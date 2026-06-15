@@ -25,11 +25,13 @@
         .teacher-gear{background:rgba(255,255,255,0.2);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:0.2s;margin-right:10px;display:none}
         .teacher-gear:hover{background:rgba(255,255,255,0.4);transform:rotate(15deg)}
         .teacher-gear i{font-size:1.3rem;color:#ffd966}
+        
         .news-ticker{background:#d62828;color:white;padding:12px 20px;border-radius:50px;margin-bottom:20px;display:flex;align-items:center;gap:15px;flex-wrap:wrap;box-shadow:0 4px 10px rgba(0,0,0,0.2)}
         .news-ticker-label{background:#b71c1c;padding:6px 15px;border-radius:50px;font-weight:800;font-size:0.9rem;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
         .news-ticker-content{flex:1;overflow:hidden}
         .news-ticker-content marquee{font-size:1rem;font-weight:500;direction:rtl}
         .news-ticker-empty{color:#ffd966;font-size:0.9rem}
+        
         .countdown-container{background:rgba(255,255,255,0.9);border-radius:60px;padding:15px 25px;margin-bottom:25px;text-align:center;box-shadow:0 10px 25px rgba(0,0,0,0.1);border:2px solid #ffc107}
         .countdown-title{font-size:1.3rem;font-weight:800;color:#b45309;margin-bottom:10px}
         .countdown-timer{display:flex;justify-content:center;gap:20px;flex-wrap:wrap}
@@ -37,6 +39,14 @@
         .countdown-number{font-size:2rem;font-weight:900;line-height:1}
         .countdown-label{font-size:0.8rem;opacity:0.9}
         .holiday-message{font-size:0.9rem;color:#d62828;margin-top:8px;font-weight:bold}
+        
+        @media (max-width:768px) {
+            .news-ticker{flex-direction:column;text-align:center;padding:10px 15px}
+            .news-ticker-label{white-space:normal;width:auto;justify-content:center}
+            .news-ticker-content{width:100%;text-align:center}
+            .news-ticker-content marquee{font-size:0.8rem;white-space:normal;word-break:break-word;display:inline-block;width:100%}
+        }
+        
         .main-stages{display:flex;flex-wrap:wrap;justify-content:center;gap:25px;margin:30px 0 50px;transition:all 0.3s ease}
         .main-stages.hide-stages{display:none}
         .stage-btn{border:none;padding:16px 35px;border-radius:80px;font-size:1.2rem;font-weight:800;font-family:'Tajawal',sans-serif;color:white;cursor:pointer;transition:all 0.3s ease;box-shadow:0 10px 20px rgba(0,0,0,0.2);display:flex;align-items:center;gap:12px}
@@ -46,6 +56,7 @@
         .stage-btn.middle-btn{background:linear-gradient(135deg,#0f5b2e,#0a4a25)}
         .stage-btn.high-btn{background:linear-gradient(135deg,#ff8c42,#e67e22)}
         .stage-btn.community-btn{background:linear-gradient(135deg,#6a1b9a,#8e24aa);border:2px solid #ffd966}
+        
         .sub-stages{display:flex;flex-wrap:wrap;justify-content:center;gap:30px;margin:30px 0 50px}
         .sub-stage-card{background:white;border-radius:30px;padding:30px 20px;text-align:center;width:240px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 15px 30px rgba(0,0,0,0.1);border-bottom:5px solid #ffc107}
         .sub-stage-card:hover{transform:translateY(-10px);box-shadow:0 25px 40px rgba(0,0,0,0.15)}
@@ -179,6 +190,7 @@
         .confirm-logout-btn{background:#d62828;color:white}
         .cancel-logout-btn{background:#ccc;color:#333}
         
+        /* النوافذ المنبثقة */
         .visitor-popup{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:3000;justify-content:center;align-items:center}
         .visitor-popup-content{background:linear-gradient(145deg,#fff8e7,#fff0d4);border-radius:70px;padding:40px 35px;text-align:center;max-width:500px;width:85%;border:5px solid #ffc107;animation:bounceIn 0.5s ease}
         @keyframes bounceIn{0%{transform:scale(0.5);opacity:0}80%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
@@ -220,7 +232,7 @@
         .loading-spinner{display:inline-block;width:40px;height:40px;border:4px solid #f3f3f3;border-top:4px solid #006233;border-radius:50%;animation:spin 1s linear infinite;margin-right:10px}
         @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
         
-        @media (max-width:768px){.subjects-grid{grid-template-columns:1fr}.years-grid{flex-direction:column;align-items:center}.lesson-types{flex-direction:column;align-items:center}.lesson-type-card{width:100%;max-width:280px;padding:30px 20px}.lesson-item{flex-direction:column;align-items:stretch;text-align:center}.lesson-actions{justify-content:center}.admin-panel{width:320px;left:10px;right:auto;top:70px}.sub-stage-card{width:180px;padding:20px}.sub-stage-card h3{font-size:1.2rem}.subject-card{width:100%;max-width:300px;margin:0 auto}.year-card{width:100%;max-width:250px}.community-link-card{width:100%;max-width:300px}.community-stage-btn{padding:10px 20px;font-size:0.9rem}.news-ticker{flex-direction:column;text-align:center}.news-ticker-label{white-space:normal}.pdf-iframe{height:50vh}}
+        @media (max-width:768px){.subjects-grid{grid-template-columns:1fr}.years-grid{flex-direction:column;align-items:center}.lesson-types{flex-direction:column;align-items:center}.lesson-type-card{width:100%;max-width:280px;padding:30px 20px}.lesson-item{flex-direction:column;align-items:stretch;text-align:center}.lesson-actions{justify-content:center}.admin-panel{width:320px;left:10px;right:auto;top:70px}.sub-stage-card{width:180px;padding:20px}.sub-stage-card h3{font-size:1.2rem}.subject-card{width:100%;max-width:300px;margin:0 auto}.year-card{width:100%;max-width:250px}.community-link-card{width:100%;max-width:300px}.community-stage-btn{padding:10px 20px;font-size:0.9rem}.pdf-iframe{height:50vh}}
     </style>
 </head>
 <body>
@@ -325,6 +337,34 @@
     </div>
 </div>
 
+<!-- النوافذ المنبثقة -->
+<div id="visitorDeniedPopup" class="visitor-popup">
+    <div class="visitor-popup-content">
+        <div class="popup-emoji">🚫👋</div>
+        <h3>🙏 عذراً عزيزي الزائر</h3>
+        <p>⚠️ أنت لست فرداً من مجتمعنا<br><br>❌ الوصول إلى الدروس مقيد بأعضاء المنصة فقط<br><br>🔐 يمكنك التسجيل كعضو والانتظار حتى قبول طلبك<br><br>📅 عند قبول عضويتك، ستتمكن من مشاهدة الدروس</p>
+        <button onclick="closeVisitorDeniedPopup()">📖 فهمت</button>
+    </div>
+</div>
+
+<div id="holidayPopup" class="visitor-popup">
+    <div class="visitor-popup-content">
+        <div class="popup-emoji">🏖️📚🎈</div>
+        <h3>🌙 تلميذي العزيز 🌙</h3>
+        <p>🌟 استمتع بعطلتك الجميلة 🌟<br>ولنا عودة إلى جو العلم والكد والاجتهاد<br><strong>📅 ابتداءً من <span id="holidayPopupDate">27/06/2026</span> إن شاء الله 📅</strong></p>
+        <button onclick="closeHolidayPopup()">📖 فهمت 📖</button>
+    </div>
+</div>
+
+<div id="stopPopup" class="visitor-popup">
+    <div class="visitor-popup-content">
+        <div class="popup-emoji">⏸️📚⏸️</div>
+        <h3>📢 إشعار توقف الدروس</h3>
+        <p>الدروس <strong id="stopTypeName">الصيفية</strong> متوقفة حالياً<br>سيتم استئنافها في تاريخ<br><strong id="stopPopupDate">--/--/----</strong></p>
+        <button onclick="closeStopPopup()">📖 فهمت 📖</button>
+    </div>
+</div>
+
 <!-- نماذج تسجيل الدخول -->
 <div id="authChoiceModal" class="auth-modal">
     <div class="auth-content">
@@ -385,9 +425,6 @@
         <button id="cancelLogoutBtn" class="cancel-logout-btn">إلغاء</button>
     </div>
 </div>
-
-<div id="holidayPopup" class="visitor-popup"><div class="visitor-popup-content"><div class="popup-emoji">🏖️📚🎈</div><h3>🌙 تلميذي العزيز 🌙</h3><p>🌟 استمتع بعطلتك الجميلة 🌟<br>ولنا عودة إلى جو العلم والكد والاجتهاد<br><strong>📅 ابتداءً من <span id="holidayPopupDate">27/06/2026</span> إن شاء الله 📅</strong></p><button onclick="closeHolidayPopup()">📖 فهمت 📖</button></div></div>
-<div id="stopPopup" class="visitor-popup"><div class="visitor-popup-content"><div class="popup-emoji">⏸️📚⏸️</div><h3>📢 إشعار توقف الدروس</h3><p>الدروس <strong id="stopTypeName">الصيفية</strong> متوقفة حالياً<br>سيتم استئنافها في تاريخ<br><strong id="stopPopupDate">--/--/----</strong></p><button onclick="closeStopPopup()">📖 فهمت 📖</button></div></div>
 
 <!-- لوحة تحكم المعلم -->
 <div class="admin-panel" id="adminPanel">
@@ -455,6 +492,38 @@
     function hideMainStages() { document.getElementById('mainStagesContainer')?.classList.add('hide-stages'); }
     function showMainStagesButtons() { document.getElementById('mainStagesContainer')?.classList.remove('hide-stages'); }
     
+    // دوال إغلاق النوافذ المنبثقة
+    function closeVisitorDeniedPopup() { document.getElementById("visitorDeniedPopup").style.display = "none"; }
+    window.closeVisitorDeniedPopup = closeVisitorDeniedPopup;
+    window.closeHolidayPopup = () => document.getElementById("holidayPopup").style.display = "none";
+    window.closeStopPopup = () => document.getElementById("stopPopup").style.display = "none";
+    
+    // دالة ظهور النافذة المناسبة للمستخدم
+    function showAppropriatePopup(type) {
+        // إذا كان المستخدم غير مسجل دخول (زائر)
+        if (!currentUser) {
+            document.getElementById("visitorDeniedPopup").style.display = "flex";
+            return;
+        }
+        
+        // إذا كان مستخدم مسجل لكن عضويته غير مقبولة (عضو منتظر القبول)
+        if (currentUser && !currentUserIsApproved && !isAdminMode) {
+            const date = type === 'summer' ? lockSettings.summerUnlockDate : lockSettings.curriculumUnlockDate;
+            const choice = type === 'summer' ? summerPopupChoice : curriculumPopupChoice;
+            
+            if (choice === 'holiday') {
+                document.getElementById("holidayPopupDate").innerText = date.split('-').reverse().join('/');
+                document.getElementById("holidayPopup").style.display = "flex";
+            } else {
+                const typeName = type === 'summer' ? 'الصيفية' : 'المقررة';
+                document.getElementById('stopTypeName').innerText = typeName;
+                document.getElementById('stopPopupDate').innerText = date.split('-').reverse().join('/');
+                document.getElementById('stopPopup').style.display = 'flex';
+            }
+            return;
+        }
+    }
+    
     // حفظ واستعادة الحالة الكاملة
     function saveFullNavigationState() {
         const state = {
@@ -470,22 +539,6 @@
             viewingLesson: currentViewingLesson
         };
         sessionStorage.setItem('full_navigation_state', JSON.stringify(state));
-    }
-    
-    function saveCurrentViewingState(lessonId, lesson) {
-        if (lessonId && lesson) {
-            currentViewingFile = lessonId;
-            currentViewingLesson = lesson;
-            const state = {
-                isViewingFile: true,
-                lessonId: lessonId,
-                lesson: lesson
-            };
-            sessionStorage.setItem('current_viewing_file', JSON.stringify(state));
-            saveFullNavigationState();
-        } else {
-            sessionStorage.removeItem('current_viewing_file');
-        }
     }
     
     function restoreFullNavigationState() {
@@ -538,6 +591,22 @@
             } catch(e) { console.error("Error restoring state:", e); }
         }
         return false;
+    }
+    
+    function saveCurrentViewingState(lessonId, lesson) {
+        if (lessonId && lesson) {
+            currentViewingFile = lessonId;
+            currentViewingLesson = lesson;
+            const state = {
+                isViewingFile: true,
+                lessonId: lessonId,
+                lesson: lesson
+            };
+            sessionStorage.setItem('current_viewing_file', JSON.stringify(state));
+            saveFullNavigationState();
+        } else {
+            sessionStorage.removeItem('current_viewing_file');
+        }
     }
     
     function toggleLessonFields() {
@@ -751,12 +820,20 @@
         return '';
     }
     
-    function isLessonAccessible(type) { if(isAdminMode) return true; const today = new Date(); today.setHours(0,0,0,0); if(type === "summer"){ if(!lockSettings.summerLocked) return true; return today >= new Date(lockSettings.summerUnlockDate); } else { if(!lockSettings.curriculumLocked) return true; return today >= new Date(lockSettings.curriculumUnlockDate); } }
-    
-    function showAppropriatePopup(type) { const date = type === 'summer' ? lockSettings.summerUnlockDate : lockSettings.curriculumUnlockDate; const choice = type === 'summer' ? summerPopupChoice : curriculumPopupChoice; if(choice === 'holiday'){ document.getElementById("holidayPopupDate").innerText = date.split('-').reverse().join('/'); document.getElementById("holidayPopup").style.display = "flex"; } else { const typeName = type === 'summer' ? 'الصيفية' : 'المقررة'; document.getElementById('stopTypeName').innerText = typeName; document.getElementById('stopPopupDate').innerText = date.split('-').reverse().join('/'); document.getElementById('stopPopup').style.display = 'flex'; } }
-    
-    window.closeHolidayPopup = () => document.getElementById("holidayPopup").style.display = "none";
-    window.closeStopPopup = () => document.getElementById("stopPopup").style.display = "none";
+    function isLessonAccessible(type) { 
+        if(isAdminMode) return true; 
+        if(currentUser && !currentUserIsApproved) return false;
+        if(!currentUser) return false;
+        const today = new Date(); 
+        today.setHours(0,0,0,0); 
+        if(type === "summer"){ 
+            if(!lockSettings.summerLocked) return true; 
+            return today >= new Date(lockSettings.summerUnlockDate); 
+        } else { 
+            if(!lockSettings.curriculumLocked) return true; 
+            return today >= new Date(lockSettings.curriculumUnlockDate); 
+        } 
+    }
     
     function getCurrentLessons() { 
         try {
@@ -806,11 +883,19 @@
             paginated.forEach(lesson => { 
                 const isLocked = !isLessonAccessible(currentLessonType); 
                 const badge = getLessonBadge(lesson);
-                html += `<div class="lesson-item"><div class="lesson-title">${badge}<span>📌 ${escapeHtml(lesson.title)}</span>${isLocked && !isAdminMode ? '<span style="color:#d62828; font-size:0.7rem; margin-right:8px;">🔒 مقفل</span>' : ''}</div><div class="lesson-actions">`;
+                html += `<div class="lesson-item"><div class="lesson-title">${badge}<span>📌 ${escapeHtml(lesson.title)}</span>${isLocked ? '<span style="background:#f0f0f0; color:#999; font-size:0.7rem; margin-right:8px; padding:2px 8px; border-radius:20px;">🔒 غير متاح</span>' : ''}</div><div class="lesson-actions">`;
                 if (lesson.content_type === 'pdf' || lesson.content_type === 'image') {
-                    html += `<button class="view-inline-btn" onclick='showLessonContent("${lesson.id}", ${JSON.stringify(lesson).replace(/'/g, "\\'")})'><i class="fas fa-eye"></i> عرض</button>`;
+                    if (!isLocked) {
+                        html += `<button class="view-inline-btn" onclick='showLessonContent("${lesson.id}", ${JSON.stringify(lesson).replace(/'/g, "\\'")})'><i class="fas fa-eye"></i> عرض</button>`;
+                    } else {
+                        html += `<button class="watch-btn" onclick='showAppropriatePopup("${currentLessonType}")'><i class="fas fa-lock"></i> غير متاح</button>`;
+                    }
                 } else {
-                    html += `<button class="watch-btn" data-url="${lesson.external_url}" data-type="${currentLessonType}"><i class="fas fa-external-link-alt"></i> مشاهدة</button>`;
+                    if (!isLocked) {
+                        html += `<button class="watch-btn" data-url="${lesson.external_url}" data-type="${currentLessonType}"><i class="fas fa-external-link-alt"></i> مشاهدة</button>`;
+                    } else {
+                        html += `<button class="watch-btn" onclick='showAppropriatePopup("${currentLessonType}")'><i class="fas fa-lock"></i> غير متاح</button>`;
+                    }
                 }
                 if(isAdminMode) {
                     if (lesson.content_type === 'pdf' || lesson.content_type === 'image') {
@@ -832,8 +917,26 @@
         if(isAdminMode) html += `<div class="add-lesson-area"><button class="add-lesson-btn" id="openAddLessonBtn"><i class="fas fa-plus-circle"></i> إضافة درس جديد</button></div>`; 
         document.getElementById("dynamicArea").innerHTML = html; 
         document.getElementById("backBtn")?.addEventListener("click", goBack); 
-        document.querySelectorAll(".watch-btn").forEach(btn => { btn.addEventListener("click", () => { const type = btn.getAttribute("data-type"); if(isLessonAccessible(type)) window.open(btn.getAttribute("data-url"), "_blank"); else showAppropriatePopup(type); }); }); 
-        document.querySelectorAll(".page-btn, .page-nav").forEach(btn => { btn.addEventListener("click", () => { const action = btn.getAttribute("data-page"); if(action === "prev") currentPage = Math.max(1, currentPage - 1); else if(action === "next") currentPage = Math.min(totalPages, currentPage + 1); else currentPage = parseInt(action); renderLessonsList(); }); }); 
+        document.querySelectorAll(".watch-btn").forEach(btn => { 
+            btn.addEventListener("click", () => { 
+                const type = btn.getAttribute("data-type"); 
+                if(btn.getAttribute("data-url")) {
+                    if(isLessonAccessible(type)) window.open(btn.getAttribute("data-url"), "_blank");
+                    else showAppropriatePopup(type);
+                } else {
+                    showAppropriatePopup(type);
+                }
+            }); 
+        }); 
+        document.querySelectorAll(".page-btn, .page-nav").forEach(btn => { 
+            btn.addEventListener("click", () => { 
+                const action = btn.getAttribute("data-page"); 
+                if(action === "prev") currentPage = Math.max(1, currentPage - 1); 
+                else if(action === "next") currentPage = Math.min(totalPages, currentPage + 1); 
+                else currentPage = parseInt(action); 
+                renderLessonsList(); 
+            }); 
+        }); 
         document.getElementById("openAddLessonBtn")?.addEventListener("click", () => { 
             document.getElementById('addLessonModalTitle').innerText = "➕ إضافة درس جديد";
             document.getElementById('newLessonTitle').value = "";
@@ -964,6 +1067,9 @@
         document.getElementById("addLessonModal").style.display = "none";
         document.getElementById("editLessonModal").style.display = "none";
         document.getElementById("editInternalLessonModal").style.display = "none";
+        document.getElementById("visitorDeniedPopup").style.display = "none";
+        document.getElementById("holidayPopup").style.display = "none";
+        document.getElementById("stopPopup").style.display = "none";
     }
     
     function showAuthChoice() { document.getElementById("authChoiceModal").style.display = "flex"; }
@@ -1072,7 +1178,7 @@
         
         window.onclick = (e) => { 
             if(e.target.classList.contains("add-lesson-modal")) e.target.style.display = "none"; 
-            if(e.target.classList.contains("visitor-popup")){ document.getElementById("holidayPopup").style.display = "none"; document.getElementById("stopPopup").style.display = "none"; } 
+            if(e.target.classList.contains("visitor-popup")){ e.target.style.display = "none"; } 
             if(e.target.classList.contains("auth-modal")) hideAllModals(); 
             if(e.target.classList.contains("logout-confirm-modal") && e.target === document.getElementById("logoutConfirmModal")) hideAllModals(); 
         };
@@ -1109,7 +1215,7 @@
                 currentUserIsApproved = false; 
                 if(gearIcon) gearIcon.style.display = "none"; 
                 if(adminPanel) adminPanel.style.display = "none";
-                if(!currentStage) showMainStages();
+                if(!currentStage && document.getElementById("dynamicArea").innerHTML.includes("تسجيل الدخول")) { showMainStages(); }
             } 
         }); }
         init();
