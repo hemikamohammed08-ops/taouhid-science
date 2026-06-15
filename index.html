@@ -11,42 +11,216 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <style>
-        *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Tajawal',sans-serif;background:linear-gradient(135deg,#d4ebd2 0%,#a8d5a2 100%);min-height:100vh}.container{max-width:1300px;margin:0 auto;padding:20px 24px}.header{background:linear-gradient(115deg,#006233 0%,#009c4a 100%);border-radius:60px;padding:15px 30px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:15px;box-shadow:0 20px 30px rgba(0,0,0,0.15);border:1px solid #ffd966}.logo h1{font-size:1.6rem;font-weight:900;color:#ffd966;text-shadow:2px 2px 0 #b45309}.logo p{color:white;font-weight:bold;font-size:0.8rem}.header-left{display:flex;align-items:center;gap:20px;flex-wrap:wrap}.social-links{display:flex;gap:12px;background:rgba(255,255,255,0.15);padding:6px 15px;border-radius:60px}.social-links a{color:white;font-size:1.3rem;transition:0.2s}.social-links a:hover{transform:scale(1.1);color:#ffd966}.flag-icon{font-size:1.2rem;background:rgba(255,255,255,0.15);border-radius:100px;padding:6px 15px;color:white;display:flex;align-items:center;gap:5px}.teacher-gear{background:rgba(255,255,255,0.2);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:0.2s;margin-right:10px;display:none}.teacher-gear:hover{background:rgba(255,255,255,0.4);transform:rotate(15deg)}.teacher-gear i{font-size:1.3rem;color:#ffd966}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Tajawal',sans-serif;background:linear-gradient(135deg,#d4ebd2 0%,#a8d5a2 100%);min-height:100vh}
+        .container{max-width:1300px;margin:0 auto;padding:20px 24px}
+        .header{background:linear-gradient(115deg,#006233 0%,#009c4a 100%);border-radius:60px;padding:15px 30px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:15px;box-shadow:0 20px 30px rgba(0,0,0,0.15);border:1px solid #ffd966}
+        .logo h1{font-size:1.6rem;font-weight:900;color:#ffd966;text-shadow:2px 2px 0 #b45309}
+        .logo p{color:white;font-weight:bold;font-size:0.8rem}
+        .header-left{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+        .social-links{display:flex;gap:12px;background:rgba(255,255,255,0.15);padding:6px 15px;border-radius:60px}
+        .social-links a{color:white;font-size:1.3rem;transition:0.2s}
+        .social-links a:hover{transform:scale(1.1);color:#ffd966}
+        .flag-icon{font-size:1.2rem;background:rgba(255,255,255,0.15);border-radius:100px;padding:6px 15px;color:white;display:flex;align-items:center;gap:5px}
+        .teacher-gear{background:rgba(255,255,255,0.2);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:0.2s;margin-right:10px;display:none}
+        .teacher-gear:hover{background:rgba(255,255,255,0.4);transform:rotate(15deg)}
+        .teacher-gear i{font-size:1.3rem;color:#ffd966}
+        .news-ticker{background:#d62828;color:white;padding:12px 20px;border-radius:50px;margin-bottom:20px;display:flex;align-items:center;gap:15px;flex-wrap:wrap;box-shadow:0 4px 10px rgba(0,0,0,0.2)}
+        .news-ticker-label{background:#b71c1c;padding:6px 15px;border-radius:50px;font-weight:800;font-size:0.9rem;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+        .news-ticker-content{flex:1;overflow:hidden}
+        .news-ticker-content marquee{font-size:1rem;font-weight:500;direction:rtl}
+        .news-ticker-empty{color:#ffd966;font-size:0.9rem}
+        .countdown-container{background:rgba(255,255,255,0.9);border-radius:60px;padding:15px 25px;margin-bottom:25px;text-align:center;box-shadow:0 10px 25px rgba(0,0,0,0.1);border:2px solid #ffc107}
+        .countdown-title{font-size:1.3rem;font-weight:800;color:#b45309;margin-bottom:10px}
+        .countdown-timer{display:flex;justify-content:center;gap:20px;flex-wrap:wrap}
+        .countdown-box{background:#006233;color:white;padding:10px 18px;border-radius:50px;min-width:90px;text-align:center}
+        .countdown-number{font-size:2rem;font-weight:900;line-height:1}
+        .countdown-label{font-size:0.8rem;opacity:0.9}
+        .holiday-message{font-size:0.9rem;color:#d62828;margin-top:8px;font-weight:bold}
+        .main-stages{display:flex;flex-wrap:wrap;justify-content:center;gap:25px;margin:30px 0 50px;transition:all 0.3s ease}
+        .main-stages.hide-stages{display:none}
+        .stage-btn{border:none;padding:16px 35px;border-radius:80px;font-size:1.2rem;font-weight:800;font-family:'Tajawal',sans-serif;color:white;cursor:pointer;transition:all 0.3s ease;box-shadow:0 10px 20px rgba(0,0,0,0.2);display:flex;align-items:center;gap:12px}
+        .stage-btn:hover{transform:translateY(-8px);filter:brightness(1.05);box-shadow:0 20px 30px rgba(0,0,0,0.25)}
+        .stage-btn i{font-size:1.4rem}
+        .stage-btn.primary-btn{background:linear-gradient(135deg,#d62828,#b71c1c)}
+        .stage-btn.middle-btn{background:linear-gradient(135deg,#0f5b2e,#0a4a25)}
+        .stage-btn.high-btn{background:linear-gradient(135deg,#ff8c42,#e67e22)}
+        .stage-btn.community-btn{background:linear-gradient(135deg,#6a1b9a,#8e24aa);border:2px solid #ffd966}
+        .sub-stages{display:flex;flex-wrap:wrap;justify-content:center;gap:30px;margin:30px 0 50px}
+        .sub-stage-card{background:white;border-radius:30px;padding:30px 20px;text-align:center;width:240px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 15px 30px rgba(0,0,0,0.1);border-bottom:5px solid #ffc107}
+        .sub-stage-card:hover{transform:translateY(-10px);box-shadow:0 25px 40px rgba(0,0,0,0.15)}
+        .sub-stage-card .stage-emoji{font-size:3rem;margin-bottom:15px}
+        .sub-stage-card h3{font-size:1.5rem;margin:10px 0;color:#006233}
+        .sub-stage-card p{color:#475569;font-size:0.85rem}
+        .years-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:25px;margin:30px 0 50px}
+        .year-card{background:white;border-radius:28px;padding:25px 20px;text-align:center;width:210px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 12px 25px rgba(0,0,0,0.1);border-bottom:4px solid #ffc107}
+        .year-card:hover{transform:translateY(-8px);box-shadow:0 20px 35px rgba(0,0,0,0.15)}
+        .year-emoji{font-size:2.5rem;margin-bottom:12px;display:block}
+        .year-card h3{font-size:1.1rem;color:#006233;margin:0}
+        .subjects-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:25px;margin:30px 0 50px}
+        .subject-card{background:white;border-radius:28px;overflow:hidden;transition:all 0.3s ease;box-shadow:0 12px 25px rgba(0,0,0,0.1);cursor:pointer;width:260px}
+        .subject-card:hover{transform:translateY(-8px);box-shadow:0 20px 35px rgba(0,0,0,0.15)}
+        .subject-header{background:linear-gradient(135deg,#fef3c7,#fde68a);padding:20px;text-align:center;font-size:1.2rem;font-weight:800;color:#b45309;display:flex;align-items:center;justify-content:center;gap:12px}
+        .subject-header i{font-size:1.8rem}
+        .lesson-types{display:flex;flex-wrap:wrap;gap:35px;justify-content:center;margin:30px 0 50px}
+        .lesson-type-card{background:white;border-radius:50px;padding:45px 35px;text-align:center;width:300px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 15px 30px rgba(0,0,0,0.12)}
+        .lesson-type-card:hover{transform:translateY(-10px);box-shadow:0 25px 40px rgba(0,0,0,0.18)}
+        .lesson-type-card.summer{border-bottom:6px solid #ff8c42}
+        .lesson-type-card.curriculum{border-bottom:6px solid #006233}
+        .lesson-type-emoji{font-size:4rem;margin-bottom:15px}
+        .lesson-type-card h3{font-size:1.6rem;margin-bottom:10px}
+        .lesson-type-card.summer h3{color:#b45309}
+        .lesson-type-card.curriculum h3{color:#006233}
+        .lesson-type-card p{color:#475569;font-size:0.9rem}
+        .lesson-count{margin-top:15px;font-size:0.85rem;background:#f1f5f9;display:inline-block;padding:6px 18px;border-radius:60px;font-weight:bold}
+        .lessons-list{background:white;border-radius:35px;padding:25px;margin:25px 0;box-shadow:0 10px 25px rgba(0,0,0,0.08)}
+        .lesson-item{background:#f8fafc;border-radius:25px;padding:15px 20px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;transition:all 0.2s ease;border:1px solid #e2e8f0}
+        .lesson-item:hover{background:#f1f5f9;transform:translateX(-5px)}
+        .lesson-title{font-weight:700;font-size:1rem;flex:1;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+        .lesson-actions{display:flex;gap:8px;flex-wrap:wrap}
+        .lesson-badge{padding:5px 12px;border-radius:60px;font-size:0.7rem;font-weight:bold;display:inline-flex;align-items:center;gap:6px}
+        .badge-pdf{background:#4caf50;color:white}
+        .badge-image{background:#2196f3;color:white}
+        .badge-telegram{background:#0088cc;color:white}
+        .badge-facebook{background:#1877f2;color:white}
+        .watch-btn{background:#006233;color:white;border:none;padding:8px 18px;border-radius:60px;cursor:pointer;font-size:0.8rem;font-weight:bold;transition:0.2s;display:inline-flex;align-items:center;gap:6px}
+        .watch-btn:hover{background:#009c4a;transform:scale(1.02)}
+        .view-inline-btn{background:#4caf50;color:white;border:none;padding:8px 18px;border-radius:60px;cursor:pointer;font-size:0.8rem;font-weight:bold;transition:0.2s;display:inline-flex;align-items:center;gap:6px}
+        .view-inline-btn:hover{background:#45a049;transform:scale(1.02)}
+        .edit-btn{background:#ff8c42;color:white;border:none;padding:7px 15px;border-radius:60px;cursor:pointer;font-size:0.75rem;font-weight:bold;transition:0.2s;display:inline-flex;align-items:center;gap:5px}
+        .edit-btn:hover{background:#e67e22;transform:scale(1.02)}
+        .delete-btn{background:#d62828;color:white;border:none;padding:7px 15px;border-radius:60px;cursor:pointer;font-size:0.75rem;font-weight:bold;transition:0.2s;display:inline-flex;align-items:center;gap:5px}
+        .delete-btn:hover{background:#b71c1c;transform:scale(1.02)}
+        .add-lesson-btn{background:linear-gradient(135deg,#006233,#009c4a);color:white;border:none;padding:14px;border-radius:60px;cursor:pointer;width:100%;font-weight:bold;font-size:1rem;transition:0.2s;display:flex;align-items:center;justify-content:center;gap:8px}
+        .add-lesson-btn:hover{transform:scale(1.01);filter:brightness(1.05)}
+        .back-btn{background:#475569;color:white;border:none;padding:10px 25px;border-radius:60px;cursor:pointer;font-family:'Tajawal',sans-serif;font-weight:bold;margin-bottom:25px;display:inline-flex;align-items:center;gap:10px;transition:0.2s}
+        .back-btn:hover{background:#006233;transform:translateX(-3px)}
+        .download-btn{background:#006233;color:white;border:none;padding:12px 30px;border-radius:60px;cursor:pointer;font-weight:bold;font-size:1rem;display:inline-flex;align-items:center;gap:8px;transition:0.2s}
+        .download-btn:hover{background:#009c4a;transform:scale(1.02)}
+        .pagination{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:25px;flex-wrap:wrap}
+        .page-btn{background:#e2e8f0;border:none;padding:8px 16px;border-radius:35px;cursor:pointer;font-size:0.85rem;font-weight:bold;transition:0.2s}
+        .page-btn:hover{background:#006233;color:white}
+        .page-btn.active{background:#006233;color:white}
+        .page-nav{background:#006233;color:white;border:none;padding:8px 16px;border-radius:35px;cursor:pointer;font-size:0.85rem;font-weight:bold;transition:0.2s}
+        .page-nav:hover{background:#d62828}
+        .page-info{font-size:0.85rem;color:#475569;font-weight:bold}
+        .empty-lessons{text-align:center;padding:50px;background:#f1f5f9;border-radius:35px;color:#64748b;font-size:1rem}
+        .page-title{font-size:1.6rem;font-weight:800;color:#006233;margin-bottom:25px;text-align:center;display:flex;align-items:center;justify-content:center;gap:12px}
+        .page-title i{font-size:1.8rem}
         
-        .news-ticker{background:#d62828;color:white;padding:12px 20px;border-radius:50px;margin-bottom:20px;display:flex;align-items:center;gap:15px;flex-wrap:wrap;box-shadow:0 4px 10px rgba(0,0,0,0.2)}.news-ticker-label{background:#b71c1c;padding:6px 15px;border-radius:50px;font-weight:800;font-size:0.9rem;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}.news-ticker-label i{font-size:1rem}.news-ticker-content{flex:1;overflow:hidden}.news-ticker-content marquee{font-size:1rem;font-weight:500;direction:rtl}.news-ticker-content marquee a{color:#ffd966;text-decoration:underline}.news-ticker-empty{color:#ffd966;font-size:0.9rem}
+        .lesson-content-viewer{background:white;border-radius:35px;padding:25px;margin:25px 0;box-shadow:0 10px 25px rgba(0,0,0,0.08)}
+        .lesson-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid #ffc107;flex-wrap:wrap;gap:10px}
+        .lesson-header h3{color:#006233;font-size:1.3rem;display:flex;align-items:center;gap:10px;margin:0}
+        .close-viewer-btn{background:#d62828;color:white;border:none;padding:8px 18px;border-radius:60px;cursor:pointer;font-size:0.8rem;font-weight:bold;transition:0.2s;display:inline-flex;align-items:center;gap:6px}
+        .close-viewer-btn:hover{background:#b71c1c;transform:scale(1.02)}
+        .lesson-body{min-height:400px;margin-bottom:20px}
+        .pdf-iframe{width:100%;height:70vh;border:none;border-radius:15px}
+        .inline-image-viewer{max-width:100%;max-height:70vh;border-radius:15px;display:block;margin:0 auto}
+        .lesson-footer{text-align:center;padding-top:15px;border-top:1px solid #ddd}
         
-        .countdown-container{background:rgba(255,255,255,0.9);border-radius:60px;padding:15px 25px;margin-bottom:25px;text-align:center;box-shadow:0 10px 25px rgba(0,0,0,0.1);border:2px solid #ffc107}.countdown-title{font-size:1.3rem;font-weight:800;color:#b45309;margin-bottom:10px}.countdown-timer{display:flex;justify-content:center;gap:20px;flex-wrap:wrap}.countdown-box{background:#006233;color:white;padding:10px 18px;border-radius:50px;min-width:90px;text-align:center}.countdown-number{font-size:2rem;font-weight:900;line-height:1}.countdown-label{font-size:0.8rem;opacity:0.9}.holiday-message{font-size:0.9rem;color:#d62828;margin-top:8px;font-weight:bold}
+        .add-lesson-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:5000;justify-content:center;align-items:center}
+        .add-lesson-content{background:white;padding:25px;border-radius:40px;width:90%;max-width:500px;max-height:90vh;overflow-y:auto}
+        .add-lesson-content h3{color:#006233;margin-bottom:20px;text-align:center}
+        .add-lesson-content input,.add-lesson-content select{width:100%;margin:8px 0;padding:10px;border-radius:50px;border:1px solid #ddd;font-family:'Tajawal',sans-serif}
+        .add-lesson-content button{width:100%;margin-top:10px;padding:12px;border-radius:50px;border:none;font-weight:bold;cursor:pointer}
+        .form-group{margin-bottom:12px}
+        .form-group label{font-weight:bold;display:block;margin-bottom:5px;color:#333;font-size:0.85rem}
+        .lock-info{font-size:0.7rem;color:#666;margin-top:3px}
         
-        /* أزرار المراحل - سيتم إخفاؤها عند الدخول إلى قسم */
-        .main-stages{display:flex;flex-wrap:wrap;justify-content:center;gap:25px;margin:30px 0 50px;transition:all 0.3s ease}.main-stages.hide-stages{display:none}
+        .admin-panel{display:none;position:fixed;top:80px;right:20px;background:white;padding:20px;border-radius:28px;width:420px;z-index:1000;box-shadow:0 10px 30px black;border-right:5px solid #d62828;max-height:85vh;overflow-y:auto}
+        .admin-panel h4{color:#006233;margin-bottom:15px;border-bottom:2px solid #ffc107;padding-bottom:8px}
+        .admin-panel h5{color:#b45309;margin:15px 0 10px 0}
+        .admin-panel input,.admin-panel select{width:100%;margin:8px 0;padding:10px;border-radius:60px;border:1px solid #ccc}
+        .admin-panel button{width:100%;margin-top:5px;padding:10px;border-radius:60px;border:none;font-weight:bold;cursor:pointer}
+        .lock-section{background:#f1f5f9;border-radius:28px;padding:15px;margin:15px 0}
+        .lock-item{margin-bottom:20px;padding-bottom:15px;border-bottom:1px solid #ddd}
+        .lock-item:last-child{border-bottom:none}
+        .lock-label{font-weight:bold;display:block;margin-bottom:8px}
+        .lock-label.summer{color:#b45309}
+        .lock-label.curriculum{color:#006233}
+        .lock-status{display:inline-block;font-size:0.75rem;padding:2px 10px;border-radius:60px;margin-right:10px}
+        .lock-status.locked{background:#d62828;color:white}
+        .lock-status.unlocked{background:#006233;color:white}
+        .lock-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:10px 0}
+        .lock-date-input{flex:1;min-width:120px;padding:8px;border-radius:60px;border:1px solid #ccc}
+        .popup-choice{display:flex;gap:15px;margin:10px 0}
+        .popup-choice label{display:flex;align-items:center;gap:5px;font-size:0.8rem;cursor:pointer}
+        .lock-action-btn{padding:6px 15px;border-radius:60px;cursor:pointer;font-size:0.8rem;border:none;font-weight:bold}
+        .lock-action-btn.stop{background:#d62828;color:white}
+        .lock-action-btn.start{background:#006233;color:white}
+        .lock-info{font-size:0.7rem;color:#666;margin-top:5px}
+        .requests-panel{background:#fff8e1;border-radius:20px;padding:15px;margin-top:10px;max-height:250px;overflow-y:auto}
+        .request-item{background:white;border-radius:15px;padding:12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;border-right:3px solid #ff9800}
+        .request-email{font-weight:bold;color:#006233;font-size:0.85rem}
+        .request-date{font-size:0.65rem;color:#666}
+        .request-actions button{padding:5px 12px;border-radius:60px;border:none;cursor:pointer;margin:0 3px;font-size:0.7rem}
+        .approve-btn{background:#006233;color:white}
+        .reject-btn{background:#d62828;color:white}
+        .empty-requests{text-align:center;padding:20px;color:#666}
+        .invite-links-section{background:#e8f5e9;border-radius:20px;padding:15px;margin:15px 0}
+        .invite-links-section .stage-title{font-weight:bold;color:#006233;margin:10px 0 5px 0}
         
-        .stage-btn{border:none;padding:16px 35px;border-radius:80px;font-size:1.2rem;font-weight:800;font-family:'Tajawal',sans-serif;color:white;cursor:pointer;transition:all 0.3s ease;box-shadow:0 10px 20px rgba(0,0,0,0.2);display:flex;align-items:center;gap:12px}.stage-btn:hover{transform:translateY(-8px);filter:brightness(1.05);box-shadow:0 20px 30px rgba(0,0,0,0.25)}.stage-btn i{font-size:1.4rem}.stage-btn.primary-btn{background:linear-gradient(135deg,#d62828,#b71c1c)}.stage-btn.middle-btn{background:linear-gradient(135deg,#0f5b2e,#0a4a25)}.stage-btn.high-btn{background:linear-gradient(135deg,#ff8c42,#e67e22)}.stage-btn.community-btn{background:linear-gradient(135deg,#6a1b9a,#8e24aa);border:2px solid #ffd966}
+        .auth-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:5000;justify-content:center;align-items:center}
+        .auth-content{background:white;padding:40px;border-radius:60px;width:90%;max-width:400px;text-align:center}
+        .auth-content h2{color:#006233;margin-bottom:20px}
+        .auth-content input{width:100%;margin:10px 0;padding:12px;border-radius:60px;border:1px solid #ccc;text-align:center}
+        .auth-content button{background:#006233;color:white;border:none;padding:12px;border-radius:60px;width:100%;font-weight:bold;cursor:pointer;margin-top:10px}
+        .auth-content .error{color:#d62828;margin-top:10px;font-size:0.8rem}
+        .auth-content .close-btn{background:#ccc;color:#333;margin-top:5px}
+        .auth-content .link-btn{background:none;color:#ff8c42;border:1px solid #ff8c42;margin-top:10px}
+        .divider{margin:15px 0;position:relative;text-align:center}
+        .divider::before{content:"";position:absolute;top:50%;left:0;right:0;height:1px;background:#ddd}
+        .divider span{background:white;padding:0 15px;position:relative;color:#999;font-size:0.8rem}
         
-        .sub-stages{display:flex;flex-wrap:wrap;justify-content:center;gap:30px;margin:30px 0 50px}.sub-stage-card{background:white;border-radius:30px;padding:30px 20px;text-align:center;width:240px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 15px 30px rgba(0,0,0,0.1);border-bottom:5px solid #ffc107;position:relative;overflow:hidden}.sub-stage-card::before{content:'';position:absolute;top:0;left:0;right:0;height:5px;background:linear-gradient(90deg,#ffc107,#ff9800)}.sub-stage-card:hover{transform:translateY(-10px);box-shadow:0 25px 40px rgba(0,0,0,0.15)}.sub-stage-card .stage-emoji{font-size:3rem;margin-bottom:15px}.sub-stage-card h3{font-size:1.5rem;margin:10px 0;color:#006233}.sub-stage-card p{color:#475569;font-size:0.85rem;line-height:1.5}
-        .years-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:25px;margin:30px 0 50px}.year-card{background:white;border-radius:28px;padding:25px 20px;text-align:center;width:210px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 12px 25px rgba(0,0,0,0.1);border-bottom:4px solid #ffc107}.year-card:hover{transform:translateY(-8px);box-shadow:0 20px 35px rgba(0,0,0,0.15)}.year-emoji{font-size:2.5rem;margin-bottom:12px;display:block}.year-card h3{font-size:1.1rem;color:#006233;margin:0}
-        .subjects-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:25px;margin:30px 0 50px}.subject-card{background:white;border-radius:28px;overflow:hidden;transition:all 0.3s ease;box-shadow:0 12px 25px rgba(0,0,0,0.1);cursor:pointer;width:260px}.subject-card:hover{transform:translateY(-8px);box-shadow:0 20px 35px rgba(0,0,0,0.15)}.subject-header{background:linear-gradient(135deg,#fef3c7,#fde68a);padding:20px;text-align:center;font-size:1.2rem;font-weight:800;color:#b45309;display:flex;align-items:center;justify-content:center;gap:12px}.subject-header i{font-size:1.8rem}
-        .lesson-types{display:flex;flex-wrap:wrap;gap:35px;justify-content:center;margin:30px 0 50px}.lesson-type-card{background:white;border-radius:50px;padding:45px 35px;text-align:center;width:300px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 15px 30px rgba(0,0,0,0.12)}.lesson-type-card:hover{transform:translateY(-10px);box-shadow:0 25px 40px rgba(0,0,0,0.18)}.lesson-type-card.summer{border-bottom:6px solid #ff8c42}.lesson-type-card.curriculum{border-bottom:6px solid #006233}.lesson-type-emoji{font-size:4rem;margin-bottom:15px}.lesson-type-card h3{font-size:1.6rem;margin-bottom:10px}.lesson-type-card.summer h3{color:#b45309}.lesson-type-card.curriculum h3{color:#006233}.lesson-type-card p{color:#475569;font-size:0.9rem}.lesson-count{margin-top:15px;font-size:0.85rem;background:#f1f5f9;display:inline-block;padding:6px 18px;border-radius:60px;font-weight:bold}
-        .lessons-list{background:white;border-radius:35px;padding:25px;margin:25px 0;box-shadow:0 10px 25px rgba(0,0,0,0.08)}.lesson-item{background:#f8fafc;border-radius:25px;padding:15px 20px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;transition:all 0.2s ease;border:1px solid #e2e8f0}.lesson-item:hover{background:#f1f5f9;transform:translateX(-5px)}.lesson-title{font-weight:700;font-size:1rem;flex:1;display:flex;align-items:center;gap:12px;flex-wrap:wrap}.lesson-badge{padding:4px 12px;border-radius:60px;font-size:0.7rem;font-weight:bold}.badge-facebook{background:#1877f2;color:white}.badge-telegram{background:#0088cc;color:white}.watch-btn{background:#006233;color:white;border:none;padding:7px 18px;border-radius:60px;cursor:pointer;font-size:0.8rem;font-weight:bold;transition:0.2s}.watch-btn:hover{background:#009c4a;transform:scale(1.02)}.edit-btn,.delete-btn{border:none;padding:6px 14px;border-radius:60px;cursor:pointer;margin-left:6px;font-size:0.7rem;font-weight:bold;transition:0.2s;display:none}.edit-btn{background:#ff8c42;color:white}.edit-btn:hover{background:#e67e22}.delete-btn{background:#d62828;color:white}.delete-btn:hover{background:#b71c1c}.add-lesson-area{margin-top:25px;padding-top:20px;border-top:2px dashed #ccc}.add-lesson-btn{background:linear-gradient(135deg,#006233,#009c4a);color:white;border:none;padding:14px;border-radius:60px;cursor:pointer;width:100%;font-weight:bold;font-size:1rem;transition:0.2s;display:none}.add-lesson-btn:hover{transform:scale(1.01);filter:brightness(1.05)}
-        .pagination{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:25px;flex-wrap:wrap}.page-btn{background:#e2e8f0;border:none;padding:8px 16px;border-radius:35px;cursor:pointer;font-size:0.85rem;font-weight:bold;transition:0.2s}.page-btn:hover{background:#006233;color:white}.page-btn.active{background:#006233;color:white}.page-nav{background:#006233;color:white;border:none;padding:8px 16px;border-radius:35px;cursor:pointer;font-size:0.85rem;font-weight:bold;transition:0.2s}.page-nav:hover{background:#d62828}.page-info{font-size:0.85rem;color:#475569;font-weight:bold}
-        .empty-lessons{text-align:center;padding:50px;background:#f1f5f9;border-radius:35px;color:#64748b;font-size:1rem}.back-btn{background:#475569;color:white;border:none;padding:10px 25px;border-radius:60px;cursor:pointer;font-family:'Tajawal',sans-serif;font-weight:bold;margin-bottom:25px;display:inline-flex;align-items:center;gap:10px;transition:0.2s}.back-btn:hover{background:#006233;transform:translateX(-3px)}.page-title{font-size:1.6rem;font-weight:800;color:#006233;margin-bottom:25px;text-align:center;display:flex;align-items:center;justify-content:center;gap:12px}.page-title i{font-size:1.8rem}
-        .admin-panel{display:none;position:fixed;top:80px;right:20px;background:white;padding:20px;border-radius:28px;width:480px;z-index:1000;box-shadow:0 10px 30px black;border-right:5px solid #d62828;max-height:85vh;overflow-y:auto}.admin-panel h4{color:#006233;margin-bottom:15px;border-bottom:2px solid #ffc107;padding-bottom:8px}.admin-panel h5{color:#b45309;margin:15px 0 10px 0}.admin-panel input,.admin-panel select{width:100%;margin:8px 0;padding:10px;border-radius:60px;border:1px solid #ccc;font-family:'Tajawal',sans-serif}.admin-panel button{width:100%;margin-top:5px;padding:10px;border-radius:60px;border:none;font-weight:bold;cursor:pointer}.lock-section{background:#f1f5f9;border-radius:28px;padding:15px;margin:15px 0}.lock-item{margin-bottom:20px;padding-bottom:15px;border-bottom:1px solid #ddd}.lock-item:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}.lock-label{font-weight:bold;display:block;margin-bottom:8px}.lock-label.summer{color:#b45309}.lock-label.curriculum{color:#006233}.lock-status{display:inline-block;font-size:0.75rem;padding:2px 10px;border-radius:60px;margin-right:10px}.lock-status.locked{background:#d62828;color:white}.lock-status.unlocked{background:#006233;color:white}.lock-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:10px 0}.lock-date-input{flex:1;min-width:120px;padding:8px;border-radius:60px;border:1px solid #ccc}.popup-choice{display:flex;gap:15px;margin:10px 0}.popup-choice label{display:flex;align-items:center;gap:5px;font-size:0.8rem;cursor:pointer}.lock-action-btn{padding:6px 15px;border-radius:60px;cursor:pointer;font-size:0.8rem;border:none;font-weight:bold}.lock-action-btn.stop{background:#d62828;color:white}.lock-action-btn.start{background:#006233;color:white}.lock-info{font-size:0.7rem;color:#666;margin-top:5px}
-        .requests-panel{background:#fff8e1;border-radius:20px;padding:15px;margin-top:10px;max-height:250px;overflow-y:auto}.request-item{background:white;border-radius:15px;padding:12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;border-right:3px solid #ff9800}.request-email{font-weight:bold;color:#006233;font-size:0.85rem}.request-date{font-size:0.65rem;color:#666}.request-actions button{padding:5px 12px;border-radius:60px;border:none;cursor:pointer;margin:0 3px;font-size:0.7rem}.approve-btn{background:#006233;color:white}.reject-btn{background:#d62828;color:white}.empty-requests{text-align:center;padding:20px;color:#666}
-        .invite-links-section{background:#e8f5e9;border-radius:20px;padding:15px;margin:15px 0}.invite-links-section .stage-title{font-weight:bold;color:#006233;margin:10px 0 5px 0}
-        .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:2000;justify-content:center;align-items:center}.modal-content{background:white;padding:30px;border-radius:48px;width:90%;max-width:450px;text-align:center}.modal-content input,.modal-content select{width:100%;margin:10px 0;padding:12px;border-radius:60px;border:1px solid #ccc;font-family:'Tajawal',sans-serif}.modal-content button{margin-top:10px}
-        .visitor-popup{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:3000;justify-content:center;align-items:center}.visitor-popup-content{background:linear-gradient(145deg,#fff8e7,#fff0d4);border-radius:70px;padding:40px 35px;text-align:center;max-width:500px;width:85%;border:5px solid #ffc107;animation:bounceIn 0.5s ease}@keyframes bounceIn{0%{transform:scale(0.5);opacity:0}80%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}.visitor-popup-content .popup-emoji{font-size:4rem;margin-bottom:15px}.visitor-popup-content h3{font-size:1.8rem;color:#d62828;margin-bottom:15px}.visitor-popup-content p{font-size:1.2rem;color:#006233;line-height:1.6;margin-bottom:25px}.visitor-popup-content button{background:#006233;color:white;border:none;padding:12px 35px;border-radius:60px;cursor:pointer}
-        .footer{background:#0c2e1e;border-radius:40px 40px 0 0;padding:25px;margin-top:50px;text-align:center;color:#ffecb3}.loading-spinner{display:inline-block;width:40px;height:40px;border:4px solid #f3f3f3;border-top:4px solid #006233;border-radius:50%;animation:spin 1s linear infinite;margin-right:10px}@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-        .auth-choice-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:5000;justify-content:center;align-items:center}.auth-choice-content{background:white;padding:40px;border-radius:60px;width:90%;max-width:450px;text-align:center}.auth-choice-content h2{color:#006233;margin-bottom:20px}.auth-choice-buttons{display:flex;gap:20px;justify-content:center;margin:25px 0}.auth-choice-btn{padding:15px 30px;border-radius:60px;border:none;font-size:1.1rem;font-weight:bold;cursor:pointer;width:160px}.teacher-login-btn{background:#d62828;color:white}.member-login-btn{background:#006233;color:white}.close-choice-btn{background:#ccc;color:#333;padding:10px 25px;border-radius:60px;border:none;cursor:pointer;margin-top:15px}
-        .login-form-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:5001;justify-content:center;align-items:center}.login-form-content{background:white;padding:35px;border-radius:60px;width:90%;max-width:400px;text-align:center}.login-form-content h3{color:#006233;margin-bottom:10px}.login-form-content .user-type-badge{padding:5px 15px;border-radius:60px;display:inline-block;margin-bottom:15px;font-size:0.8rem;font-weight:bold}.teacher-badge{background:#d62828;color:white}.member-badge{background:#006233;color:white}.login-form-content input{width:100%;margin:10px 0;padding:12px;border-radius:60px;border:1px solid #ccc;font-family:'Tajawal',sans-serif;text-align:center}.login-form-content button{background:#006233;color:white;border:none;padding:12px;border-radius:60px;width:100%;font-weight:bold;cursor:pointer;margin-top:10px}.login-form-content .close-btn{background:#ccc;color:#333;margin-top:5px}.login-form-content .error{color:#d62828;margin-top:10px;font-size:0.8rem}
-        .register-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:5002;justify-content:center;align-items:center}.register-content{background:white;padding:35px;border-radius:60px;width:90%;max-width:400px;text-align:center}.register-content h3{color:#006233;margin-bottom:20px}.register-content input{width:100%;margin:10px 0;padding:12px;border-radius:60px;border:1px solid #ccc;font-family:'Tajawal',sans-serif;text-align:center}.register-content button{background:#006233;color:white;border:none;padding:12px;border-radius:60px;width:100%;font-weight:bold;cursor:pointer;margin-top:10px}.register-content .close-btn{background:#ccc;color:#333;margin-top:5px}.register-content .error{color:#d62828;margin-top:10px;font-size:0.8rem}
-        .welcome-card{text-align:center;padding:30px 20px;background:linear-gradient(135deg,#ffffff,#f8fafc);border-radius:50px;margin:20px 0;box-shadow:0 8px 20px rgba(0,0,0,0.05);border:1px solid rgba(0,98,51,0.1)}.welcome-emoji{font-size:2.5rem;margin-bottom:8px}.welcome-card h3{color:#006233;font-size:1.3rem;margin-bottom:6px;font-weight:800}.welcome-card p{color:#64748b;font-size:0.9rem}.welcome-card .login-shortcut{background:#006233;color:white;border:none;padding:10px 25px;border-radius:60px;margin-top:15px;cursor:pointer;font-weight:bold;display:inline-block}
+        .logout-confirm-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:6000;justify-content:center;align-items:center}
+        .logout-confirm-content{background:white;padding:30px;border-radius:50px;text-align:center;max-width:350px;width:90%}
+        .logout-confirm-content p{margin:20px 0;font-size:1.1rem}
+        .logout-confirm-content button{padding:10px 25px;border-radius:60px;border:none;cursor:pointer;margin:0 8px;font-weight:bold}
+        .confirm-logout-btn{background:#d62828;color:white}
+        .cancel-logout-btn{background:#ccc;color:#333}
         
-        .community-section{background:linear-gradient(135deg,#f3e5f5,#e1bee7);border-radius:40px;padding:30px;margin:30px 0;border:2px solid #8e24aa}.community-section .section-title{font-size:1.5rem;font-weight:800;color:#4a148c;text-align:center;margin-bottom:25px;display:flex;align-items:center;justify-content:center;gap:12px}.community-section .community-back-btn{background:#475569;color:white;border:none;padding:8px 20px;border-radius:60px;cursor:pointer;font-family:'Tajawal',sans-serif;font-weight:bold;margin-bottom:20px;display:inline-flex;align-items:center;gap:8px;transition:0.2s}.community-section .community-back-btn:hover{background:#006233;transform:translateX(-3px)}.community-stage-buttons{display:flex;flex-wrap:wrap;justify-content:center;gap:20px;margin-bottom:30px}.community-stage-btn{background:white;border:none;padding:15px 30px;border-radius:60px;font-size:1.1rem;font-weight:bold;cursor:pointer;transition:0.2s;box-shadow:0 5px 15px rgba(0,0,0,0.1)}.community-stage-btn.primary{color:#b71c1c;border-bottom:4px solid #d62828}.community-stage-btn.middle{color:#0a4a25;border-bottom:4px solid #0f5b2e}.community-stage-btn.high{color:#e67e22;border-bottom:4px solid #ff8c42}.community-stage-btn:hover{transform:translateY(-3px);box-shadow:0 10px 20px rgba(0,0,0,0.15)}.community-stage-btn.active{background:#8e24aa;color:white}.community-links-container{display:flex;flex-wrap:wrap;gap:25px;justify-content:center}.community-link-card{background:white;border-radius:28px;padding:25px;width:320px;text-align:center;box-shadow:0 10px 25px rgba(0,0,0,0.1);border-bottom:5px solid #8e24aa;transition:0.3s}.community-link-card:hover{transform:translateY(-5px)}.community-link-card i{font-size:3rem;margin-bottom:15px}.community-link-card h3{color:#4a148c;margin-bottom:10px}.community-link-card .community-link-url{direction:ltr;background:#f1f5f9;padding:12px;border-radius:50px;font-size:0.8rem;word-break:break-all;margin:15px 0;font-family:monospace}.community-btn-copy{background:#006233;color:white;border:none;padding:8px 20px;border-radius:60px;cursor:pointer;margin:5px}.community-btn-visit{background:#8e24aa;color:white;border:none;padding:8px 20px;border-radius:60px;cursor:pointer;margin:5px;text-decoration:none;display:inline-block}
+        .visitor-popup{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:3000;justify-content:center;align-items:center}
+        .visitor-popup-content{background:linear-gradient(145deg,#fff8e7,#fff0d4);border-radius:70px;padding:40px 35px;text-align:center;max-width:500px;width:85%;border:5px solid #ffc107;animation:bounceIn 0.5s ease}
+        @keyframes bounceIn{0%{transform:scale(0.5);opacity:0}80%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
+        .visitor-popup-content .popup-emoji{font-size:4rem;margin-bottom:15px}
+        .visitor-popup-content h3{font-size:1.8rem;color:#d62828;margin-bottom:15px}
+        .visitor-popup-content p{font-size:1.2rem;color:#006233;line-height:1.6;margin-bottom:25px}
+        .visitor-popup-content button{background:#006233;color:white;border:none;padding:12px 35px;border-radius:60px;cursor:pointer}
         
-        .membership-banner{background:#006233;color:white;border-radius:40px;padding:15px 25px;margin:15px 0;text-align:center;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;display:none}.membership-banner span{font-weight:bold}.membership-logout-btn{background:#d62828;color:white;border:none;padding:6px 20px;border-radius:60px;cursor:pointer}
+        .community-section{background:linear-gradient(135deg,#f3e5f5,#e1bee7);border-radius:40px;padding:30px;margin:30px 0;border:2px solid #8e24aa}
+        .community-section .section-title{font-size:1.5rem;font-weight:800;color:#4a148c;text-align:center;margin-bottom:25px;display:flex;align-items:center;justify-content:center;gap:12px}
+        .community-section .community-back-btn{background:#475569;color:white;border:none;padding:8px 20px;border-radius:60px;cursor:pointer;font-weight:bold;margin-bottom:20px;display:inline-flex;align-items:center;gap:8px;transition:0.2s}
+        .community-section .community-back-btn:hover{background:#006233;transform:translateX(-3px)}
+        .community-stage-buttons{display:flex;flex-wrap:wrap;justify-content:center;gap:20px;margin-bottom:30px}
+        .community-stage-btn{background:white;border:none;padding:15px 30px;border-radius:60px;font-size:1.1rem;font-weight:bold;cursor:pointer;transition:0.2s;box-shadow:0 5px 15px rgba(0,0,0,0.1)}
+        .community-stage-btn.primary{color:#b71c1c;border-bottom:4px solid #d62828}
+        .community-stage-btn.middle{color:#0a4a25;border-bottom:4px solid #0f5b2e}
+        .community-stage-btn.high{color:#e67e22;border-bottom:4px solid #ff8c42}
+        .community-stage-btn:hover{transform:translateY(-3px);box-shadow:0 10px 20px rgba(0,0,0,0.15)}
+        .community-stage-btn.active{background:#8e24aa;color:white}
+        .community-links-container{display:flex;flex-wrap:wrap;gap:25px;justify-content:center}
+        .community-link-card{background:white;border-radius:28px;padding:25px;width:320px;text-align:center;box-shadow:0 10px 25px rgba(0,0,0,0.1);border-bottom:5px solid #8e24aa}
+        .community-link-card:hover{transform:translateY(-5px)}
+        .community-link-card i{font-size:3rem;margin-bottom:15px}
+        .community-link-card h3{color:#4a148c;margin-bottom:10px}
+        .community-link-card .community-link-url{direction:ltr;background:#f1f5f9;padding:12px;border-radius:50px;font-size:0.8rem;word-break:break-all;margin:15px 0;font-family:monospace}
+        .community-btn-copy{background:#006233;color:white;border:none;padding:8px 20px;border-radius:60px;cursor:pointer;margin:5px}
+        .community-btn-visit{background:#8e24aa;color:white;border:none;padding:8px 20px;border-radius:60px;cursor:pointer;margin:5px;text-decoration:none;display:inline-block}
         
-        .logout-confirm-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:6000;justify-content:center;align-items:center}.logout-confirm-content{background:white;padding:30px;border-radius:50px;text-align:center;max-width:350px;width:90%}.logout-confirm-content p{margin:20px 0;font-size:1.1rem}.logout-confirm-content button{padding:10px 25px;border-radius:60px;border:none;cursor:pointer;margin:0 8px;font-weight:bold}.confirm-logout-btn{background:#d62828;color:white}.cancel-logout-btn{background:#ccc;color:#333}
+        .membership-banner{background:#006233;color:white;border-radius:40px;padding:15px 25px;margin:15px 0;text-align:center;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;display:none}
+        .membership-banner span{font-weight:bold}
+        .membership-logout-btn{background:#d62828;color:white;border:none;padding:6px 20px;border-radius:60px;cursor:pointer}
+        .welcome-card{text-align:center;padding:30px 20px;background:linear-gradient(135deg,#ffffff,#f8fafc);border-radius:50px;margin:20px 0;box-shadow:0 8px 20px rgba(0,0,0,0.05);border:1px solid rgba(0,98,51,0.1)}
+        .welcome-emoji{font-size:2.5rem;margin-bottom:8px}
+        .welcome-card h3{color:#006233;font-size:1.3rem;margin-bottom:6px;font-weight:800}
+        .welcome-card p{color:#64748b;font-size:0.9rem}
+        .welcome-card .login-shortcut{background:#006233;color:white;border:none;padding:10px 25px;border-radius:60px;margin-top:15px;cursor:pointer;font-weight:bold;display:inline-block}
         
-        @media (max-width:768px){.subjects-grid{grid-template-columns:1fr}.years-grid{flex-direction:column;align-items:center}.lesson-types{flex-direction:column;align-items:center}.lesson-type-card{width:100%;max-width:280px;padding:30px 20px}.lesson-item{flex-direction:column;align-items:stretch;text-align:center}.admin-panel{width:320px;left:10px;right:auto;top:70px}.sub-stage-card{width:180px;padding:20px}.sub-stage-card h3{font-size:1.2rem}.subject-card{width:100%;max-width:300px;margin:0 auto}.year-card{width:100%;max-width:250px}.community-link-card{width:100%;max-width:300px}.community-stage-btn{padding:10px 20px;font-size:0.9rem}.news-ticker{flex-direction:column;text-align:center}.news-ticker-label{white-space:normal}}
+        .footer{background:#0c2e1e;border-radius:40px 40px 0 0;padding:25px;margin-top:50px;text-align:center;color:#ffecb3}
+        .loading-spinner{display:inline-block;width:40px;height:40px;border:4px solid #f3f3f3;border-top:4px solid #006233;border-radius:50%;animation:spin 1s linear infinite;margin-right:10px}
+        @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+        
+        @media (max-width:768px){.subjects-grid{grid-template-columns:1fr}.years-grid{flex-direction:column;align-items:center}.lesson-types{flex-direction:column;align-items:center}.lesson-type-card{width:100%;max-width:280px;padding:30px 20px}.lesson-item{flex-direction:column;align-items:stretch;text-align:center}.lesson-actions{justify-content:center}.admin-panel{width:320px;left:10px;right:auto;top:70px}.sub-stage-card{width:180px;padding:20px}.sub-stage-card h3{font-size:1.2rem}.subject-card{width:100%;max-width:300px;margin:0 auto}.year-card{width:100%;max-width:250px}.community-link-card{width:100%;max-width:300px}.community-stage-btn{padding:10px 20px;font-size:0.9rem}.news-ticker{flex-direction:column;text-align:center}.news-ticker-label{white-space:normal}.pdf-iframe{height:50vh}}
     </style>
 </head>
 <body>
@@ -65,9 +239,7 @@
     
     <div id="newsTicker" class="news-ticker">
         <div class="news-ticker-label"><i class="fas fa-bullhorn"></i> 📢 آخر المستجدات</div>
-        <div class="news-ticker-content" id="newsTickerContent">
-            <div class="news-ticker-empty"><i class="fas fa-spinner fa-spin"></i> جاري التحميل...</div>
-        </div>
+        <div class="news-ticker-content" id="newsTickerContent"><div class="news-ticker-empty">جاري التحميل...</div></div>
     </div>
     
     <div id="membershipBanner" class="membership-banner">
@@ -98,23 +270,79 @@
 
 <div class="footer"><p>© الأستاذ محمد للتعليم - الجزائر | تعليم ذكي للمستقبل</p></div>
 
-<!-- جميع النوافذ المنبثقة -->
-<div id="authChoiceModal" class="auth-choice-modal">
-    <div class="auth-choice-content">
-        <div style="font-size:3rem;">🔐</div>
-        <h2>تسجيل الدخول</h2>
-        <p style="margin-bottom:10px;">اختر نوع الحساب:</p>
-        <div class="auth-choice-buttons">
-            <button id="teacherLoginChoiceBtn" class="auth-choice-btn teacher-login-btn"><i class="fas fa-chalkboard-user"></i> معلم</button>
-            <button id="memberLoginChoiceBtn" class="auth-choice-btn member-login-btn"><i class="fas fa-user-graduate"></i> عضو</button>
+<!-- نافذة إضافة درس -->
+<div id="addLessonModal" class="add-lesson-modal">
+    <div class="add-lesson-content">
+        <h3 id="addLessonModalTitle">➕ إضافة درس جديد</h3>
+        <div class="form-group"><label>عنوان الدرس:</label><input type="text" id="newLessonTitle" placeholder="أدخل عنوان الدرس"></div>
+        <div class="form-group"><label>نوع الدرس:</label>
+            <select id="newLessonType">
+                <option value="pdf">📄 PDF - عرض داخل الموقع</option>
+                <option value="image">🖼️ صورة - عرض داخل الموقع</option>
+                <option value="telegram">📡 تلجرام - رابط خارجي</option>
+                <option value="facebook">📘 فيسبوك - رابط خارجي</option>
+            </select>
         </div>
-        <button id="closeChoiceBtn" class="close-choice-btn">إلغاء</button>
+        <div id="internalLessonFields">
+            <div class="form-group"><label>رابط العرض (Google Drive):</label><input type="url" id="newLessonInternalUrl" placeholder="https://drive.google.com/file/d/xxx/preview"><div class="lock-info">📌 استخدم رابط "embed" أو "preview" من Google Drive</div></div>
+            <div class="form-group"><label>رابط التحميل:</label><input type="url" id="newLessonDownloadUrl" placeholder="https://drive.google.com/uc?export=download&id=xxx"><div class="lock-info">📥 اختياري - رابط التحميل المباشر</div></div>
+        </div>
+        <div id="externalLessonFields" style="display:none">
+            <div class="form-group"><label>الرابط:</label><input type="url" id="newLessonExternalUrl" placeholder="https://t.me/... أو https://facebook.com/..."></div>
+        </div>
+        <button id="confirmAddLessonBtn" style="background:#006233; color:white;">✅ حفظ الدرس</button>
+        <button id="cancelAddLessonBtn" style="background:#ccc; color:#333; margin-top:10px;">إلغاء</button>
     </div>
 </div>
 
-<div id="teacherLoginModal" class="login-form-modal">
-    <div class="login-form-content">
-        <div class="user-type-badge teacher-badge"><i class="fas fa-chalkboard-user"></i> تسجيل الدخول كمعلم</div>
+<!-- نافذة تعديل درس خارجي -->
+<div id="editLessonModal" class="add-lesson-modal">
+    <div class="add-lesson-content">
+        <h3>✏️ تعديل الدرس</h3>
+        <div class="form-group"><label>عنوان الدرس:</label><input type="text" id="editLessonTitle" placeholder="عنوان الدرس"></div>
+        <div class="form-group"><label>المنصة:</label><select id="editLessonPlatform"><option value="telegram">📡 تلجرام</option><option value="facebook">📘 فيسبوك</option></select></div>
+        <div class="form-group"><label>الرابط:</label><input type="url" id="editLessonUrl" placeholder="https://..."></div>
+        <button id="confirmEditLessonBtn" style="background:#006233; color:white;">✅ حفظ التعديلات</button>
+        <button id="cancelEditLessonBtn" style="background:#ccc; color:#333; margin-top:10px;">إلغاء</button>
+    </div>
+</div>
+
+<!-- نافذة تعديل درس داخلي -->
+<div id="editInternalLessonModal" class="add-lesson-modal">
+    <div class="add-lesson-content">
+        <h3>✏️ تعديل الدرس</h3>
+        <div class="form-group"><label>نوع الدرس:</label>
+            <select id="editInternalType">
+                <option value="pdf">📄 PDF - عرض داخل الموقع</option>
+                <option value="image">🖼️ صورة - عرض داخل الموقع</option>
+            </select>
+        </div>
+        <div class="form-group"><label>عنوان الدرس:</label><input type="text" id="editInternalTitle" placeholder="عنوان الدرس"></div>
+        <div class="form-group"><label>رابط العرض:</label><input type="url" id="editInternalUrl" placeholder="https://drive.google.com/file/d/xxx/preview"></div>
+        <div class="form-group"><label>رابط التحميل:</label><input type="url" id="editInternalDownload" placeholder="https://drive.google.com/uc?export=download&id=xxx"></div>
+        <button id="confirmEditInternalBtn" style="background:#006233; color:white;">✅ حفظ التعديلات</button>
+        <button id="cancelEditInternalBtn" style="background:#ccc; color:#333; margin-top:10px;">إلغاء</button>
+    </div>
+</div>
+
+<!-- نماذج تسجيل الدخول -->
+<div id="authChoiceModal" class="auth-modal">
+    <div class="auth-content">
+        <div style="font-size:3rem;">🔐</div>
+        <h2>تسجيل الدخول</h2>
+        <p>اختر نوع الحساب:</p>
+        <div style="display:flex; gap:15px; justify-content:center; margin:20px 0">
+            <button id="teacherLoginChoiceBtn" style="background:#d62828; width:auto; padding:10px 25px;">👨‍🏫 معلم</button>
+            <button id="memberLoginChoiceBtn" style="background:#006233; width:auto; padding:10px 25px;">👨‍🎓 عضو</button>
+        </div>
+        <button id="closeChoiceBtn" class="close-btn">إلغاء</button>
+    </div>
+</div>
+
+<div id="teacherLoginModal" class="auth-modal">
+    <div class="auth-content">
+        <div style="font-size:2rem;">👨‍🏫</div>
+        <h2>تسجيل الدخول كمعلم</h2>
         <input type="email" id="teacherEmail" placeholder="البريد الإلكتروني" dir="ltr">
         <input type="password" id="teacherPassword" placeholder="كلمة المرور" dir="ltr">
         <div id="teacherLoginError" class="error"></div>
@@ -123,28 +351,29 @@
     </div>
 </div>
 
-<div id="memberLoginModal" class="login-form-modal">
-    <div class="login-form-content">
-        <div class="user-type-badge member-badge"><i class="fas fa-user-graduate"></i> تسجيل الدخول كعضو</div>
+<div id="memberLoginModal" class="auth-modal">
+    <div class="auth-content">
+        <div style="font-size:2rem;">👨‍🎓</div>
+        <h2>تسجيل الدخول كعضو</h2>
         <input type="email" id="memberEmail" placeholder="البريد الإلكتروني" dir="ltr">
         <input type="password" id="memberPassword" placeholder="كلمة المرور" dir="ltr">
         <div id="memberLoginError" class="error"></div>
         <button id="memberLoginBtn">تسجيل الدخول</button>
-        <button id="showMemberRegisterBtn" class="link-btn" style="background:none; border:1px solid #ff8c42; margin-top:10px;">📝 ليس لديك حساب؟ سجل الآن</button>
+        <button id="showMemberRegisterBtn" class="link-btn">📝 إنشاء حساب جديد</button>
         <button id="closeMemberLoginBtn" class="close-btn">إلغاء</button>
     </div>
 </div>
 
-<div id="registerMemberModal" class="register-modal">
-    <div class="register-content">
-        <div style="font-size:2.5rem;">📝</div>
-        <h3>إنشاء حساب عضو جديد</h3>
-        <input type="email" id="registerMemberEmail" placeholder="البريد الإلكتروني" dir="ltr">
-        <input type="password" id="registerMemberPassword" placeholder="كلمة المرور" dir="ltr">
-        <input type="password" id="registerMemberConfirm" placeholder="تأكيد كلمة المرور" dir="ltr">
-        <div id="registerMemberError" class="error"></div>
-        <button id="registerMemberBtn">إنشاء حساب</button>
-        <button id="closeRegisterMemberBtn" class="close-btn">إلغاء</button>
+<div id="registerMemberModal" class="auth-modal">
+    <div class="auth-content">
+        <div style="font-size:2rem;">📝</div>
+        <h2>إنشاء حساب جديد</h2>
+        <input type="email" id="registerEmail" placeholder="البريد الإلكتروني" dir="ltr">
+        <input type="password" id="registerPassword" placeholder="كلمة المرور" dir="ltr">
+        <input type="password" id="registerConfirm" placeholder="تأكيد كلمة المرور" dir="ltr">
+        <div id="registerError" class="error"></div>
+        <button id="registerBtn">إنشاء حساب</button>
+        <button id="closeRegisterBtn" class="close-btn">إلغاء</button>
     </div>
 </div>
 
@@ -160,8 +389,7 @@
 <div id="holidayPopup" class="visitor-popup"><div class="visitor-popup-content"><div class="popup-emoji">🏖️📚🎈</div><h3>🌙 تلميذي العزيز 🌙</h3><p>🌟 استمتع بعطلتك الجميلة 🌟<br>ولنا عودة إلى جو العلم والكد والاجتهاد<br><strong>📅 ابتداءً من <span id="holidayPopupDate">27/06/2026</span> إن شاء الله 📅</strong></p><button onclick="closeHolidayPopup()">📖 فهمت 📖</button></div></div>
 <div id="stopPopup" class="visitor-popup"><div class="visitor-popup-content"><div class="popup-emoji">⏸️📚⏸️</div><h3>📢 إشعار توقف الدروس</h3><p>الدروس <strong id="stopTypeName">الصيفية</strong> متوقفة حالياً<br>سيتم استئنافها في تاريخ<br><strong id="stopPopupDate">--/--/----</strong></p><button onclick="closeStopPopup()">📖 فهمت 📖</button></div></div>
 
-<div id="addLessonModal" class="modal"><div class="modal-content"><h3 id="addLessonTitle" style="margin-bottom:15px;">➕ إضافة درس جديد</h3><input type="text" id="modalLessonTitle" placeholder="عنوان الدرس"><input type="url" id="modalLessonUrl" placeholder="رابط الدرس المباشر" dir="ltr"><select id="modalLessonPlatform"><option value="facebook_group">📘 فيسبوك</option><option value="telegram_channel">📡 تيليجرام</option></select><button id="modalConfirmBtn" style="background:#006233; color:white;">✅ حفظ</button><button id="modalCancelBtn" style="background:#ccc;">إلغاء</button></div></div>
-
+<!-- لوحة تحكم المعلم -->
 <div class="admin-panel" id="adminPanel">
     <h4>🔐 لوحة تحكم المعلم</h4>
     <div class="lock-section">
@@ -171,34 +399,24 @@
     </div>
     
     <h5><i class="fas fa-newspaper"></i> شريط الأخبار المتحرك</h5>
-    <div class="invite-links-section">
-        <div class="form-group">
-            <label>محتوى شريط الأخبار</label>
-            <input type="text" id="adminNewsText" placeholder="أدخل النص الذي تريد عرضه في شريط الأخبار..." style="width:100%; padding:10px; border-radius:60px; border:1px solid #ccc;">
-            <div class="lock-info" style="margin-top:5px;">📝 يمكنك إضافة روابط HTML عادية داخل النص</div>
-        </div>
-        <button id="saveNewsBtn" class="lock-action-btn start" style="width:100%;">💾 حفظ شريط الأخبار</button>
-    </div>
+    <div class="invite-links-section"><div class="form-group"><label>محتوى شريط الأخبار</label><input type="text" id="adminNewsText" placeholder="أدخل النص..." style="width:100%; padding:10px; border-radius:60px; border:1px solid #ccc;"></div><button id="saveNewsBtn" class="lock-action-btn start">💾 حفظ شريط الأخبار</button></div>
     
-    <h5><i class="fas fa-link"></i> روابط الدعوة للمجتمع (حسب المرحلة)</h5>
+    <h5><i class="fas fa-link"></i> روابط الدعوة للمجتمع</h5>
     <div class="invite-links-section">
         <div class="stage-title">📚 المرحلة الابتدائية</div>
-        <div class="form-group"><label>رابط قناة Telegram</label><input type="url" id="adminTelegramPrimary" placeholder="https://t.me/..." dir="ltr" value="https://t.me/+A_vFc__1MeRiZTBk"></div>
-        <div class="form-group"><label>رابط مجموعة Facebook</label><input type="url" id="adminFacebookPrimary" placeholder="https://facebook.com/groups/..." dir="ltr" value="https://www.facebook.com/groups/1317083163089038/"></div>
-        
+        <div class="form-group"><label>رابط Telegram</label><input type="url" id="adminTelegramPrimary" placeholder="https://t.me/..." dir="ltr" value="https://t.me/+A_vFc__1MeRiZTBk"></div>
+        <div class="form-group"><label>رابط Facebook</label><input type="url" id="adminFacebookPrimary" placeholder="https://facebook.com/groups/..." dir="ltr" value="https://www.facebook.com/groups/1317083163089038/"></div>
         <div class="stage-title">🏫 مرحلة المتوسط</div>
-        <div class="form-group"><label>رابط قناة Telegram</label><input type="url" id="adminTelegramMiddle" placeholder="https://t.me/..." dir="ltr" value="https://t.me/+hhGuQrYaE55hMjI8"></div>
-        <div class="form-group"><label>رابط مجموعة Facebook</label><input type="url" id="adminFacebookMiddle" placeholder="https://facebook.com/groups/..." dir="ltr" value="https://www.facebook.com/groups/2220629488691724"></div>
-        
+        <div class="form-group"><label>رابط Telegram</label><input type="url" id="adminTelegramMiddle" placeholder="https://t.me/..." dir="ltr" value="https://t.me/+hhGuQrYaE55hMjI8"></div>
+        <div class="form-group"><label>رابط Facebook</label><input type="url" id="adminFacebookMiddle" placeholder="https://facebook.com/groups/..." dir="ltr" value="https://www.facebook.com/groups/2220629488691724"></div>
         <div class="stage-title">🎓 مرحلة الثانوي</div>
-        <div class="form-group"><label>رابط قناة Telegram</label><input type="url" id="adminTelegramHigh" placeholder="https://t.me/..." dir="ltr" value="https://t.me/+RW-kr1fY7xg1ZmZk"></div>
-        <div class="form-group"><label>رابط مجموعة Facebook</label><input type="url" id="adminFacebookHigh" placeholder="https://facebook.com/groups/..." dir="ltr" value="https://www.facebook.com/groups/811441095239367"></div>
+        <div class="form-group"><label>رابط Telegram</label><input type="url" id="adminTelegramHigh" placeholder="https://t.me/..." dir="ltr" value="https://t.me/+RW-kr1fY7xg1ZmZk"></div>
+        <div class="form-group"><label>رابط Facebook</label><input type="url" id="adminFacebookHigh" placeholder="https://facebook.com/groups/..." dir="ltr" value="https://www.facebook.com/groups/811441095239367"></div>
     </div>
-    <button id="saveInviteLinksBtn" class="lock-action-btn start" style="width:100%; margin-bottom:15px;">💾 حفظ روابط الدعوة</button>
+    <button id="saveInviteLinksBtn" class="lock-action-btn start">💾 حفظ روابط الدعوة</button>
     
     <h5><i class="fas fa-users"></i> طلبات انضمام الأعضاء <span id="requestsCount" style="background:#d62828; color:white; padding:2px 8px; border-radius:20px; font-size:0.7rem;">0</span></h5>
     <div id="joinRequestsList" class="requests-panel"><div class="empty-requests">جاري تحميل الطلبات...</div></div>
-    <div class="lock-info" style="margin-top:10px;">⚠️ الأعضاء المقبولة طلباتهم يستطيعون رؤية روابط المجتمع</div>
 </div>
 
 <script>
@@ -212,40 +430,235 @@
         databaseURL: "https://taouhid-sci-default-rtdb.firebaseio.com/"
     };
     
-    let database = null, auth = null, isFirebaseReady = false;
-    try { firebase.initializeApp(firebaseConfig); database = firebase.database(); auth = firebase.auth(); isFirebaseReady = true; } catch(e) { console.error("Firebase error:", e); }
+    let database = null, auth = null;
+    try { firebase.initializeApp(firebaseConfig); database = firebase.database(); auth = firebase.auth(); } catch(e) { console.error("Firebase error:", e); }
     
     const LESSONS_PER_PAGE = 7;
     let isAdminMode = false, currentUser = null, currentUserIsApproved = false;
     let summerPopupChoice = 'holiday', curriculumPopupChoice = 'holiday';
-    let navigationStack = [], currentStage = null, currentSubStage = null, currentYear = null, currentSubject = null, currentLessonType = null, currentPage = 1, editingLessonId = null;
+    let navigationStack = [], currentStage = null, currentSubStage = null, currentYear = null, currentSubject = null, currentLessonType = null, currentPage = 1;
     let platformData = null, lockSettings = null, dataLoaded = false, joinRequests = [], selectedCommunityStage = 'primary';
-    let newsText = "📢 مرحباً بكم في منصة الأستاذ محمد التعليمية | نتمنى لكم عاماً دراسياً موفقاً";
+    let newsText = "📢 مرحباً بكم في منصة الأستاذ محمد التعليمية";
     let inviteLinks = {
         primary: { telegram: "https://t.me/+A_vFc__1MeRiZTBk", facebook: "https://www.facebook.com/groups/1317083163089038/" },
         middle: { telegram: "https://t.me/+hhGuQrYaE55hMjI8", facebook: "https://www.facebook.com/groups/2220629488691724" },
         high: { telegram: "https://t.me/+RW-kr1fY7xg1ZmZk", facebook: "https://www.facebook.com/groups/811441095239367" }
     };
     
+    let editingLessonId = null;
+    let editingInternalLessonId = null;
+    let currentViewingFile = null;
+    let currentViewingLesson = null;
+    
     function escapeHtml(str) { return str ? str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])) : ''; }
     
-    // دالة لإخفاء أزرار المراحل
-    function hideMainStages() {
-        const stagesContainer = document.getElementById('mainStagesContainer');
-        if(stagesContainer) stagesContainer.classList.add('hide-stages');
+    function hideMainStages() { document.getElementById('mainStagesContainer')?.classList.add('hide-stages'); }
+    function showMainStagesButtons() { document.getElementById('mainStagesContainer')?.classList.remove('hide-stages'); }
+    
+    // حفظ واستعادة الحالة الكاملة
+    function saveFullNavigationState() {
+        const state = {
+            currentStage: currentStage,
+            currentSubStage: currentSubStage,
+            currentYear: currentYear,
+            currentSubject: currentSubject,
+            currentLessonType: currentLessonType,
+            currentPage: currentPage,
+            navigationStack: navigationStack.slice(),
+            isViewingFile: currentViewingFile !== null,
+            viewingLessonId: currentViewingFile,
+            viewingLesson: currentViewingLesson
+        };
+        sessionStorage.setItem('full_navigation_state', JSON.stringify(state));
     }
     
-    // دالة لإظهار أزرار المراحل
-    function showMainStagesButtons() {
-        const stagesContainer = document.getElementById('mainStagesContainer');
-        if(stagesContainer) stagesContainer.classList.remove('hide-stages');
+    function saveCurrentViewingState(lessonId, lesson) {
+        if (lessonId && lesson) {
+            currentViewingFile = lessonId;
+            currentViewingLesson = lesson;
+            const state = {
+                isViewingFile: true,
+                lessonId: lessonId,
+                lesson: lesson
+            };
+            sessionStorage.setItem('current_viewing_file', JSON.stringify(state));
+            saveFullNavigationState();
+        } else {
+            sessionStorage.removeItem('current_viewing_file');
+        }
+    }
+    
+    function restoreFullNavigationState() {
+        const saved = sessionStorage.getItem('full_navigation_state');
+        if (saved) {
+            try {
+                const state = JSON.parse(saved);
+                if (state.currentStage && ['primary', 'middle', 'high'].includes(state.currentStage)) {
+                    currentStage = state.currentStage;
+                    currentSubStage = state.currentSubStage || null;
+                    currentYear = state.currentYear || null;
+                    currentSubject = state.currentSubject || null;
+                    currentLessonType = state.currentLessonType || null;
+                    currentPage = state.currentPage || 1;
+                    navigationStack = state.navigationStack || [];
+                    
+                    if (currentStage === "primary") {
+                        if (currentSubStage && currentSubject && currentLessonType) {
+                            renderLessonsList();
+                        } else if (currentSubStage && currentSubject) {
+                            showLessonTypes();
+                        } else if (currentSubStage) {
+                            showSubjects();
+                        } else {
+                            showSubStages();
+                        }
+                    } else if (currentStage === "middle" || currentStage === "high") {
+                        if (currentYear && currentSubject && currentLessonType) {
+                            renderLessonsList();
+                        } else if (currentYear && currentSubject) {
+                            showLessonTypes();
+                        } else if (currentYear) {
+                            showSubjects();
+                        } else {
+                            showYears();
+                        }
+                    } else {
+                        showMainStages();
+                    }
+                    
+                    if (state.isViewingFile && state.viewingLessonId && state.viewingLesson) {
+                        setTimeout(() => {
+                            const backBtn = document.getElementById('backBtn');
+                            if (backBtn) backBtn.style.display = 'none';
+                            showLessonContent(state.viewingLessonId, state.viewingLesson, true);
+                        }, 100);
+                    }
+                    return true;
+                }
+            } catch(e) { console.error("Error restoring state:", e); }
+        }
+        return false;
+    }
+    
+    function toggleLessonFields() {
+        const lessonType = document.getElementById('newLessonType').value;
+        const internalFields = document.getElementById('internalLessonFields');
+        const externalFields = document.getElementById('externalLessonFields');
+        if (lessonType === 'pdf' || lessonType === 'image') {
+            internalFields.style.display = 'block';
+            externalFields.style.display = 'none';
+        } else {
+            internalFields.style.display = 'none';
+            externalFields.style.display = 'block';
+        }
+    }
+    
+    document.getElementById('newLessonType')?.addEventListener('change', toggleLessonFields);
+    if (document.getElementById('newLessonType')) toggleLessonFields();
+    
+    async function addNewLesson() {
+        const title = document.getElementById('newLessonTitle').value.trim();
+        const lessonType = document.getElementById('newLessonType').value;
+        if (!title) { alert("الرجاء إدخال عنوان الدرس"); return; }
+        if (!currentStage || !currentSubject || !currentLessonType) { alert("الرجاء اختيار المرحلة والمادة أولاً"); return; }
+        
+        let lessonData = { 
+            title: title, 
+            stage: currentStage, 
+            subject: currentSubject, 
+            lesson_type: currentLessonType, 
+            content_type: lessonType, 
+            created_at: new Date().toISOString() 
+        };
+        if (currentStage === "primary") lessonData.substage = currentSubStage;
+        else lessonData.year = currentYear;
+        
+        if (lessonType === 'pdf' || lessonType === 'image') {
+            const internalUrl = document.getElementById('newLessonInternalUrl').value.trim();
+            if (!internalUrl) { alert("الرجاء إدخال رابط العرض"); return; }
+            lessonData.internal_url = internalUrl;
+            lessonData.download_url = document.getElementById('newLessonDownloadUrl').value.trim() || internalUrl;
+        } else {
+            const externalUrl = document.getElementById('newLessonExternalUrl').value.trim();
+            if (!externalUrl) { alert("الرجاء إدخال الرابط"); return; }
+            lessonData.external_url = externalUrl;
+            lessonData.platform = lessonType;
+        }
+        
+        const lessonId = Date.now().toString();
+        await database.ref('lessons/' + lessonId).set(lessonData);
+        alert("✅ تم إضافة الدرس بنجاح");
+        document.getElementById('addLessonModal').style.display = 'none';
+        document.getElementById('newLessonTitle').value = "";
+        document.getElementById('newLessonInternalUrl').value = "";
+        document.getElementById('newLessonDownloadUrl').value = "";
+        document.getElementById('newLessonExternalUrl').value = "";
+        await loadDataFromFirebase();
+        refreshCurrentView();
+    }
+    
+    function showLessonContent(lessonId, lesson, isRestoration = false) {
+        const container = document.getElementById('lessonsContainer');
+        const backBtn = document.getElementById('backBtn');
+        
+        if (backBtn) backBtn.style.display = 'none';
+        
+        if (!isRestoration) saveCurrentViewingState(lessonId, lesson);
+        
+        let contentHtml = `
+            <div class="lesson-content-viewer">
+                <div class="lesson-header">
+                    <h3><i class="fas ${lesson.content_type === 'pdf' ? 'fa-file-pdf' : 'fa-image'}"></i> ${escapeHtml(lesson.title)}</h3>
+                    <button class="close-viewer-btn" onclick="closeFileViewer()"><i class="fas fa-times"></i> إغلاق</button>
+                </div>
+                <div class="lesson-body">
+                    ${lesson.content_type === 'pdf' ? 
+                        `<iframe src="${lesson.internal_url}" class="pdf-iframe"></iframe>` :
+                        `<img src="${lesson.internal_url}" class="inline-image-viewer" alt="${escapeHtml(lesson.title)}">`
+                    }
+                </div>
+                <div class="lesson-footer">
+                    ${lesson.download_url ? `<button class="download-btn" onclick="window.open('${lesson.download_url}', '_blank')"><i class="fas fa-download"></i> تحميل الملف</button>` : ''}
+                </div>
+            </div>
+        `;
+        if (container) container.innerHTML = contentHtml;
+    }
+    
+    function closeFileViewer() {
+        const backBtn = document.getElementById('backBtn');
+        if (backBtn) backBtn.style.display = 'inline-flex';
+        sessionStorage.removeItem('current_viewing_file');
+        currentViewingFile = null;
+        currentViewingLesson = null;
+        saveFullNavigationState();
+        renderLessonsList();
     }
     
     function getDefaultPlatformData() { 
         return { 
-            primary: { stage1: { name: "الطور الأول", years: "تحضيري - أولى - ثانية", subjects: { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التربية الإسلامية": { summer: [], curriculum: [] } } }, stage2: { name: "الطور الثاني", years: "الثالثة - الرابعة", subjects: { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التربية العلمية": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "التربية الإسلامية": { summer: [], curriculum: [] } } }, stage3: { name: "الطور الثالث", years: "الخامسة", subjects: { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التربية العلمية": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "التربية الإسلامية": { summer: [], curriculum: [] } } } }, 
-            middle: { name: "مرحلة المتوسط", yearsList: ["السنة الأولى متوسط", "السنة الثانية متوسط", "السنة الثالثة متوسط", "السنة الرابعة متوسط"], subjectsByYear: { "السنة الأولى متوسط": { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "التربية الإسلامية": { summer: [], curriculum: [] }, "المتفرقات": { summer: [], curriculum: [] } }, "السنة الثانية متوسط": { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "التربية الإسلامية": { summer: [], curriculum: [] }, "المتفرقات": { summer: [], curriculum: [] } }, "السنة الثالثة متوسط": { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "التربية الإسلامية": { summer: [], curriculum: [] }, "المتفرقات": { summer: [], curriculum: [] } }, "السنة الرابعة متوسط": { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "التربية الإسلامية": { summer: [], curriculum: [] }, "المتفرقات": { summer: [], curriculum: [] } } } }, 
-            high: { name: "مرحلة الثانوي", yearsList: ["السنة الأولى ثانوي", "السنة الثانية ثانوي", "السنة الثالثة ثانوي"], subjectsByYear: { "السنة الأولى ثانوي": { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "العلوم الإسلامية": { summer: [], curriculum: [] }, "المتفرقات": { summer: [], curriculum: [] } }, "السنة الثانية ثانوي": { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "العلوم الإسلامية": { summer: [], curriculum: [] }, "المتفرقات": { summer: [], curriculum: [] } }, "السنة الثالثة ثانوي": { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "العلوم الإسلامية": { summer: [], curriculum: [] }, "المتفرقات": { summer: [], curriculum: [] } } } } 
+            primary: { 
+                stage1: { name: "الطور الأول", years: "تحضيري - أولى - ثانية", subjects: { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التربية الإسلامية": { summer: [], curriculum: [] } } }, 
+                stage2: { name: "الطور الثاني", years: "الثالثة - الرابعة", subjects: { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التربية العلمية": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "التربية الإسلامية": { summer: [], curriculum: [] } } }, 
+                stage3: { name: "الطور الثالث", years: "الخامسة", subjects: { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التربية العلمية": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "التربية الإسلامية": { summer: [], curriculum: [] } } } 
+            }, 
+            middle: { 
+                name: "مرحلة المتوسط", yearsList: ["السنة الأولى متوسط", "السنة الثانية متوسط", "السنة الثالثة متوسط", "السنة الرابعة متوسط"], 
+                subjectsByYear: { 
+                    "السنة الأولى متوسط": { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "التربية الإسلامية": { summer: [], curriculum: [] }, "المتفرقات": { summer: [], curriculum: [] } },
+                    "السنة الثانية متوسط": { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "التربية الإسلامية": { summer: [], curriculum: [] }, "المتفرقات": { summer: [], curriculum: [] } },
+                    "السنة الثالثة متوسط": { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "التربية الإسلامية": { summer: [], curriculum: [] }, "المتفرقات": { summer: [], curriculum: [] } },
+                    "السنة الرابعة متوسط": { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "التربية الإسلامية": { summer: [], curriculum: [] }, "المتفرقات": { summer: [], curriculum: [] } }
+                } 
+            }, 
+            high: { 
+                name: "مرحلة الثانوي", yearsList: ["السنة الأولى ثانوي", "السنة الثانية ثانوي", "السنة الثالثة ثانوي"], 
+                subjectsByYear: { 
+                    "السنة الأولى ثانوي": { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "العلوم الإسلامية": { summer: [], curriculum: [] }, "المتفرقات": { summer: [], curriculum: [] } },
+                    "السنة الثانية ثانوي": { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "العلوم الإسلامية": { summer: [], curriculum: [] }, "المتفرقات": { summer: [], curriculum: [] } },
+                    "السنة الثالثة ثانوي": { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "العلوم الإسلامية": { summer: [], curriculum: [] }, "المتفرقات": { summer: [], curriculum: [] } }
+                } 
+            } 
         }; 
     }
     
@@ -255,7 +668,9 @@
         if(!database) return getDefaultLockSettings();
         try { const snapshot = await database.ref('settings/lockSettings').once('value'); const saved = snapshot.val(); if(saved){ lockSettings = saved; summerPopupChoice = lockSettings.summerPopupChoice || 'holiday'; curriculumPopupChoice = lockSettings.curriculumPopupChoice || 'holiday'; } else { lockSettings = getDefaultLockSettings(); } updateLockUI(); return lockSettings; } catch(e) { lockSettings = getDefaultLockSettings(); return lockSettings; }
     }
+    
     async function saveLockSettings() { if(!database) return; lockSettings.summerPopupChoice = summerPopupChoice; lockSettings.curriculumPopupChoice = curriculumPopupChoice; await database.ref('settings/lockSettings').set(lockSettings); updateLockUI(); refreshCurrentView(); }
+    
     function updateLockUI(){ 
         const sb = document.getElementById('summerLockStatusBadge'), cb = document.getElementById('curriculumLockStatusBadge'), si = document.getElementById('summerInfo'), ci = document.getElementById('curriculumInfo'), sd = document.getElementById('summerStopDate'), cd = document.getElementById('curriculumStopDate');
         if(!sb) return;
@@ -265,44 +680,18 @@
         document.querySelectorAll('input[name="summerPopupChoice"]').forEach(r => { if(r.value === summerPopupChoice) r.checked = true; });
         document.querySelectorAll('input[name="curriculumPopupChoice"]').forEach(r => { if(r.value === curriculumPopupChoice) r.checked = true; });
     }
+    
     async function stopLessons(type){ const dateInput = type==='summer'?document.getElementById('summerStopDate'):document.getElementById('curriculumStopDate'); const stopDate = dateInput?.value; if(!stopDate){ alert("الرجاء تحديد تاريخ الاستئناف"); return; } if(type==='summer'){ const selected = document.querySelector('input[name="summerPopupChoice"]:checked'); summerPopupChoice = selected ? selected.value : 'holiday'; lockSettings.summerLocked = true; lockSettings.summerUnlockDate = stopDate; } else { const selected = document.querySelector('input[name="curriculumPopupChoice"]:checked'); curriculumPopupChoice = selected ? selected.value : 'holiday'; lockSettings.curriculumLocked = true; lockSettings.curriculumUnlockDate = stopDate; } await saveLockSettings(); alert(`✅ تم توقيف الدروس ${type==='summer'?'الصيفية':'المقررة'} حتى تاريخ ${stopDate.split('-').reverse().join('/')}`); }
     async function startLessons(type){ if(type==='summer') lockSettings.summerLocked = false; else lockSettings.curriculumLocked = false; await saveLockSettings(); alert(`✅ تم استئناف الدروس ${type==='summer'?'الصيفية':'المقررة'}`); }
     
     async function loadNews() {
         if(!database) return;
-        try {
-            const snapshot = await database.ref('settings/news').once('value');
-            const saved = snapshot.val();
-            if(saved && saved.text) {
-                newsText = saved.text;
-            }
-            document.getElementById("adminNewsText").value = newsText;
-            renderNewsTicker();
-        } catch(e) { console.error("Error loading news:", e); }
+        try { const snapshot = await database.ref('settings/news').once('value'); const saved = snapshot.val(); if(saved && saved.text) { newsText = saved.text; } document.getElementById("adminNewsText").value = newsText; renderNewsTicker(); } catch(e) { console.error("Error loading news:", e); }
     }
     
-    async function saveNews() {
-        if(!database || !isAdminMode) return;
-        const newText = document.getElementById("adminNewsText").value.trim();
-        if(!newText) {
-            alert("الرجاء إدخال نص للإعلان");
-            return;
-        }
-        newsText = newText;
-        await database.ref('settings/news').set({ text: newsText, updatedAt: Date.now() });
-        renderNewsTicker();
-        alert("✅ تم حفظ شريط الأخبار بنجاح");
-    }
+    async function saveNews() { if(!database || !isAdminMode) return; const newText = document.getElementById("adminNewsText").value.trim(); if(!newText) { alert("الرجاء إدخال نص للإعلان"); return; } newsText = newText; await database.ref('settings/news').set({ text: newsText, updatedAt: Date.now() }); renderNewsTicker(); alert("✅ تم حفظ شريط الأخبار بنجاح"); }
     
-    function renderNewsTicker() {
-        const container = document.getElementById("newsTickerContent");
-        if(!container) return;
-        if(newsText && newsText.trim() !== "") {
-            container.innerHTML = `<marquee behavior="scroll" direction="right" scrollamount="5" onmouseover="this.stop()" onmouseout="this.start()">${escapeHtml(newsText)}</marquee>`;
-        } else {
-            container.innerHTML = `<div class="news-ticker-empty">📢 لا توجد مستجدات حالياً</div>`;
-        }
-    }
+    function renderNewsTicker() { const container = document.getElementById("newsTickerContent"); if(!container) return; if(newsText && newsText.trim() !== "") { container.innerHTML = `<marquee behavior="scroll" direction="right" scrollamount="5" onmouseover="this.stop()" onmouseout="this.start()">${escapeHtml(newsText)}</marquee>`; } else { container.innerHTML = `<div class="news-ticker-empty">📢 لا توجد مستجدات حالياً</div>`; } }
     
     async function loadInviteLinks() { 
         if(!database) return;
@@ -312,27 +701,97 @@
         document.getElementById("adminTelegramHigh").value = inviteLinks.high.telegram || ""; document.getElementById("adminFacebookHigh").value = inviteLinks.high.facebook || "";
         renderCommunityLinks(); } catch(e) { console.error("Error loading invite links:", e); }
     }
+    
     async function saveInviteLinksToDB() { if(!database || !isAdminMode) return; const newLinks = { primary: { telegram: document.getElementById("adminTelegramPrimary").value.trim(), facebook: document.getElementById("adminFacebookPrimary").value.trim() }, middle: { telegram: document.getElementById("adminTelegramMiddle").value.trim(), facebook: document.getElementById("adminFacebookMiddle").value.trim() }, high: { telegram: document.getElementById("adminTelegramHigh").value.trim(), facebook: document.getElementById("adminFacebookHigh").value.trim() } }; await database.ref('inviteLinks').set(newLinks); inviteLinks = newLinks; renderCommunityLinks(); alert("✅ تم حفظ روابط الدعوة للمجتمع بنجاح"); }
-    function renderCommunityLinks() { const container = document.getElementById('communityLinksContainer'); if(!container) return; const links = inviteLinks[selectedCommunityStage]; if(!links) return; let html = `<div class="community-link-card"><i class="fab fa-telegram-plane" style="font-size:3rem; color:#0088cc;"></i><h3>قناة التلجرام</h3><p>انضم إلى قناتنا على التلجرام لمتابعة الدروس والمراجعات</p><div class="community-link-url">${escapeHtml(links.telegram || "لا يوجد رابط")}</div>${links.telegram ? `<button class="community-btn-copy" data-url="${escapeHtml(links.telegram)}"><i class="fas fa-copy"></i> نسخ الرابط</button><a href="${escapeHtml(links.telegram)}" target="_blank" class="community-btn-visit"><i class="fab fa-telegram-plane"></i> انضم الآن</a>` : '<p style="color:#999;">سيتم إضافة الرابط قريباً</p>'}</div><div class="community-link-card"><i class="fab fa-facebook-f" style="font-size:3rem; color:#1877f2;"></i><h3>مجموعة الفيسبوك</h3><p>انضم إلى مجموعتنا على الفيسبوك للتفاعل والمناقشات</p><div class="community-link-url">${escapeHtml(links.facebook || "لا يوجد رابط")}</div>${links.facebook ? `<button class="community-btn-copy" data-url="${escapeHtml(links.facebook)}"><i class="fas fa-copy"></i> نسخ الرابط</button><a href="${escapeHtml(links.facebook)}" target="_blank" class="community-btn-visit"><i class="fab fa-facebook-f"></i> انضم الآن</a>` : '<p style="color:#999;">سيتم إضافة الرابط قريباً</p>'}</div>`; container.innerHTML = html; document.querySelectorAll('.community-btn-copy').forEach(btn => { btn.addEventListener('click', () => { navigator.clipboard.writeText(btn.getAttribute('data-url')).then(() => alert("✅ تم نسخ الرابط")); }); }); }
+    
+    function renderCommunityLinks() { const container = document.getElementById('communityLinksContainer'); if(!container) return; const links = inviteLinks[selectedCommunityStage]; if(!links) return; let html = `<div class="community-link-card"><i class="fab fa-telegram-plane" style="font-size:3rem; color:#0088cc;"></i><h3>قناة التلجرام</h3><div class="community-link-url">${escapeHtml(links.telegram || "لا يوجد رابط")}</div>${links.telegram ? `<button class="community-btn-copy" data-url="${escapeHtml(links.telegram)}"><i class="fas fa-copy"></i> نسخ</button><a href="${escapeHtml(links.telegram)}" target="_blank" class="community-btn-visit"><i class="fab fa-telegram-plane"></i> زيارة</a>` : '<p style="color:#999;">سيتم إضافة الرابط قريباً</p>'}</div><div class="community-link-card"><i class="fab fa-facebook-f" style="font-size:3rem; color:#1877f2;"></i><h3>مجموعة الفيسبوك</h3><div class="community-link-url">${escapeHtml(links.facebook || "لا يوجد رابط")}</div>${links.facebook ? `<button class="community-btn-copy" data-url="${escapeHtml(links.facebook)}"><i class="fas fa-copy"></i> نسخ</button><a href="${escapeHtml(links.facebook)}" target="_blank" class="community-btn-visit"><i class="fab fa-facebook-f"></i> زيارة</a>` : '<p style="color:#999;">سيتم إضافة الرابط قريباً</p>'}</div>`; container.innerHTML = html; document.querySelectorAll('.community-btn-copy').forEach(btn => { btn.addEventListener('click', () => { navigator.clipboard.writeText(btn.getAttribute('data-url')).then(() => alert("✅ تم نسخ الرابط")); }); }); }
     
     async function loadJoinRequests() { if(!database || !isAdminMode) return; try { const snapshot = await database.ref('members/joinRequests').once('value'); const requests = snapshot.val() || {}; joinRequests = Object.entries(requests).map(([id, data]) => ({ id, ...data })); renderJoinRequestsList(); } catch(e) { console.error("Error loading requests:", e); } }
-    function renderJoinRequestsList() { const container = document.getElementById('joinRequestsList'); const countSpan = document.getElementById('requestsCount'); if(!container) return; if(joinRequests.length === 0) { container.innerHTML = '<div class="empty-requests">📭 لا توجد طلبات انضمام جديدة</div>'; if(countSpan) countSpan.innerText = '0'; return; } if(countSpan) countSpan.innerText = joinRequests.length; let html = ''; joinRequests.forEach(req => { html += `<div class="request-item"><div><div class="request-email">📧 ${escapeHtml(req.email)}</div><div class="request-date">📅 ${new Date(req.createdAt).toLocaleDateString('ar')}</div></div><div class="request-actions"><button class="approve-btn" data-id="${req.id}" data-email="${escapeHtml(req.email)}">✅ قبول</button><button class="reject-btn" data-id="${req.id}">❌ رفض</button></div></div>`; }); container.innerHTML = html; document.querySelectorAll('.approve-btn').forEach(btn => { btn.addEventListener('click', async () => { const id = btn.getAttribute('data-id'); const email = btn.getAttribute('data-email'); await database.ref('members/approved/' + email.replace(/\./g, '_')).set({ email: email, approvedAt: Date.now() }); await database.ref('members/joinRequests/' + id).remove(); alert(`✅ تم قبول طلب ${email} - يمكنه الآن رؤية روابط المجتمع`); await loadJoinRequests(); }); }); document.querySelectorAll('.reject-btn').forEach(btn => { btn.addEventListener('click', async () => { const id = btn.getAttribute('data-id'); await database.ref('members/joinRequests/' + id).remove(); alert(`❌ تم رفض الطلب`); await loadJoinRequests(); }); }); }
+    
+    function renderJoinRequestsList() { const container = document.getElementById('joinRequestsList'); const countSpan = document.getElementById('requestsCount'); if(!container) return; if(joinRequests.length === 0) { container.innerHTML = '<div class="empty-requests">📭 لا توجد طلبات انضمام جديدة</div>'; if(countSpan) countSpan.innerText = '0'; return; } if(countSpan) countSpan.innerText = joinRequests.length; let html = ''; joinRequests.forEach(req => { html += `<div class="request-item"><div><div class="request-email">📧 ${escapeHtml(req.email)}</div><div class="request-date">📅 ${new Date(req.createdAt).toLocaleDateString('ar')}</div></div><div class="request-actions"><button class="approve-btn" data-id="${req.id}" data-email="${escapeHtml(req.email)}">✅ قبول</button><button class="reject-btn" data-id="${req.id}">❌ رفض</button></div></div>`; }); container.innerHTML = html; document.querySelectorAll('.approve-btn').forEach(btn => { btn.addEventListener('click', async () => { const id = btn.getAttribute('data-id'); const email = btn.getAttribute('data-email'); await database.ref('members/approved/' + email.replace(/\./g, '_')).set({ email: email, approvedAt: Date.now() }); await database.ref('members/joinRequests/' + id).remove(); alert(`✅ تم قبول طلب ${email}`); await loadJoinRequests(); }); }); document.querySelectorAll('.reject-btn').forEach(btn => { btn.addEventListener('click', async () => { const id = btn.getAttribute('data-id'); await database.ref('members/joinRequests/' + id).remove(); alert(`❌ تم رفض الطلب`); await loadJoinRequests(); }); }); }
+    
     async function checkMemberApproval(email) { if(!database || !email) return false; try { const snapshot = await database.ref('members/approved/' + email.replace(/\./g, '_')).once('value'); return snapshot.exists(); } catch(e) { return false; } }
     async function addJoinRequest(email) { if(!database) return; await database.ref('members/joinRequests/' + Date.now()).set({ email: email, createdAt: Date.now() }); }
     
-    async function loadDataFromFirebase() { if(!database) { platformData = getDefaultPlatformData(); dataLoaded = true; return; } return new Promise((resolve) => { database.ref('lessons').once('value', (snapshot) => { const lessons = snapshot.val() || {}; platformData = getDefaultPlatformData(); Object.keys(lessons).forEach(lessonId => { const lesson = lessons[lessonId]; if(lesson && lesson.stage === "primary" && platformData.primary[lesson.substage] && platformData.primary[lesson.substage].subjects[lesson.subject]) { if(platformData.primary[lesson.substage].subjects[lesson.subject][lesson.lesson_type]) { platformData.primary[lesson.substage].subjects[lesson.subject][lesson.lesson_type].push({ id: lessonId, title: lesson.lesson_title, platform: lesson.platform, url: lesson.url }); } } else if(lesson && lesson.stage === "middle" && platformData.middle.subjectsByYear[lesson.year] && platformData.middle.subjectsByYear[lesson.year][lesson.subject]) { if(platformData.middle.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type]) { platformData.middle.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type].push({ id: lessonId, title: lesson.lesson_title, platform: lesson.platform, url: lesson.url }); } } else if(lesson && lesson.stage === "high" && platformData.high.subjectsByYear[lesson.year] && platformData.high.subjectsByYear[lesson.year][lesson.subject]) { if(platformData.high.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type]) { platformData.high.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type].push({ id: lessonId, title: lesson.lesson_title, platform: lesson.platform, url: lesson.url }); } } }); dataLoaded = true; resolve(); }, (error) => { platformData = getDefaultPlatformData(); dataLoaded = true; resolve(); }); }); }
-    async function addLessonToFirebase(title, url, platform) { if(!database) throw new Error("Firebase not available"); const lessonId = Date.now().toString() + Math.random().toString(36).substr(2, 6); let lessonData = { stage: currentStage, lesson_title: title, lesson_type: currentLessonType, platform: platform, url: url, created_at: new Date().toISOString() }; if(currentStage === "primary"){ lessonData.substage = currentSubStage; lessonData.subject = currentSubject; } else { lessonData.year = currentYear; lessonData.subject = currentSubject; } await database.ref('lessons/' + lessonId).set(lessonData); return lessonId; }
-    async function updateLessonInFirebase(id, title, url, platform) { if(!database) throw new Error("Firebase not available"); await database.ref('lessons/' + id).update({ lesson_title: title, platform: platform, url: url }); }
-    async function deleteLessonFromFirebase(id) { if(!database) throw new Error("Firebase not available"); await database.ref('lessons/' + id).remove(); }
-    function getPlatformBadge(platform) { return platform === "facebook_group" ? '<span class="lesson-badge badge-facebook">📘 فيسبوك</span>' : '<span class="lesson-badge badge-telegram">📡 تيليجرام</span>'; }
+    async function loadDataFromFirebase() { 
+        if(!database) { platformData = getDefaultPlatformData(); dataLoaded = true; return; } 
+        return new Promise((resolve) => { 
+            database.ref('lessons').once('value', (snapshot) => { 
+                const lessons = snapshot.val() || {}; 
+                platformData = getDefaultPlatformData(); 
+                Object.keys(lessons).forEach(lessonId => { 
+                    const lesson = lessons[lessonId]; 
+                    if(lesson && lesson.stage && lesson.subject && lesson.lesson_type) {
+                        if(lesson.stage === "primary" && lesson.substage && platformData.primary[lesson.substage] && platformData.primary[lesson.substage].subjects[lesson.subject]) { 
+                            if(platformData.primary[lesson.substage].subjects[lesson.subject][lesson.lesson_type]) { 
+                                platformData.primary[lesson.substage].subjects[lesson.subject][lesson.lesson_type].push({ id: lessonId, title: lesson.title, platform: lesson.platform, external_url: lesson.external_url, internal_url: lesson.internal_url, download_url: lesson.download_url, content_type: lesson.content_type }); 
+                            } 
+                        } else if(lesson.stage === "middle" && lesson.year && platformData.middle.subjectsByYear[lesson.year] && platformData.middle.subjectsByYear[lesson.year][lesson.subject]) { 
+                            if(platformData.middle.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type]) { 
+                                platformData.middle.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type].push({ id: lessonId, title: lesson.title, platform: lesson.platform, external_url: lesson.external_url, internal_url: lesson.internal_url, download_url: lesson.download_url, content_type: lesson.content_type }); 
+                            } 
+                        } else if(lesson.stage === "high" && lesson.year && platformData.high.subjectsByYear[lesson.year] && platformData.high.subjectsByYear[lesson.year][lesson.subject]) { 
+                            if(platformData.high.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type]) { 
+                                platformData.high.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type].push({ id: lessonId, title: lesson.title, platform: lesson.platform, external_url: lesson.external_url, internal_url: lesson.internal_url, download_url: lesson.download_url, content_type: lesson.content_type }); 
+                            } 
+                        }
+                    }
+                }); 
+                dataLoaded = true; 
+                resolve(); 
+            }, (error) => { console.error("Error loading lessons:", error); platformData = getDefaultPlatformData(); dataLoaded = true; resolve(); }); 
+        }); 
+    }
+    
+    function getLessonBadge(lesson) {
+        if (lesson.content_type === 'pdf') return '<span class="lesson-badge badge-pdf"><i class="fas fa-file-pdf"></i> PDF</span>';
+        if (lesson.content_type === 'image') return '<span class="lesson-badge badge-image"><i class="fas fa-image"></i> صورة</span>';
+        if (lesson.content_type === 'telegram') return '<span class="lesson-badge badge-telegram"><i class="fab fa-telegram"></i> تلجرام</span>';
+        if (lesson.content_type === 'facebook') return '<span class="lesson-badge badge-facebook"><i class="fab fa-facebook-f"></i> فيسبوك</span>';
+        return '';
+    }
+    
     function isLessonAccessible(type) { if(isAdminMode) return true; const today = new Date(); today.setHours(0,0,0,0); if(type === "summer"){ if(!lockSettings.summerLocked) return true; return today >= new Date(lockSettings.summerUnlockDate); } else { if(!lockSettings.curriculumLocked) return true; return today >= new Date(lockSettings.curriculumUnlockDate); } }
+    
     function showAppropriatePopup(type) { const date = type === 'summer' ? lockSettings.summerUnlockDate : lockSettings.curriculumUnlockDate; const choice = type === 'summer' ? summerPopupChoice : curriculumPopupChoice; if(choice === 'holiday'){ document.getElementById("holidayPopupDate").innerText = date.split('-').reverse().join('/'); document.getElementById("holidayPopup").style.display = "flex"; } else { const typeName = type === 'summer' ? 'الصيفية' : 'المقررة'; document.getElementById('stopTypeName').innerText = typeName; document.getElementById('stopPopupDate').innerText = date.split('-').reverse().join('/'); document.getElementById('stopPopup').style.display = 'flex'; } }
+    
     window.closeHolidayPopup = () => document.getElementById("holidayPopup").style.display = "none";
     window.closeStopPopup = () => document.getElementById("stopPopup").style.display = "none";
-    function getCurrentLessons() { if(currentStage === "primary") return platformData.primary[currentSubStage].subjects[currentSubject][currentLessonType]; else if(currentStage === "middle") return platformData.middle.subjectsByYear[currentYear][currentSubject][currentLessonType]; else return platformData.high.subjectsByYear[currentYear][currentSubject][currentLessonType]; }
-    function saveNavigationState() { const state = { currentStage, currentSubStage, currentYear, currentSubject, currentLessonType, currentPage, navigationStack: navigationStack.slice() }; sessionStorage.setItem("app_navigation_state", JSON.stringify(state)); }
-    function restoreNavigationState() { const saved = sessionStorage.getItem("app_navigation_state"); if(saved){ try{ const state = JSON.parse(saved); if(state.currentStage && ['primary','middle','high'].includes(state.currentStage)){ currentStage = state.currentStage; currentSubStage = state.currentSubStage || null; currentYear = state.currentYear || null; currentSubject = state.currentSubject || null; currentLessonType = state.currentLessonType || null; currentPage = state.currentPage || 1; navigationStack = state.navigationStack || []; return true; } } catch(e){} } return false; }
-    function refreshCurrentView() { if(!dataLoaded) return; if(currentLessonType) renderLessonsList(); else if(currentSubject) showLessonTypes(); else if(currentYear) showSubjects(); else if(currentSubStage) showSubjects(); else if(currentStage === "primary") showSubStages(); else if(currentStage === "middle" || currentStage === "high") showYears(); else showMainStages(); saveNavigationState(); }
+    
+    function getCurrentLessons() { 
+        try {
+            if(currentStage === "primary") return platformData.primary[currentSubStage].subjects[currentSubject][currentLessonType]; 
+            else if(currentStage === "middle") return platformData.middle.subjectsByYear[currentYear][currentSubject][currentLessonType]; 
+            else return platformData.high.subjectsByYear[currentYear][currentSubject][currentLessonType]; 
+        } catch(e) { return []; }
+    }
+    
+    function openEditModal(id, title, url, platform) {
+        editingLessonId = id;
+        document.getElementById('editLessonTitle').value = title;
+        document.getElementById('editLessonUrl').value = url;
+        document.getElementById('editLessonPlatform').value = platform;
+        document.getElementById('editLessonModal').style.display = "flex";
+    }
+    
+    function openEditInternalModal(id, title, url, download, contentType) {
+        editingInternalLessonId = id;
+        document.getElementById('editInternalTitle').value = title;
+        document.getElementById('editInternalUrl').value = url;
+        document.getElementById('editInternalDownload').value = download || '';
+        if (contentType) document.getElementById('editInternalType').value = contentType;
+        document.getElementById('editInternalLessonModal').style.display = "flex";
+    }
+    
+    async function deleteLesson(id) {
+        if(confirm("هل أنت متأكد من حذف هذا الدرس؟")){
+            await database.ref('lessons/' + id).remove();
+            alert("✅ تم حذف الدرس بنجاح");
+            await loadDataFromFirebase();
+            refreshCurrentView();
+        }
+    }
+    
     function renderLessonsList() { 
         hideMainStages();
         const lessons = getCurrentLessons(); 
@@ -342,13 +801,26 @@
         const paginated = lessons.slice(start, start + LESSONS_PER_PAGE); 
         let titleText = currentSubject; 
         if(currentStage !== "primary") titleText = `${currentYear} - ${currentSubject}`; 
-        let html = `<button class="back-btn" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع للرئيسية</button><div class="page-title"><i class="fas fa-book-open"></i> ${titleText} - ${currentLessonType === 'summer' ? 'الدروس الصيفية' : 'الدروس المقررة'}</div><div class="lessons-list">`; 
-        if(paginated.length > 0){ 
+        let html = `<button class="back-btn" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع</button><div class="page-title"><i class="fas fa-book-open"></i> ${titleText} - ${currentLessonType === 'summer' ? 'الدروس الصيفية' : 'الدروس المقررة'}</div><div id="lessonsContainer" class="lessons-list">`; 
+        if(paginated && paginated.length > 0){ 
             paginated.forEach(lesson => { 
                 const isLocked = !isLessonAccessible(currentLessonType); 
-                html += `<div class="lesson-item"><div class="lesson-title">${getPlatformBadge(lesson.platform)}<span>📌 ${escapeHtml(lesson.title)}</span>${isLocked && !isAdminMode ? '<span style="color:#d62828; font-size:0.7rem;">🔒 مقفل</span>' : ''}</div><div><button class="watch-btn" data-url="${lesson.url}" data-type="${currentLessonType}"><i class="fas fa-eye"></i> مشاهدة</button>`; 
-                if(isAdminMode) html += `<button class="edit-btn" data-id="${lesson.id}" data-title="${escapeHtml(lesson.title)}" data-url="${escapeHtml(lesson.url)}" data-platform="${lesson.platform}"><i class="fas fa-edit"></i> تعديل</button><button class="delete-btn" data-id="${lesson.id}"><i class="fas fa-trash"></i> حذف</button>`; 
-                html += `</div></div>`; 
+                const badge = getLessonBadge(lesson);
+                html += `<div class="lesson-item"><div class="lesson-title">${badge}<span>📌 ${escapeHtml(lesson.title)}</span>${isLocked && !isAdminMode ? '<span style="color:#d62828; font-size:0.7rem; margin-right:8px;">🔒 مقفل</span>' : ''}</div><div class="lesson-actions">`;
+                if (lesson.content_type === 'pdf' || lesson.content_type === 'image') {
+                    html += `<button class="view-inline-btn" onclick='showLessonContent("${lesson.id}", ${JSON.stringify(lesson).replace(/'/g, "\\'")})'><i class="fas fa-eye"></i> عرض</button>`;
+                } else {
+                    html += `<button class="watch-btn" data-url="${lesson.external_url}" data-type="${currentLessonType}"><i class="fas fa-external-link-alt"></i> مشاهدة</button>`;
+                }
+                if(isAdminMode) {
+                    if (lesson.content_type === 'pdf' || lesson.content_type === 'image') {
+                        html += `<button class="edit-btn" onclick='openEditInternalModal("${lesson.id}", "${escapeHtml(lesson.title)}", "${lesson.internal_url}", "${lesson.download_url || ''}", "${lesson.content_type}")'><i class="fas fa-edit"></i> تعديل</button>`;
+                    } else {
+                        html += `<button class="edit-btn" onclick='openEditModal("${lesson.id}", "${escapeHtml(lesson.title)}", "${lesson.external_url}", "${lesson.platform}")'><i class="fas fa-edit"></i> تعديل</button>`;
+                    }
+                    html += `<button class="delete-btn" onclick='deleteLesson("${lesson.id}")'><i class="fas fa-trash"></i> حذف</button>`;
+                }
+                html += `</div></div>`;
             }); 
         } else html += `<div class="empty-lessons"><i class="fas fa-inbox"></i> لا توجد دروس ${currentLessonType === 'summer' ? 'صيفية' : 'مقررة'} حالياً</div>`; 
         html += `</div>`; 
@@ -357,59 +829,22 @@
             for(let i = 1; i <= totalPages; i++) html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`; 
             html += `<button class="page-nav" data-page="next">التالي <i class="fas fa-chevron-left"></i></button><span class="page-info">${currentPage} / ${totalPages}</span></div>`; 
         } 
-        if(isAdminMode) html += `<div class="add-lesson-area"><button class="add-lesson-btn" id="addLessonBtn" style="display:block;"><i class="fas fa-plus-circle"></i> إضافة درس جديد</button></div>`; 
+        if(isAdminMode) html += `<div class="add-lesson-area"><button class="add-lesson-btn" id="openAddLessonBtn"><i class="fas fa-plus-circle"></i> إضافة درس جديد</button></div>`; 
         document.getElementById("dynamicArea").innerHTML = html; 
         document.getElementById("backBtn")?.addEventListener("click", goBack); 
-        document.querySelectorAll(".watch-btn").forEach(btn => { 
-            btn.addEventListener("click", () => { 
-                const type = btn.getAttribute("data-type"); 
-                if(isLessonAccessible(type)) window.open(btn.getAttribute("data-url"), "_blank"); 
-                else showAppropriatePopup(type); 
-            }); 
-        }); 
-        document.querySelectorAll(".page-btn, .page-nav").forEach(btn => { 
-            btn.addEventListener("click", () => { 
-                const action = btn.getAttribute("data-page"); 
-                if(action === "prev") currentPage = Math.max(1, currentPage - 1); 
-                else if(action === "next") currentPage = Math.min(totalPages, currentPage + 1); 
-                else currentPage = parseInt(action); 
-                renderLessonsList(); 
-            }); 
-        }); 
-        if(isAdminMode){ 
-            document.querySelectorAll(".edit-btn").forEach(btn => { 
-                btn.addEventListener("click", () => { 
-                    editingLessonId = btn.getAttribute("data-id"); 
-                    document.getElementById("modalLessonTitle").value = btn.getAttribute("data-title"); 
-                    document.getElementById("modalLessonUrl").value = btn.getAttribute("data-url"); 
-                    document.getElementById("modalLessonPlatform").value = btn.getAttribute("data-platform"); 
-                    document.getElementById("addLessonTitle").innerText = "✏️ تعديل الدرس"; 
-                    document.getElementById("addLessonModal").style.display = "flex"; 
-                }); 
-            }); 
-            document.querySelectorAll(".delete-btn").forEach(btn => { 
-                btn.addEventListener("click", async () => { 
-                    const id = btn.getAttribute("data-id"); 
-                    if(confirm("هل أنت متأكد من حذف هذا الدرس؟")){ 
-                        await deleteLessonFromFirebase(id); 
-                        alert("✅ تم حذف الدرس بنجاح"); 
-                        await loadDataFromFirebase(); 
-                        refreshCurrentView(); 
-                    } 
-                }); 
-            }); 
-            const addBtn = document.getElementById("addLessonBtn"); 
-            if(addBtn) addBtn.addEventListener("click", () => { 
-                editingLessonId = null; 
-                document.getElementById("modalLessonTitle").value = ""; 
-                document.getElementById("modalLessonUrl").value = ""; 
-                document.getElementById("modalLessonPlatform").value = "facebook_group"; 
-                document.getElementById("addLessonTitle").innerText = "➕ إضافة درس جديد"; 
-                document.getElementById("addLessonModal").style.display = "flex"; 
-            }); 
-            document.querySelectorAll(".edit-btn, .delete-btn").forEach(el => el.style.display = "inline-block"); 
-        } 
+        document.querySelectorAll(".watch-btn").forEach(btn => { btn.addEventListener("click", () => { const type = btn.getAttribute("data-type"); if(isLessonAccessible(type)) window.open(btn.getAttribute("data-url"), "_blank"); else showAppropriatePopup(type); }); }); 
+        document.querySelectorAll(".page-btn, .page-nav").forEach(btn => { btn.addEventListener("click", () => { const action = btn.getAttribute("data-page"); if(action === "prev") currentPage = Math.max(1, currentPage - 1); else if(action === "next") currentPage = Math.min(totalPages, currentPage + 1); else currentPage = parseInt(action); renderLessonsList(); }); }); 
+        document.getElementById("openAddLessonBtn")?.addEventListener("click", () => { 
+            document.getElementById('addLessonModalTitle').innerText = "➕ إضافة درس جديد";
+            document.getElementById('newLessonTitle').value = "";
+            document.getElementById('newLessonInternalUrl').value = "";
+            document.getElementById('newLessonDownloadUrl').value = "";
+            document.getElementById('newLessonExternalUrl').value = "";
+            document.getElementById('addLessonModal').style.display = "flex";
+        });
+        saveFullNavigationState();
     }
+    
     function showSubjects() { 
         hideMainStages();
         let subjectsObj = {}, titleText = "", icon = ""; 
@@ -423,7 +858,7 @@
             subjectsObj = platformData.high.subjectsByYear[currentYear]; 
             titleText = currentYear; icon = "fas fa-graduation-cap"; 
         } 
-        let html = `<button class="back-btn" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع للرئيسية</button><div class="page-title"><i class="${icon}"></i> ${titleText}</div><div class="subjects-grid">`; 
+        let html = `<button class="back-btn" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع</button><div class="page-title"><i class="${icon}"></i> ${titleText}</div><div class="subjects-grid">`; 
         const subjectIcons = {"اللغة العربية":"fas fa-language","الرياضيات":"fas fa-calculator","التربية الإسلامية":"fas fa-mosque","التربية العلمية":"fas fa-flask","التاريخ والجغرافيا":"fas fa-landmark","المتفرقات":"fas fa-puzzle-piece","العلوم الإسلامية":"fas fa-star-and-crescent"}; 
         for(let subject in subjectsObj){ 
             let subIcon = subjectIcons[subject] || "fas fa-book"; 
@@ -432,14 +867,10 @@
         html += `</div>`; 
         document.getElementById("dynamicArea").innerHTML = html; 
         document.getElementById("backBtn")?.addEventListener("click", goBack); 
-        document.querySelectorAll(".subject-card").forEach(card => { 
-            card.addEventListener("click", () => { 
-                navigationStack.push({ view: "subjects", stage: currentStage, substage: currentSubStage, year: currentYear }); 
-                currentSubject = card.getAttribute("data-subject"); 
-                showLessonTypes(); 
-            }); 
-        }); 
+        document.querySelectorAll(".subject-card").forEach(card => { card.addEventListener("click", () => { navigationStack.push({ view: "subjects", stage: currentStage, substage: currentSubStage, year: currentYear }); currentSubject = card.getAttribute("data-subject"); showLessonTypes(); }); }); 
+        saveFullNavigationState();
     }
+    
     function showLessonTypes() { 
         hideMainStages();
         let summerCount = 0, curriculumCount = 0; 
@@ -453,73 +884,55 @@
             summerCount = platformData.high.subjectsByYear[currentYear][currentSubject].summer.length; 
             curriculumCount = platformData.high.subjectsByYear[currentYear][currentSubject].curriculum.length; 
         } 
-        let html = `<button class="back-btn" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع للرئيسية</button><div class="page-title"><i class="fas fa-chalkboard-teacher"></i> ${currentSubject}</div><div class="lesson-types"><div class="lesson-type-card summer" data-type="summer"><div class="lesson-type-emoji">🏖️</div><h3>الدروس الصيفية</h3><p>دروس العطلة والمراجعة</p><div class="lesson-count"><i class="fas fa-video"></i> ${summerCount} درس</div></div><div class="lesson-type-card curriculum" data-type="curriculum"><div class="lesson-type-emoji">📖</div><h3>الدروس المقررة</h3><p>دروس البرنامج الدراسي</p><div class="lesson-count"><i class="fas fa-video"></i> ${curriculumCount} درس</div></div></div>`; 
+        let html = `<button class="back-btn" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع</button><div class="page-title"><i class="fas fa-chalkboard-teacher"></i> ${currentSubject}</div><div class="lesson-types"><div class="lesson-type-card summer" data-type="summer"><div class="lesson-type-emoji">🏖️</div><h3>الدروس الصيفية</h3><p>دروس العطلة والمراجعة</p><div class="lesson-count"><i class="fas fa-video"></i> ${summerCount} درس</div></div><div class="lesson-type-card curriculum" data-type="curriculum"><div class="lesson-type-emoji">📖</div><h3>الدروس المقررة</h3><p>دروس البرنامج الدراسي</p><div class="lesson-count"><i class="fas fa-video"></i> ${curriculumCount} درس</div></div></div>`; 
         document.getElementById("dynamicArea").innerHTML = html; 
         document.getElementById("backBtn")?.addEventListener("click", goBack); 
-        document.querySelectorAll(".lesson-type-card").forEach(card => { 
-            card.addEventListener("click", () => { 
-                navigationStack.push({ view: "lessonTypes", stage: currentStage, substage: currentSubStage, year: currentYear, subject: currentSubject }); 
-                currentLessonType = card.getAttribute("data-type"); 
-                currentPage = 1; 
-                renderLessonsList(); 
-            }); 
-        }); 
+        document.querySelectorAll(".lesson-type-card").forEach(card => { card.addEventListener("click", () => { navigationStack.push({ view: "lessonTypes", stage: currentStage, substage: currentSubStage, year: currentYear, subject: currentSubject }); currentLessonType = card.getAttribute("data-type"); currentPage = 1; renderLessonsList(); }); }); 
+        saveFullNavigationState();
     }
+    
     function showYears() { 
         hideMainStages();
         let years = currentStage === "middle" ? platformData.middle.yearsList : platformData.high.yearsList; 
         let titleText = currentStage === "middle" ? "مرحلة المتوسط" : "مرحلة الثانوي"; 
         let icon = currentStage === "middle" ? "fas fa-chalkboard-user" : "fas fa-university"; 
         let images = currentStage === "middle" ? ["📘","📗","📙","📕"] : ["🎓","📚","🏛️"]; 
-        let html = `<button class="back-btn" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع للرئيسية</button><div class="page-title"><i class="${icon}"></i> ${titleText}</div><div class="years-grid">`; 
-        for(let i = 0; i < years.length; i++){ 
-            html += `<div class="year-card" data-year="${years[i]}"><div class="year-emoji">${images[i % images.length]}</div><h3>${years[i]}</h3></div>`; 
-        } 
+        let html = `<button class="back-btn" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع</button><div class="page-title"><i class="${icon}"></i> ${titleText}</div><div class="years-grid">`; 
+        for(let i = 0; i < years.length; i++){ html += `<div class="year-card" data-year="${years[i]}"><div class="year-emoji">${images[i % images.length]}</div><h3>${years[i]}</h3></div>`; } 
         html += `</div>`; 
         document.getElementById("dynamicArea").innerHTML = html; 
         document.getElementById("backBtn")?.addEventListener("click", goBack); 
-        document.querySelectorAll(".year-card").forEach(card => { 
-            card.addEventListener("click", () => { 
-                navigationStack.push({ view: "years", stage: currentStage }); 
-                currentYear = card.getAttribute("data-year"); 
-                showSubjects(); 
-            }); 
-        }); 
+        document.querySelectorAll(".year-card").forEach(card => { card.addEventListener("click", () => { navigationStack.push({ view: "years", stage: currentStage }); currentYear = card.getAttribute("data-year"); showSubjects(); }); }); 
+        saveFullNavigationState();
     }
+    
     function showSubStages() { 
         hideMainStages();
-        let html = `<button class="back-btn" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع للرئيسية</button><div class="page-title"><i class="fas fa-school"></i> المرحلة الابتدائية</div><div class="sub-stages">`; 
-        for(let [key, stage] of Object.entries(platformData.primary)){ 
-            let emoji = key === 'stage1' ? '⭐' : (key === 'stage2' ? '📖' : '🎓'); 
-            html += `<div class="sub-stage-card" data-stage="${key}"><div class="stage-emoji">${emoji}</div><h3>${stage.name}</h3><p>${stage.years}</p></div>`; 
-        } 
+        let html = `<button class="back-btn" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع</button><div class="page-title"><i class="fas fa-school"></i> المرحلة الابتدائية</div><div class="sub-stages">`; 
+        for(let [key, stage] of Object.entries(platformData.primary)){ let emoji = key === 'stage1' ? '⭐' : (key === 'stage2' ? '📖' : '🎓'); html += `<div class="sub-stage-card" data-stage="${key}"><div class="stage-emoji">${emoji}</div><h3>${stage.name}</h3><p>${stage.years}</p></div>`; } 
         html += `</div>`; 
         document.getElementById("dynamicArea").innerHTML = html; 
         document.getElementById("backBtn")?.addEventListener("click", goBack); 
-        document.querySelectorAll(".sub-stage-card").forEach(card => { 
-            card.addEventListener("click", () => { 
-                navigationStack.push({ view: "subStages" }); 
-                currentSubStage = card.getAttribute("data-stage"); 
-                showSubjects(); 
-            }); 
-        }); 
+        document.querySelectorAll(".sub-stage-card").forEach(card => { card.addEventListener("click", () => { navigationStack.push({ view: "subStages" }); currentSubStage = card.getAttribute("data-stage"); showSubjects(); }); }); 
+        saveFullNavigationState();
     }
+    
     function showMainStages() { 
         showMainStagesButtons();
         let html = `<div class="welcome-card"><div class="welcome-emoji">👨‍🏫📚</div><h3>مرحباً بك في منصة الأستاذ محمد</h3><p>اختر المرحلة الدراسية أو مجتمعنا من الأعلى للبدء</p><div class="welcome-arrow"><i class="fas fa-arrow-up"></i></div>`; 
-        if(!currentUser) {
-            html += `<button id="floatingLoginBtn" class="login-shortcut"><i class="fas fa-sign-in-alt"></i> تسجيل الدخول</button>`;
-        }
+        if(!currentUser) { html += `<button id="floatingLoginBtn" class="login-shortcut"><i class="fas fa-sign-in-alt"></i> تسجيل الدخول</button>`; }
         html += `</div>`;
         document.getElementById("dynamicArea").innerHTML = html; 
         const loginBtn = document.getElementById("floatingLoginBtn"); 
         if(loginBtn) loginBtn.onclick = () => showAuthChoice(); 
+        saveFullNavigationState();
     }
+    
     function goBack() { 
         if(navigationStack.length === 0){ 
             currentStage = null; currentSubStage = null; currentYear = null; currentSubject = null; currentLessonType = null; 
             showMainStages(); 
-            saveNavigationState(); 
+            saveFullNavigationState();
             return; 
         } 
         const last = navigationStack.pop(); 
@@ -527,21 +940,63 @@
         else if(last.view === "years"){ currentStage = last.stage; currentYear = null; showYears(); } 
         else if(last.view === "subjects"){ currentStage = last.stage; currentSubStage = last.substage; currentYear = last.year; currentSubject = null; showSubjects(); } 
         else if(last.view === "lessonTypes"){ currentStage = last.stage; currentSubStage = last.substage; currentYear = last.year; currentSubject = last.subject; currentLessonType = null; showLessonTypes(); } 
-        saveNavigationState(); 
+        saveFullNavigationState();
     }
-    async function saveLesson() { const title = document.getElementById("modalLessonTitle").value.trim(); const url = document.getElementById("modalLessonUrl").value.trim(); const platform = document.getElementById("modalLessonPlatform").value; if(!title || !url){ alert("أدخل عنوان الدرس والرابط"); return; } try{ if(editingLessonId){ await updateLessonInFirebase(editingLessonId, title, url, platform); alert("✅ تم تعديل الدرس بنجاح"); } else { await addLessonToFirebase(title, url, platform); alert("✅ تم إضافة الدرس بنجاح"); } document.getElementById("addLessonModal").style.display = "none"; editingLessonId = null; await loadDataFromFirebase(); refreshCurrentView(); } catch(error){ alert("خطأ في حفظ الدرس: " + error.message); } }
+    
+    function refreshCurrentView() { 
+        if(!dataLoaded) return; 
+        if(currentLessonType) renderLessonsList(); 
+        else if(currentSubject) showLessonTypes(); 
+        else if(currentYear) showSubjects(); 
+        else if(currentSubStage) showSubjects(); 
+        else if(currentStage === "primary") showSubStages(); 
+        else if(currentStage === "middle" || currentStage === "high") showYears(); 
+        else showMainStages(); 
+        saveFullNavigationState();
+    }
     
     function hideAllModals() { 
         document.getElementById("authChoiceModal").style.display = "none"; 
         document.getElementById("teacherLoginModal").style.display = "none"; 
         document.getElementById("memberLoginModal").style.display = "none"; 
-        document.getElementById("registerMemberModal").style.display = "none";
+        document.getElementById("registerMemberModal").style.display = "none"; 
         document.getElementById("logoutConfirmModal").style.display = "none";
+        document.getElementById("addLessonModal").style.display = "none";
+        document.getElementById("editLessonModal").style.display = "none";
+        document.getElementById("editInternalLessonModal").style.display = "none";
     }
+    
     function showAuthChoice() { document.getElementById("authChoiceModal").style.display = "flex"; }
-    async function handleTeacherLogin() { const email = document.getElementById("teacherEmail").value.trim(); const password = document.getElementById("teacherPassword").value; const errorDiv = document.getElementById("teacherLoginError"); if(!email || !password){ errorDiv.innerText = "❌ الرجاء إدخال البريد الإلكتروني وكلمة المرور"; return; } if(!auth) { errorDiv.innerText = "❌ خطأ في الاتصال"; return; } try { await auth.signInWithEmailAndPassword(email, password); hideAllModals(); alert("✅ تم تسجيل الدخول كمعلم بنجاح!"); } catch(error) { let msg = "❌ فشل تسجيل الدخول"; if(error.code === 'auth/user-not-found') msg = "❌ لا يوجد حساب بهذا البريد"; else if(error.code === 'auth/wrong-password') msg = "❌ كلمة المرور غير صحيحة"; else if(error.code === 'auth/invalid-email') msg = "❌ البريد الإلكتروني غير صالح"; errorDiv.innerText = msg; } }
-    async function handleMemberLogin() { const email = document.getElementById("memberEmail").value.trim(); const password = document.getElementById("memberPassword").value; const errorDiv = document.getElementById("memberLoginError"); if(!email || !password){ errorDiv.innerText = "❌ الرجاء إدخال البريد الإلكتروني وكلمة المرور"; return; } if(!auth) { errorDiv.innerText = "❌ خطأ في الاتصال"; return; } try { await auth.signInWithEmailAndPassword(email, password); const isApproved = await checkMemberApproval(email); if(!isApproved) { await auth.signOut(); errorDiv.innerText = "❌ لم يتم قبول عضويتك بعد. يرجى الانتظار حتى يوافق المعلم على طلبك"; return; } hideAllModals(); alert("✅ تم تسجيل الدخول كعضو بنجاح!"); } catch(error) { let msg = "❌ فشل تسجيل الدخول"; if(error.code === 'auth/user-not-found') msg = "❌ لا يوجد حساب بهذا البريد"; else if(error.code === 'auth/wrong-password') msg = "❌ كلمة المرور غير صحيحة"; else if(error.code === 'auth/invalid-email') msg = "❌ البريد الإلكتروني غير صالح"; errorDiv.innerText = msg; } }
-    async function handleMemberRegister() { const email = document.getElementById("registerMemberEmail").value.trim(); const password = document.getElementById("registerMemberPassword").value; const confirm = document.getElementById("registerMemberConfirm").value; const errorDiv = document.getElementById("registerMemberError"); if(!email || !password){ errorDiv.innerText = "❌ الرجاء ملء جميع الحقول"; return; } if(password !== confirm){ errorDiv.innerText = "❌ كلمتا المرور غير متطابقتين"; return; } if(password.length < 6){ errorDiv.innerText = "❌ كلمة المرور يجب أن تكون 6 أحرف على الأقل"; return; } if(!auth) { errorDiv.innerText = "❌ خطأ في الاتصال"; return; } try { await auth.createUserWithEmailAndPassword(email, password); await addJoinRequest(email); await auth.signOut(); hideAllModals(); alert("✅ تم إنشاء الحساب بنجاح! سيتم مراجعة طلب انضمامك من قبل المعلم."); } catch(error) { let msg = "❌ فشل إنشاء الحساب"; if(error.code === 'auth/email-already-in-use') msg = "❌ هذا البريد الإلكتروني مستخدم بالفعل"; else if(error.code === 'auth/invalid-email') msg = "❌ البريد الإلكتروني غير صالح"; else if(error.code === 'auth/weak-password') msg = "❌ كلمة المرور ضعيفة جداً"; errorDiv.innerText = msg; } }
+    
+    async function handleTeacherLogin() { 
+        const email = document.getElementById("teacherEmail").value.trim(); 
+        const password = document.getElementById("teacherPassword").value; 
+        const errorDiv = document.getElementById("teacherLoginError"); 
+        if(!email || !password){ errorDiv.innerText = "❌ الرجاء إدخال البريد الإلكتروني وكلمة المرور"; return; } 
+        if(!auth) { errorDiv.innerText = "❌ خطأ في الاتصال"; return; } 
+        try { await auth.signInWithEmailAndPassword(email, password); hideAllModals(); alert("✅ تم تسجيل الدخول كمعلم بنجاح!"); } catch(error) { let msg = "❌ فشل تسجيل الدخول"; if(error.code === 'auth/user-not-found') msg = "❌ لا يوجد حساب بهذا البريد"; else if(error.code === 'auth/wrong-password') msg = "❌ كلمة المرور غير صحيحة"; else if(error.code === 'auth/invalid-email') msg = "❌ البريد الإلكتروني غير صالح"; errorDiv.innerText = msg; } 
+    }
+    
+    async function handleMemberLogin() { 
+        const email = document.getElementById("memberEmail").value.trim(); 
+        const password = document.getElementById("memberPassword").value; 
+        const errorDiv = document.getElementById("memberLoginError"); 
+        if(!email || !password){ errorDiv.innerText = "❌ الرجاء إدخال البريد الإلكتروني وكلمة المرور"; return; } 
+        if(!auth) { errorDiv.innerText = "❌ خطأ في الاتصال"; return; } 
+        try { await auth.signInWithEmailAndPassword(email, password); const isApproved = await checkMemberApproval(email); if(!isApproved) { await auth.signOut(); errorDiv.innerText = "❌ لم يتم قبول عضويتك بعد. يرجى الانتظار حتى يوافق المعلم على طلبك"; return; } hideAllModals(); alert("✅ تم تسجيل الدخول كعضو بنجاح!"); } catch(error) { let msg = "❌ فشل تسجيل الدخول"; if(error.code === 'auth/user-not-found') msg = "❌ لا يوجد حساب بهذا البريد"; else if(error.code === 'auth/wrong-password') msg = "❌ كلمة المرور غير صحيحة"; else if(error.code === 'auth/invalid-email') msg = "❌ البريد الإلكتروني غير صالح"; errorDiv.innerText = msg; } 
+    }
+    
+    async function handleMemberRegister() { 
+        const email = document.getElementById("registerEmail").value.trim(); 
+        const password = document.getElementById("registerPassword").value; 
+        const confirm = document.getElementById("registerConfirm").value; 
+        const errorDiv = document.getElementById("registerError"); 
+        if(!email || !password){ errorDiv.innerText = "❌ الرجاء ملء جميع الحقول"; return; } 
+        if(password !== confirm){ errorDiv.innerText = "❌ كلمتا المرور غير متطابقتين"; return; } 
+        if(password.length < 6){ errorDiv.innerText = "❌ كلمة المرور يجب أن تكون 6 أحرف على الأقل"; return; } 
+        if(!auth) { errorDiv.innerText = "❌ خطأ في الاتصال"; return; } 
+        try { await auth.createUserWithEmailAndPassword(email, password); await addJoinRequest(email); await auth.signOut(); hideAllModals(); alert("✅ تم إنشاء الحساب بنجاح! سيتم مراجعة طلب انضمامك من قبل المعلم."); } catch(error) { let msg = "❌ فشل إنشاء الحساب"; if(error.code === 'auth/email-already-in-use') msg = "❌ هذا البريد الإلكتروني مستخدم بالفعل"; else if(error.code === 'auth/invalid-email') msg = "❌ البريد الإلكتروني غير صالح"; else if(error.code === 'auth/weak-password') msg = "❌ كلمة المرور ضعيفة جداً"; errorDiv.innerText = msg; } 
+    }
     
     function showLogoutConfirm() { document.getElementById("logoutConfirmModal").style.display = "flex"; }
     async function confirmLogout() { if(auth) await auth.signOut(); hideAllModals(); alert("🔒 تم تسجيل الخروج"); }
@@ -550,42 +1005,13 @@
         if(!currentUser) { showAuthChoice(); return; } 
         if(!currentUserIsApproved && !isAdminMode) { alert("⚠️ لم يتم قبول عضويتك بعد. يرجى الانتظار حتى يوافق المعلم على طلبك"); return; } 
         hideMainStages();
-        let html = `
-            <div class="community-section">
-                <button class="community-back-btn" id="communityBackBtn"><i class="fas fa-arrow-right"></i> رجوع للرئيسية</button>
-                <div class="section-title"><i class="fas fa-globe"></i> مجتمع الأستاذ محمد التعليمي <i class="fas fa-heart" style="color:#d62828;"></i></div>
-                <div class="community-stage-buttons">
-                    <button class="community-stage-btn primary active" data-stage="primary">📚 المرحلة الابتدائية</button>
-                    <button class="community-stage-btn middle" data-stage="middle">🏫 مرحلة المتوسط</button>
-                    <button class="community-stage-btn high" data-stage="high">🎓 مرحلة الثانوي</button>
-                </div>
-                <div id="communityLinksContainer" class="community-links-container"></div>
-                <div style="text-align:center; margin-top:25px; padding:15px; background:#e8eaf6; border-radius:28px; font-size:0.85rem; color:#4a148c;">
-                    <i class="fas fa-info-circle"></i> بعد الانضمام إلى القنوات والمجموعات، يمكنك مشاهدة الدروس من خلال اختيار المرحلة التعليمية من الأعلى
-                </div>
-            </div>
-        `;
+        let html = `<div class="community-section"><button class="community-back-btn" id="communityBackBtn"><i class="fas fa-arrow-right"></i> رجوع للرئيسية</button><div class="section-title"><i class="fas fa-globe"></i> مجتمع الأستاذ محمد التعليمي <i class="fas fa-heart" style="color:#d62828;"></i></div><div class="community-stage-buttons"><button class="community-stage-btn primary active" data-stage="primary">📚 المرحلة الابتدائية</button><button class="community-stage-btn middle" data-stage="middle">🏫 مرحلة المتوسط</button><button class="community-stage-btn high" data-stage="high">🎓 مرحلة الثانوي</button></div><div id="communityLinksContainer" class="community-links-container"></div><div style="text-align:center; margin-top:25px; padding:15px; background:#e8eaf6; border-radius:28px; font-size:0.85rem; color:#4a148c;"><i class="fas fa-info-circle"></i> بعد الانضمام إلى القنوات والمجموعات، يمكنك مشاهدة الدروس من خلال اختيار المرحلة التعليمية من الأعلى</div></div>`;
         document.getElementById("dynamicArea").innerHTML = html;
-        
-        document.getElementById("communityBackBtn")?.addEventListener("click", () => {
-            showMainStages();
-            currentStage = null;
-            saveNavigationState();
-        });
-        
-        document.querySelectorAll(".community-stage-btn").forEach(btn => {
-            btn.addEventListener("click", (e) => {
-                const stage = e.currentTarget.getAttribute("data-stage");
-                selectedCommunityStage = stage;
-                document.querySelectorAll(".community-stage-btn").forEach(b => b.classList.remove("active"));
-                e.currentTarget.classList.add("active");
-                renderCommunityLinks();
-            });
-        });
-        
+        document.getElementById("communityBackBtn")?.addEventListener("click", () => { showMainStages(); currentStage = null; saveFullNavigationState(); });
+        document.querySelectorAll(".community-stage-btn").forEach(btn => { btn.addEventListener("click", (e) => { const stage = e.currentTarget.getAttribute("data-stage"); selectedCommunityStage = stage; document.querySelectorAll(".community-stage-btn").forEach(b => b.classList.remove("active")); e.currentTarget.classList.add("active"); renderCommunityLinks(); }); });
         renderCommunityLinks();
         currentStage = null; 
-        saveNavigationState(); 
+        saveFullNavigationState();
     }
     
     function bindMainStageButtons() { 
@@ -593,33 +1019,22 @@
         const communityBtn = document.getElementById("communityBtn"); 
         if(communityBtn) { communityBtn.removeEventListener("click", showCommunitySection); communityBtn.addEventListener("click", showCommunitySection); } 
     }
-    function stageClickHandler(e) { 
-        const btn = e.currentTarget; 
-        if(btn.id === 'communityBtn') return; 
-        currentStage = btn.getAttribute("data-main"); 
-        currentSubStage = null; 
-        currentYear = null; 
-        currentSubject = null; 
-        currentLessonType = null; 
-        navigationStack = []; 
-        if(currentStage === "primary") showSubStages(); 
-        else showYears(); 
-        saveNavigationState(); 
-    }
+    
+    function stageClickHandler(e) { const btn = e.currentTarget; if(btn.id === 'communityBtn') return; currentStage = btn.getAttribute("data-main"); currentSubStage = null; currentYear = null; currentSubject = null; currentLessonType = null; navigationStack = []; if(currentStage === "primary") showSubStages(); else showYears(); saveFullNavigationState(); }
     
     const returnDate = new Date(2026, 5, 27);
     function updateCountdown(){ const diff = returnDate - new Date(); if(diff <= 0){ const container = document.getElementById("countdownContainer"); if(container) container.innerHTML = `<div class="countdown-title">🎉 مرحباً بعودتكم</div>`; return; } document.getElementById("days").innerText = Math.floor(diff/86400000).toString().padStart(2,'0'); document.getElementById("hours").innerText = Math.floor((diff%86400000)/3600000).toString().padStart(2,'0'); document.getElementById("minutes").innerText = Math.floor((diff%3600000)/60000).toString().padStart(2,'0'); document.getElementById("seconds").innerText = Math.floor((diff%60000)/1000).toString().padStart(2,'0'); }
     setInterval(updateCountdown, 1000); updateCountdown();
     
     async function init() {
-        if(!isFirebaseReady || !database) { document.getElementById("dynamicArea").innerHTML = `<div style="text-align:center; padding:50px; background:#fff0f0; border-radius:35px;"><i class="fas fa-database" style="font-size:3rem; color:#d62828;"></i><h3 style="color:#d62828;">⚠️ خطأ في الاتصال بقاعدة البيانات</h3><button onclick="location.reload()" style="background:#006233; color:white; border:none; padding:10px 30px; border-radius:60px; margin-top:15px; cursor:pointer;">🔄 إعادة تحميل</button></div>`; return; }
-        await Promise.all([loadDataFromFirebase(), loadLockSettings(), loadInviteLinks(), loadNews()]); bindMainStageButtons();
-        const hasState = restoreNavigationState();
-        if(hasState && currentStage){
-            if(currentStage === "primary"){ if(currentSubStage && currentSubject && currentLessonType) renderLessonsList(); else if(currentSubStage && currentSubject) showLessonTypes(); else if(currentSubStage) showSubjects(); else showSubStages(); }
-            else if(currentStage === "middle" || currentStage === "high"){ if(currentYear && currentSubject && currentLessonType) renderLessonsList(); else if(currentYear && currentSubject) showLessonTypes(); else if(currentYear) showSubjects(); else showYears(); }
-            else { showMainStages(); }
-        } else { showMainStages(); }
+        if(!database) { document.getElementById("dynamicArea").innerHTML = `<div style="text-align:center; padding:50px; background:#fff0f0; border-radius:35px;"><i class="fas fa-database" style="font-size:3rem; color:#d62828;"></i><h3 style="color:#d62828;">⚠️ خطأ في الاتصال بقاعدة البيانات</h3><button onclick="location.reload()" style="background:#006233; color:white; border:none; padding:10px 30px; border-radius:60px; margin-top:15px; cursor:pointer;">🔄 إعادة تحميل</button></div>`; return; }
+        await Promise.all([loadDataFromFirebase(), loadLockSettings(), loadInviteLinks(), loadNews()]); 
+        bindMainStageButtons();
+        
+        if(!restoreFullNavigationState()) {
+            showMainStages();
+        }
+        
         if(database) { database.ref('lessons').on('value', async () => { await loadDataFromFirebase(); refreshCurrentView(); }); }
     }
     
@@ -632,16 +1047,20 @@
         document.getElementById("memberLoginBtn")?.addEventListener("click", handleMemberLogin);
         document.getElementById("closeMemberLoginBtn")?.addEventListener("click", () => hideAllModals());
         document.getElementById("showMemberRegisterBtn")?.addEventListener("click", () => { document.getElementById("memberLoginModal").style.display = "none"; document.getElementById("registerMemberModal").style.display = "flex"; });
-        document.getElementById("registerMemberBtn")?.addEventListener("click", handleMemberRegister);
-        document.getElementById("closeRegisterMemberBtn")?.addEventListener("click", () => hideAllModals());
+        document.getElementById("registerBtn")?.addEventListener("click", handleMemberRegister);
+        document.getElementById("closeRegisterBtn")?.addEventListener("click", () => hideAllModals());
         document.getElementById("summerStopBtn")?.addEventListener("click", () => stopLessons('summer'));
         document.getElementById("summerStartBtn")?.addEventListener("click", () => startLessons('summer'));
         document.getElementById("curriculumStopBtn")?.addEventListener("click", () => stopLessons('curriculum'));
         document.getElementById("curriculumStartBtn")?.addEventListener("click", () => startLessons('curriculum'));
-        document.getElementById("saveInviteLinksBtn")?.addEventListener("click", async () => { if(!isAdminMode){ alert("غير مصرح لك، هذه اللوحة للمعلم فقط"); return; } await saveInviteLinksToDB(); });
-        document.getElementById("saveNewsBtn")?.addEventListener("click", async () => { if(!isAdminMode){ alert("غير مصرح لك، هذه اللوحة للمعلم فقط"); return; } await saveNews(); });
-        document.getElementById("modalConfirmBtn")?.addEventListener("click", saveLesson);
-        document.getElementById("modalCancelBtn")?.addEventListener("click", () => { document.getElementById("addLessonModal").style.display = "none"; editingLessonId = null; });
+        document.getElementById("saveInviteLinksBtn")?.addEventListener("click", async () => { if(!isAdminMode){ alert("غير مصرح لك"); return; } await saveInviteLinksToDB(); });
+        document.getElementById("saveNewsBtn")?.addEventListener("click", async () => { if(!isAdminMode){ alert("غير مصرح لك"); return; } await saveNews(); });
+        document.getElementById("confirmAddLessonBtn")?.addEventListener("click", addNewLesson);
+        document.getElementById("cancelAddLessonBtn")?.addEventListener("click", () => document.getElementById("addLessonModal").style.display = "none");
+        document.getElementById("confirmEditLessonBtn")?.addEventListener("click", async () => { if(editingLessonId){ await database.ref('lessons/' + editingLessonId).update({ title: document.getElementById("editLessonTitle").value, platform: document.getElementById("editLessonPlatform").value, external_url: document.getElementById("editLessonUrl").value }); alert("✅ تم تعديل الدرس"); } document.getElementById("editLessonModal").style.display = "none"; await loadDataFromFirebase(); refreshCurrentView(); });
+        document.getElementById("cancelEditLessonBtn")?.addEventListener("click", () => document.getElementById("editLessonModal").style.display = "none");
+        document.getElementById("confirmEditInternalBtn")?.addEventListener("click", async () => { if(editingInternalLessonId){ await database.ref('lessons/' + editingInternalLessonId).update({ title: document.getElementById("editInternalTitle").value, content_type: document.getElementById("editInternalType").value, internal_url: document.getElementById("editInternalUrl").value, download_url: document.getElementById("editInternalDownload").value }); alert("✅ تم تعديل الدرس"); } document.getElementById("editInternalLessonModal").style.display = "none"; await loadDataFromFirebase(); refreshCurrentView(); });
+        document.getElementById("cancelEditInternalBtn")?.addEventListener("click", () => document.getElementById("editInternalLessonModal").style.display = "none");
         
         const membershipLogoutBtn = document.getElementById("membershipLogoutBtn");
         if(membershipLogoutBtn) membershipLogoutBtn.onclick = () => showLogoutConfirm();
@@ -652,12 +1071,10 @@
         if(teacherGear) teacherGear.onclick = () => { if(currentUser && isAdminMode){ if(adminPanel) adminPanel.style.display = adminPanel.style.display === "none" ? "block" : "none"; if(adminPanel.style.display === "block") { loadJoinRequests(); } } else if(currentUser && !isAdminMode){ alert("⚠️ هذه اللوحة للمعلم فقط"); } else { showAuthChoice(); } };
         
         window.onclick = (e) => { 
-            if(e.target.classList.contains("modal")) e.target.style.display = "none"; 
+            if(e.target.classList.contains("add-lesson-modal")) e.target.style.display = "none"; 
             if(e.target.classList.contains("visitor-popup")){ document.getElementById("holidayPopup").style.display = "none"; document.getElementById("stopPopup").style.display = "none"; } 
-            if(e.target.classList.contains("auth-choice-modal")) hideAllModals(); 
-            if(e.target.classList.contains("login-form-modal")) hideAllModals(); 
-            if(e.target.classList.contains("register-modal")) hideAllModals();
-            if(e.target.classList.contains("logout-confirm-modal")) hideAllModals();
+            if(e.target.classList.contains("auth-modal")) hideAllModals(); 
+            if(e.target.classList.contains("logout-confirm-modal") && e.target === document.getElementById("logoutConfirmModal")) hideAllModals(); 
         };
         
         if(auth) { auth.onAuthStateChanged(async (user) => { 
@@ -685,9 +1102,7 @@
                 if(isAdminMode) await loadJoinRequests(); 
                 const loginBtn = document.getElementById("floatingLoginBtn");
                 if(loginBtn) loginBtn.style.display = "none";
-                if(!currentStage && document.getElementById("dynamicArea").innerHTML.includes("تسجيل الدخول")) {
-                    showMainStages();
-                }
+                if(!currentStage && document.getElementById("dynamicArea").innerHTML.includes("تسجيل الدخول")) { showMainStages(); }
             } else { 
                 if(banner) banner.style.display = "none"; 
                 isAdminMode = false; 
