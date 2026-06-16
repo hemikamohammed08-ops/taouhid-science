@@ -138,10 +138,10 @@
         .form-group label{font-weight:bold;display:block;margin-bottom:5px;color:#333;font-size:0.85rem}
         .lock-info{font-size:0.7rem;color:#666;margin-top:3px}
         
-        .admin-panel{display:none;position:fixed;top:80px;right:20px;background:white;padding:20px;border-radius:28px;width:420px;z-index:1000;box-shadow:0 10px 30px black;border-right:5px solid #d62828;max-height:85vh;overflow-y:auto}
+        .admin-panel{display:none;position:fixed;top:80px;right:20px;background:white;padding:20px;border-radius:28px;width:480px;z-index:1000;box-shadow:0 10px 30px black;border-right:5px solid #d62828;max-height:85vh;overflow-y:auto}
         .admin-panel h4{color:#006233;margin-bottom:15px;border-bottom:2px solid #ffc107;padding-bottom:8px}
         .admin-panel h5{color:#b45309;margin:15px 0 10px 0}
-        .admin-panel input,.admin-panel select{width:100%;margin:8px 0;padding:10px;border-radius:60px;border:1px solid #ccc}
+        .admin-panel input,.admin-panel select{width:100%;margin:8px 0;padding:10px;border-radius:60px;border:1px solid #ccc;font-family:'Tajawal',sans-serif}
         .admin-panel button{width:100%;margin-top:5px;padding:10px;border-radius:60px;border:none;font-weight:bold;cursor:pointer}
         .lock-section{background:#f1f5f9;border-radius:28px;padding:15px;margin:15px 0}
         .lock-item{margin-bottom:20px;padding-bottom:15px;border-bottom:1px solid #ddd}
@@ -430,7 +430,7 @@
     </div>
 </div>
 
-<!-- لوحة تحكم المعلم -->
+<!-- لوحة تحكم الأستاذ -->
 <div class="admin-panel" id="adminPanel">
     <h4>🔐 لوحة تحكم الأستاذ</h4>
     <div class="lock-section">
@@ -458,6 +458,23 @@
     
     <h5><i class="fas fa-users"></i> طلبات انضمام الأعضاء <span id="requestsCount" style="background:#d62828; color:white; padding:2px 8px; border-radius:20px; font-size:0.7rem;">0</span></h5>
     <div id="joinRequestsList" class="requests-panel"><div class="empty-requests">جاري تحميل الطلبات...</div></div>
+    
+    <!-- قسم إدارة الأساتذة (يظهر فقط للأستاذ الأول) -->
+    <div id="teacherManagementSection" style="display:none;">
+        <hr style="margin:15px 0;">
+        <h5><i class="fas fa-chalkboard-teacher"></i> 👑 إدارة الأساتذة</h5>
+        <div class="invite-links-section">
+            <div class="form-group">
+                <label>البريد الإلكتروني للأستاذ الجديد:</label>
+                <input type="email" id="newTeacherEmail" placeholder="example@email.com" dir="ltr">
+            </div>
+            <button id="addTeacherBtn" class="lock-action-btn start">➕ إضافة أستاذ</button>
+            <div id="teachersList" style="margin-top:15px;">
+                <div class="lock-info">جاري تحميل قائمة الأساتذة...</div>
+            </div>
+            <div class="lock-info" style="margin-top:10px;">👑 أنت المدير، يمكنك إضافة أو حذف أي أستاذ</div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -473,6 +490,9 @@
     
     let database = null, auth = null;
     try { firebase.initializeApp(firebaseConfig); database = firebase.database(); auth = firebase.auth(); } catch(e) { console.error("Firebase error:", e); }
+    
+    // ======================== المتغيرات العامة ========================
+    const MASTER_TEACHER_EMAIL = "hemikamohammed08@gmail.com"; // 🔑 ضع بريدك الإلكتروني هنا
     
     const LESSONS_PER_PAGE = 7;
     let isAdminMode = false, currentUser = null, currentUserIsApproved = false;
@@ -496,6 +516,7 @@
     function hideMainStages() { document.getElementById('mainStagesContainer')?.classList.add('hide-stages'); }
     function showMainStagesButtons() { document.getElementById('mainStagesContainer')?.classList.remove('hide-stages'); }
     
+    // ======================== دوال النوافذ المنبثقة ========================
     function closeVisitorDeniedPopup() { document.getElementById("visitorDeniedPopup").style.display = "none"; }
     window.closeVisitorDeniedPopup = closeVisitorDeniedPopup;
     window.closeHolidayPopup = () => document.getElementById("holidayPopup").style.display = "none";
@@ -522,6 +543,7 @@
         }
     }
     
+    // ======================== دوال حفظ الحالة ========================
     function saveFullNavigationState() {
         const state = {
             currentStage: currentStage,
@@ -606,6 +628,105 @@
         }
     }
     
+    // ======================== دوال إدارة الأساتذة ========================
+    async function loadTeachersList() {
+        if (!isAdminMode) return;
+        // التحقق من أن المستخدم هو الأستاذ الأول
+        if (currentUser?.email !== MASTER_TEACHER_EMAIL) {
+            document.getElementById('teacherManagementSection').style.display = 'none';
+            return;
+        }
+        document.getElementById('teacherManagementSection').style.display = 'block';
+        
+        try {
+            const snapshot = await database.ref('teachers').once('value');
+            const teachers = snapshot.val() || {};
+            const container = document.getElementById('teachersList');
+            let html = '<div style="font-weight:bold; margin-bottom:10px;">📋 قائمة الأساتذة المسجلين:</div>';
+            let count = 0;
+            for (let [emailKey, data] of Object.entries(teachers)) {
+                count++;
+                const email = data.email || emailKey.replace(/_/g, '.');
+                const isMaster = email === MASTER_TEACHER_EMAIL;
+                html += `<div class="request-item" style="border-right-color:${isMaster ? '#006233' : '#d62828'};">
+                            <div>
+                                <div class="request-email">📧 ${escapeHtml(email)} ${isMaster ? '👑' : ''}</div>
+                                <div class="request-date">📅 ${new Date(data.addedAt).toLocaleDateString('ar')}</div>
+                            </div>
+                            <div>
+                                ${!isMaster ? `<button class="delete-btn" onclick='removeTeacher("${escapeHtml(email)}")' style="display:inline-flex;"><i class="fas fa-user-minus"></i> حذف</button>` : '<span style="color:#006233; font-weight:bold;">👑 المدير</span>'}
+                            </div>
+                        </div>`;
+            }
+            if (count === 0) {
+                html += '<div class="empty-requests">📭 لا يوجد أساتذة مسجلون</div>';
+            }
+            container.innerHTML = html;
+        } catch(e) {
+            console.error("Error loading teachers:", e);
+            document.getElementById('teachersList').innerHTML = '<div class="lock-info">⚠️ خطأ في تحميل قائمة الأساتذة</div>';
+        }
+    }
+    
+    async function addTeacher() {
+        if (currentUser?.email !== MASTER_TEACHER_EMAIL) {
+            alert("غير مصرح لك بهذه العملية");
+            return;
+        }
+        const email = document.getElementById('newTeacherEmail').value.trim();
+        if (!email) { alert("الرجاء إدخال البريد الإلكتروني"); return; }
+        if (email === MASTER_TEACHER_EMAIL) { alert("هذا هو بريدك بالفعل!"); return; }
+        
+        try {
+            // التحقق من أن البريد غير موجود بالفعل
+            const checkSnapshot = await database.ref('teachers/' + email.replace(/\./g, '_')).once('value');
+            if (checkSnapshot.exists()) {
+                alert("⚠️ هذا البريد مسجل بالفعل كأستاذ");
+                return;
+            }
+            
+            await database.ref('teachers/' + email.replace(/\./g, '_')).set({
+                email: email,
+                addedAt: Date.now(),
+                addedBy: currentUser.email
+            });
+            alert(`✅ تم إضافة الأستاذ ${email} بنجاح`);
+            document.getElementById('newTeacherEmail').value = '';
+            await loadTeachersList();
+        } catch(e) {
+            alert("خطأ في إضافة الأستاذ: " + e.message);
+        }
+    }
+    
+    async function removeTeacher(email) {
+        if (currentUser?.email !== MASTER_TEACHER_EMAIL) {
+            alert("غير مصرح لك بهذه العملية");
+            return;
+        }
+        if (email === MASTER_TEACHER_EMAIL) { alert("لا يمكن حذف المدير!"); return; }
+        if (!confirm(`⚠️ هل أنت متأكد من حذف الأستاذ ${email}؟\nسيتم فقدان صلاحياته كأستاذ.`)) return;
+        
+        try {
+            await database.ref('teachers/' + email.replace(/\./g, '_')).remove();
+            alert(`✅ تم حذف الأستاذ ${email} بنجاح`);
+            await loadTeachersList();
+        } catch(e) {
+            alert("خطأ في حذف الأستاذ: " + e.message);
+        }
+    }
+    
+    async function checkTeacherPermissions(email) {
+        if (!email) return false;
+        // الأستاذ الأول له صلاحية دائماً
+        if (email === MASTER_TEACHER_EMAIL) return true;
+        // التحقق من وجوده في قائمة الأساتذة
+        try {
+            const snapshot = await database.ref('teachers/' + email.replace(/\./g, '_')).once('value');
+            return snapshot.exists();
+        } catch(e) { return false; }
+    }
+    
+    // ======================== دوال إضافة الدروس ========================
     function toggleLessonFields() {
         const lessonType = document.getElementById('newLessonType').value;
         const internalFields = document.getElementById('internalLessonFields');
@@ -699,6 +820,7 @@
         renderLessonsList();
     }
     
+    // ======================== البيانات الافتراضية ========================
     function getDefaultPlatformData() { 
         return { 
             primary: { 
@@ -779,6 +901,7 @@
     
     function getDefaultLockSettings() { return { summerLocked: true, curriculumLocked: true, summerUnlockDate: "2026-06-27", curriculumUnlockDate: "2026-08-15", summerPopupChoice: 'holiday', curriculumPopupChoice: 'holiday' }; }
     
+    // ======================== تحميل الإعدادات ========================
     async function loadLockSettings() {
         if(!database) return getDefaultLockSettings();
         try { const snapshot = await database.ref('settings/lockSettings').once('value'); const saved = snapshot.val(); if(saved){ lockSettings = saved; summerPopupChoice = lockSettings.summerPopupChoice || 'holiday'; curriculumPopupChoice = lockSettings.curriculumPopupChoice || 'holiday'; } else { lockSettings = getDefaultLockSettings(); } updateLockUI(); return lockSettings; } catch(e) { lockSettings = getDefaultLockSettings(); return lockSettings; }
@@ -799,6 +922,7 @@
     async function stopLessons(type){ const dateInput = type==='summer'?document.getElementById('summerStopDate'):document.getElementById('curriculumStopDate'); const stopDate = dateInput?.value; if(!stopDate){ alert("الرجاء تحديد تاريخ الاستئناف"); return; } if(type==='summer'){ const selected = document.querySelector('input[name="summerPopupChoice"]:checked'); summerPopupChoice = selected ? selected.value : 'holiday'; lockSettings.summerLocked = true; lockSettings.summerUnlockDate = stopDate; } else { const selected = document.querySelector('input[name="curriculumPopupChoice"]:checked'); curriculumPopupChoice = selected ? selected.value : 'holiday'; lockSettings.curriculumLocked = true; lockSettings.curriculumUnlockDate = stopDate; } await saveLockSettings(); alert(`✅ تم توقيف الدروس ${type==='summer'?'الصيفية':'المقررة'} حتى تاريخ ${stopDate.split('-').reverse().join('/')}`); }
     async function startLessons(type){ if(type==='summer') lockSettings.summerLocked = false; else lockSettings.curriculumLocked = false; await saveLockSettings(); alert(`✅ تم استئناف الدروس ${type==='summer'?'الصيفية':'المقررة'}`); }
     
+    // ======================== شريط الأخبار ========================
     async function loadNews() {
         if(!database) return;
         try { const snapshot = await database.ref('settings/news').once('value'); const saved = snapshot.val(); if(saved && saved.text) { newsText = saved.text; } document.getElementById("adminNewsText").value = newsText; renderNewsTicker(); } catch(e) { console.error("Error loading news:", e); }
@@ -808,6 +932,7 @@
     
     function renderNewsTicker() { const container = document.getElementById("newsTickerContent"); if(!container) return; if(newsText && newsText.trim() !== "") { container.innerHTML = `<marquee behavior="scroll" direction="right" scrollamount="5" onmouseover="this.stop()" onmouseout="this.start()">${escapeHtml(newsText)}</marquee>`; } else { container.innerHTML = `<div class="news-ticker-empty">📢 لا توجد مستجدات حالياً</div>`; } }
     
+    // ======================== روابط المجتمع ========================
     async function loadInviteLinks() { 
         if(!database) return;
         try { const snapshot = await database.ref('inviteLinks').once('value'); const data = snapshot.val(); if(data){ if(data.primary) inviteLinks.primary = data.primary; if(data.middle) inviteLinks.middle = data.middle; if(data.high) inviteLinks.high = data.high; }
@@ -821,6 +946,7 @@
     
     function renderCommunityLinks() { const container = document.getElementById('communityLinksContainer'); if(!container) return; const links = inviteLinks[selectedCommunityStage]; if(!links) return; let html = `<div class="community-link-card"><i class="fab fa-telegram-plane" style="font-size:3rem; color:#0088cc;"></i><h3>قناة التلجرام</h3><div class="community-link-url">${escapeHtml(links.telegram || "لا يوجد رابط")}</div>${links.telegram ? `<button class="community-btn-copy" data-url="${escapeHtml(links.telegram)}"><i class="fas fa-copy"></i> نسخ</button><a href="${escapeHtml(links.telegram)}" target="_blank" class="community-btn-visit"><i class="fab fa-telegram-plane"></i> زيارة</a>` : '<p style="color:#999;">سيتم إضافة الرابط قريباً</p>'}</div><div class="community-link-card"><i class="fab fa-facebook-f" style="font-size:3rem; color:#1877f2;"></i><h3>مجموعة الفيسبوك</h3><div class="community-link-url">${escapeHtml(links.facebook || "لا يوجد رابط")}</div>${links.facebook ? `<button class="community-btn-copy" data-url="${escapeHtml(links.facebook)}"><i class="fas fa-copy"></i> نسخ</button><a href="${escapeHtml(links.facebook)}" target="_blank" class="community-btn-visit"><i class="fab fa-facebook-f"></i> زيارة</a>` : '<p style="color:#999;">سيتم إضافة الرابط قريباً</p>'}</div>`; container.innerHTML = html; document.querySelectorAll('.community-btn-copy').forEach(btn => { btn.addEventListener('click', () => { navigator.clipboard.writeText(btn.getAttribute('data-url')).then(() => alert("✅ تم نسخ الرابط")); }); }); }
     
+    // ======================== إدارة الأعضاء ========================
     async function loadJoinRequests() { if(!database || !isAdminMode) return; try { const snapshot = await database.ref('members/joinRequests').once('value'); const requests = snapshot.val() || {}; joinRequests = Object.entries(requests).map(([id, data]) => ({ id, ...data })); renderJoinRequestsList(); } catch(e) { console.error("Error loading requests:", e); } }
     
     function renderJoinRequestsList() { const container = document.getElementById('joinRequestsList'); const countSpan = document.getElementById('requestsCount'); if(!container) return; if(joinRequests.length === 0) { container.innerHTML = '<div class="empty-requests">📭 لا توجد طلبات انضمام جديدة</div>'; if(countSpan) countSpan.innerText = '0'; return; } if(countSpan) countSpan.innerText = joinRequests.length; let html = ''; joinRequests.forEach(req => { html += `<div class="request-item"><div><div class="request-email">📧 ${escapeHtml(req.email)}</div><div class="request-date">📅 ${new Date(req.createdAt).toLocaleDateString('ar')}</div></div><div class="request-actions"><button class="approve-btn" data-id="${req.id}" data-email="${escapeHtml(req.email)}">✅ قبول</button><button class="reject-btn" data-id="${req.id}">❌ رفض</button></div></div>`; }); container.innerHTML = html; document.querySelectorAll('.approve-btn').forEach(btn => { btn.addEventListener('click', async () => { const id = btn.getAttribute('data-id'); const email = btn.getAttribute('data-email'); await database.ref('members/approved/' + email.replace(/\./g, '_')).set({ email: email, approvedAt: Date.now() }); await database.ref('members/joinRequests/' + id).remove(); alert(`✅ تم قبول طلب ${email}`); await loadJoinRequests(); }); }); document.querySelectorAll('.reject-btn').forEach(btn => { btn.addEventListener('click', async () => { const id = btn.getAttribute('data-id'); await database.ref('members/joinRequests/' + id).remove(); alert(`❌ تم رفض الطلب`); await loadJoinRequests(); }); }); }
@@ -828,6 +954,7 @@
     async function checkMemberApproval(email) { if(!database || !email) return false; try { const snapshot = await database.ref('members/approved/' + email.replace(/\./g, '_')).once('value'); return snapshot.exists(); } catch(e) { return false; } }
     async function addJoinRequest(email) { if(!database) return; await database.ref('members/joinRequests/' + Date.now()).set({ email: email, createdAt: Date.now() }); }
     
+    // ======================== تحميل الدروس ========================
     async function loadDataFromFirebase() { 
         if(!database) { platformData = getDefaultPlatformData(); dataLoaded = true; return; } 
         return new Promise((resolve) => { 
@@ -915,6 +1042,7 @@
         }
     }
     
+    // ======================== دوال العرض ========================
     function renderLessonsList() { 
         hideMainStages();
         const lessons = getCurrentLessons(); 
@@ -1033,7 +1161,7 @@
             summerCount = platformData.high.subjectsByYear[currentYear][currentSubject].summer.length; 
             curriculumCount = platformData.high.subjectsByYear[currentYear][currentSubject].curriculum.length; 
         } 
-        let html = `<button class="back-btn" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع</button><div class="page-title"><i class="fas fa-chalkboard-teacher"></i> ${currentSubject}</div><div class="lesson-types"><div class="lesson-type-card summer" data-type="summer"><div class="lesson-type-emoji">🏖️</div><h3>الدروس الصيفية</h3><p>دروس العطلة والمراجعة</p><div class="lesson-count"><i class="fas fa-video"></i> ${summerCount} درس</div></div><div class="lesson-type-card curriculum" data-type="curriculum"><div class="lesson-type-emoji">📖</div><h3>الدروس المقررة</h3><p>دروس البرنامج الدراسي</p><div class="lesson-count"><i class="fas fa-video"></i> ${curriculumCount} درس</div></div></div>`; 
+        let html = `<button class="back-btn" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع</button><div class="page-title"><i class="fas fa-chalkboard-teacher"></i> ${currentSubject}</div><div class="lesson-types"><div class="lesson-type-card summer" data-type="summer"><div class="lesson-type-emoji">🏖️</div><h3>الدروس الصيفية</h3><p>دروس العطلة والمراجعة</p><div class="lesson-count"><i class="fas fa-video"></i> ${summerCount} درس</div></div><div class="lesson-type-card curriculum" data-type="curriculum"><div class="lesson-type-emoji">📖</div><h3>الدروس المقررة</h3><p>دروس البرنامج الدراسي</p><div class="lesson-count"><i class="fas fa-video"></i} ${curriculumCount} درس</div></div></div>`; 
         document.getElementById("dynamicArea").innerHTML = html; 
         document.getElementById("backBtn")?.addEventListener("click", goBack); 
         document.querySelectorAll(".lesson-type-card").forEach(card => { card.addEventListener("click", () => { navigationStack.push({ view: "lessonTypes", stage: currentStage, substage: currentSubStage, year: currentYear, subject: currentSubject }); currentLessonType = card.getAttribute("data-type"); currentPage = 1; renderLessonsList(); }); }); 
@@ -1120,6 +1248,7 @@
     
     function showAuthChoice() { document.getElementById("authChoiceModal").style.display = "flex"; }
     
+    // ======================== دوال المصادقة ========================
     async function handleTeacherLogin() { 
         const email = document.getElementById("teacherEmail").value.trim(); 
         const password = document.getElementById("teacherPassword").value; 
@@ -1178,6 +1307,7 @@
     function updateCountdown(){ const diff = returnDate - new Date(); if(diff <= 0){ const container = document.getElementById("countdownContainer"); if(container) container.innerHTML = `<div class="countdown-title">🎉 مرحباً بعودتكم</div>`; return; } document.getElementById("days").innerText = Math.floor(diff/86400000).toString().padStart(2,'0'); document.getElementById("hours").innerText = Math.floor((diff%86400000)/3600000).toString().padStart(2,'0'); document.getElementById("minutes").innerText = Math.floor((diff%3600000)/60000).toString().padStart(2,'0'); document.getElementById("seconds").innerText = Math.floor((diff%60000)/1000).toString().padStart(2,'0'); }
     setInterval(updateCountdown, 1000); updateCountdown();
     
+    // ======================== التهيئة الرئيسية ========================
     async function init() {
         if(!database) { document.getElementById("dynamicArea").innerHTML = `<div style="text-align:center; padding:50px; background:#fff0f0; border-radius:35px;"><i class="fas fa-database" style="font-size:3rem; color:#d62828;"></i><h3 style="color:#d62828;">⚠️ خطأ في الاتصال بقاعدة البيانات</h3><button onclick="location.reload()" style="background:#006233; color:white; border:none; padding:10px 30px; border-radius:60px; margin-top:15px; cursor:pointer;">🔄 إعادة تحميل</button></div>`; return; }
         await Promise.all([loadDataFromFirebase(), loadLockSettings(), loadInviteLinks(), loadNews()]); 
@@ -1203,6 +1333,7 @@
         document.getElementById("curriculumStartBtn")?.addEventListener("click", () => startLessons('curriculum'));
         document.getElementById("saveInviteLinksBtn")?.addEventListener("click", async () => { if(!isAdminMode){ alert("غير مصرح لك"); return; } await saveInviteLinksToDB(); });
         document.getElementById("saveNewsBtn")?.addEventListener("click", async () => { if(!isAdminMode){ alert("غير مصرح لك"); return; } await saveNews(); });
+        document.getElementById("addTeacherBtn")?.addEventListener("click", addTeacher);
         document.getElementById("confirmAddLessonBtn")?.addEventListener("click", addNewLesson);
         document.getElementById("cancelAddLessonBtn")?.addEventListener("click", () => document.getElementById("addLessonModal").style.display = "none");
         document.getElementById("confirmEditLessonBtn")?.addEventListener("click", async () => { if(editingLessonId){ await database.ref('lessons/' + editingLessonId).update({ title: document.getElementById("editLessonTitle").value, platform: document.getElementById("editLessonPlatform").value, external_url: document.getElementById("editLessonUrl").value }); alert("✅ تم تعديل الدرس"); } document.getElementById("editLessonModal").style.display = "none"; await loadDataFromFirebase(); refreshCurrentView(); });
@@ -1216,7 +1347,18 @@
         document.getElementById("cancelLogoutBtn")?.addEventListener("click", () => hideAllModals());
         
         const teacherGear = document.getElementById("teacherGearIcon"); const adminPanel = document.getElementById("adminPanel");
-        if(teacherGear) teacherGear.onclick = () => { if(currentUser && isAdminMode){ if(adminPanel) adminPanel.style.display = adminPanel.style.display === "none" ? "block" : "none"; if(adminPanel.style.display === "block") { loadJoinRequests(); } } else if(currentUser && !isAdminMode){ alert("⚠️ هذه اللوحة للأستاذ فقط"); } else { showAuthChoice(); } };
+        if(teacherGear) teacherGear.onclick = () => { 
+            if(currentUser && isAdminMode){ 
+                if(adminPanel) adminPanel.style.display = adminPanel.style.display === "none" ? "block" : "none"; 
+                if(adminPanel.style.display === "block") { 
+                    loadJoinRequests(); 
+                    if(currentUser?.email === MASTER_TEACHER_EMAIL) {
+                        loadTeachersList();
+                    }
+                } 
+            } else if(currentUser && !isAdminMode){ alert("⚠️ هذه اللوحة للأستاذ فقط"); } 
+            else { showAuthChoice(); } 
+        };
         
         window.onclick = (e) => { 
             if(e.target.classList.contains("add-lesson-modal")) e.target.style.display = "none"; 
@@ -1230,21 +1372,43 @@
             const banner = document.getElementById("membershipBanner"); 
             const bannerSpan = document.getElementById("bannerUserType"); 
             const gearIcon = document.getElementById("teacherGearIcon");
+            const teacherManagementSection = document.getElementById("teacherManagementSection");
+            
             if(user){ 
                 const email = user.email; 
-                const isApprovedMember = await checkMemberApproval(email); 
+                const isApprovedMember = await checkMemberApproval(email);
+                const isTeacher = await checkTeacherPermissions(email);
+                
                 if(isApprovedMember) { 
+                    // عضو عادي
                     isAdminMode = false; 
                     currentUserIsApproved = true; 
                     if(bannerSpan) bannerSpan.innerHTML = `👨‍🎓 مرحباً ${escapeHtml(email)}`; 
                     if(banner) banner.style.display = "flex"; 
-                    if(gearIcon) gearIcon.style.display = "none"; 
-                } else { 
+                    if(gearIcon) gearIcon.style.display = "none";
+                    if(teacherManagementSection) teacherManagementSection.style.display = "none";
+                } else if(isTeacher || email === MASTER_TEACHER_EMAIL) { 
+                    // أستاذ (معلم)
                     isAdminMode = true; 
                     currentUserIsApproved = true; 
                     if(bannerSpan) bannerSpan.innerHTML = `👨‍🏫 مرحباً أستاذ ${escapeHtml(email)}`; 
                     if(banner) banner.style.display = "flex"; 
-                    if(gearIcon) gearIcon.style.display = "flex"; 
+                    if(gearIcon) gearIcon.style.display = "flex";
+                    // إظهار قسم إدارة الأساتذة فقط للأستاذ الأول
+                    if(email === MASTER_TEACHER_EMAIL && teacherManagementSection) {
+                        teacherManagementSection.style.display = "block";
+                        loadTeachersList();
+                    } else if(teacherManagementSection) {
+                        teacherManagementSection.style.display = "none";
+                    }
+                } else { 
+                    // مستخدم عادي (ليس عضواً ولا أستاذاً)
+                    isAdminMode = false; 
+                    currentUserIsApproved = false; 
+                    if(bannerSpan) bannerSpan.innerHTML = `👤 مرحباً ${escapeHtml(email)}`; 
+                    if(banner) banner.style.display = "flex"; 
+                    if(gearIcon) gearIcon.style.display = "none";
+                    if(teacherManagementSection) teacherManagementSection.style.display = "none";
                 } 
                 await loadInviteLinks(); 
                 if(isAdminMode) await loadJoinRequests(); 
@@ -1257,6 +1421,7 @@
                 currentUserIsApproved = false; 
                 if(gearIcon) gearIcon.style.display = "none"; 
                 if(adminPanel) adminPanel.style.display = "none";
+                if(teacherManagementSection) teacherManagementSection.style.display = "none";
                 if(!currentStage && document.getElementById("dynamicArea").innerHTML.includes("تسجيل الدخول")) { showMainStages(); }
             } 
         }); }
