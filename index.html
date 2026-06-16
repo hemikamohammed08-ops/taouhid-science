@@ -199,6 +199,10 @@
         .visitor-popup-content p{font-size:1.2rem;color:#006233;line-height:1.6;margin-bottom:25px}
         .visitor-popup-content button{background:#006233;color:white;border:none;padding:12px 35px;border-radius:60px;cursor:pointer}
         
+        /* نافذة الزائر */
+        #visitorDeniedPopup .visitor-popup-content h3{color:#d62828}
+        #visitorDeniedPopup .visitor-popup-content .popup-emoji{font-size:4rem}
+        
         .community-section{background:linear-gradient(135deg,#f3e5f5,#e1bee7);border-radius:40px;padding:30px;margin:30px 0;border:2px solid #8e24aa}
         .community-section .section-title{font-size:1.5rem;font-weight:800;color:#4a148c;text-align:center;margin-bottom:25px;display:flex;align-items:center;justify-content:center;gap:12px}
         .community-section .community-back-btn{background:#475569;color:white;border:none;padding:8px 20px;border-radius:60px;cursor:pointer;font-weight:bold;margin-bottom:20px;display:inline-flex;align-items:center;gap:8px;transition:0.2s}
@@ -372,7 +376,7 @@
         <h2>تسجيل الدخول</h2>
         <p>اختر نوع الحساب:</p>
         <div style="display:flex; gap:15px; justify-content:center; margin:20px 0">
-            <button id="teacherLoginChoiceBtn" style="background:#d62828; width:auto; padding:10px 25px;">👨‍🏫 معلم</button>
+            <button id="teacherLoginChoiceBtn" style="background:#d62828; width:auto; padding:10px 25px;">👨‍🏫 أستاذ</button>
             <button id="memberLoginChoiceBtn" style="background:#006233; width:auto; padding:10px 25px;">👨‍🎓 عضو</button>
         </div>
         <button id="closeChoiceBtn" class="close-btn">إلغاء</button>
@@ -382,7 +386,7 @@
 <div id="teacherLoginModal" class="auth-modal">
     <div class="auth-content">
         <div style="font-size:2rem;">👨‍🏫</div>
-        <h2>تسجيل الدخول كمعلم</h2>
+        <h2>تسجيل الدخول كأستاذ</h2>
         <input type="email" id="teacherEmail" placeholder="البريد الإلكتروني" dir="ltr">
         <input type="password" id="teacherPassword" placeholder="كلمة المرور" dir="ltr">
         <div id="teacherLoginError" class="error"></div>
@@ -428,7 +432,7 @@
 
 <!-- لوحة تحكم المعلم -->
 <div class="admin-panel" id="adminPanel">
-    <h4>🔐 لوحة تحكم المعلم</h4>
+    <h4>🔐 لوحة تحكم الأستاذ</h4>
     <div class="lock-section">
         <h5>⏸️ التحكم بتوقيف الدروس</h5>
         <div class="lock-item"><div><span class="lock-label summer">🏖️ الدروس الصيفية</span><span id="summerLockStatusBadge" class="lock-status locked">مقفلة</span></div><div class="lock-row"><input type="date" id="summerStopDate" class="lock-date-input"></div><div class="popup-choice"><label><input type="radio" name="summerPopupChoice" value="holiday" checked> 🏖️ علبة العطلة</label><label><input type="radio" name="summerPopupChoice" value="stop"> ⏸️ علبة التوقف</label></div><div class="lock-row"><button id="summerStopBtn" class="lock-action-btn stop">⏸️ توقيف</button><button id="summerStartBtn" class="lock-action-btn start">▶️ استئناف</button></div><div id="summerInfo" class="lock-info"></div></div>
@@ -492,25 +496,19 @@
     function hideMainStages() { document.getElementById('mainStagesContainer')?.classList.add('hide-stages'); }
     function showMainStagesButtons() { document.getElementById('mainStagesContainer')?.classList.remove('hide-stages'); }
     
-    // دوال إغلاق النوافذ المنبثقة
     function closeVisitorDeniedPopup() { document.getElementById("visitorDeniedPopup").style.display = "none"; }
     window.closeVisitorDeniedPopup = closeVisitorDeniedPopup;
     window.closeHolidayPopup = () => document.getElementById("holidayPopup").style.display = "none";
     window.closeStopPopup = () => document.getElementById("stopPopup").style.display = "none";
     
-    // دالة ظهور النافذة المناسبة للمستخدم
     function showAppropriatePopup(type) {
-        // إذا كان المستخدم غير مسجل دخول (زائر)
         if (!currentUser) {
             document.getElementById("visitorDeniedPopup").style.display = "flex";
             return;
         }
-        
-        // إذا كان مستخدم مسجل لكن عضويته غير مقبولة (عضو منتظر القبول)
         if (currentUser && !currentUserIsApproved && !isAdminMode) {
             const date = type === 'summer' ? lockSettings.summerUnlockDate : lockSettings.curriculumUnlockDate;
             const choice = type === 'summer' ? summerPopupChoice : curriculumPopupChoice;
-            
             if (choice === 'holiday') {
                 document.getElementById("holidayPopupDate").innerText = date.split('-').reverse().join('/');
                 document.getElementById("holidayPopup").style.display = "flex";
@@ -524,7 +522,6 @@
         }
     }
     
-    // حفظ واستعادة الحالة الكاملة
     function saveFullNavigationState() {
         const state = {
             currentStage: currentStage,
@@ -669,9 +666,7 @@
     function showLessonContent(lessonId, lesson, isRestoration = false) {
         const container = document.getElementById('lessonsContainer');
         const backBtn = document.getElementById('backBtn');
-        
         if (backBtn) backBtn.style.display = 'none';
-        
         if (!isRestoration) saveCurrentViewingState(lessonId, lesson);
         
         let contentHtml = `
@@ -712,20 +707,71 @@
                 stage3: { name: "الطور الثالث", years: "الخامسة", subjects: { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التربية العلمية": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "التربية الإسلامية": { summer: [], curriculum: [] } } } 
             }, 
             middle: { 
-                name: "مرحلة المتوسط", yearsList: ["السنة الأولى متوسط", "السنة الثانية متوسط", "السنة الثالثة متوسط", "السنة الرابعة متوسط"], 
+                name: "مرحلة المتوسط", 
+                yearsList: ["السنة الأولى متوسط", "السنة الثانية متوسط", "السنة الثالثة متوسط", "السنة الرابعة متوسط"], 
                 subjectsByYear: { 
-                    "السنة الأولى متوسط": { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "التربية الإسلامية": { summer: [], curriculum: [] }, "المتفرقات": { summer: [], curriculum: [] } },
-                    "السنة الثانية متوسط": { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "التربية الإسلامية": { summer: [], curriculum: [] }, "المتفرقات": { summer: [], curriculum: [] } },
-                    "السنة الثالثة متوسط": { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "التربية الإسلامية": { summer: [], curriculum: [] }, "المتفرقات": { summer: [], curriculum: [] } },
-                    "السنة الرابعة متوسط": { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "التربية الإسلامية": { summer: [], curriculum: [] }, "المتفرقات": { summer: [], curriculum: [] } }
+                    "السنة الأولى متوسط": { 
+                        "اللغة العربية": { summer: [], curriculum: [] }, 
+                        "الرياضيات": { summer: [], curriculum: [] }, 
+                        "التاريخ والجغرافيا": { summer: [], curriculum: [] }, 
+                        "التربية الإسلامية": { summer: [], curriculum: [] }, 
+                        "العلوم الفيزيائية": { summer: [], curriculum: [] },
+                        "المتفرقات": { summer: [], curriculum: [] } 
+                    },
+                    "السنة الثانية متوسط": { 
+                        "اللغة العربية": { summer: [], curriculum: [] }, 
+                        "الرياضيات": { summer: [], curriculum: [] }, 
+                        "التاريخ والجغرافيا": { summer: [], curriculum: [] }, 
+                        "التربية الإسلامية": { summer: [], curriculum: [] }, 
+                        "العلوم الفيزيائية": { summer: [], curriculum: [] },
+                        "المتفرقات": { summer: [], curriculum: [] } 
+                    },
+                    "السنة الثالثة متوسط": { 
+                        "اللغة العربية": { summer: [], curriculum: [] }, 
+                        "الرياضيات": { summer: [], curriculum: [] }, 
+                        "التاريخ والجغرافيا": { summer: [], curriculum: [] }, 
+                        "التربية الإسلامية": { summer: [], curriculum: [] }, 
+                        "العلوم الفيزيائية": { summer: [], curriculum: [] },
+                        "المتفرقات": { summer: [], curriculum: [] } 
+                    },
+                    "السنة الرابعة متوسط": { 
+                        "اللغة العربية": { summer: [], curriculum: [] }, 
+                        "الرياضيات": { summer: [], curriculum: [] }, 
+                        "التاريخ والجغرافيا": { summer: [], curriculum: [] }, 
+                        "التربية الإسلامية": { summer: [], curriculum: [] }, 
+                        "العلوم الفيزيائية": { summer: [], curriculum: [] },
+                        "المتفرقات": { summer: [], curriculum: [] } 
+                    }
                 } 
             }, 
             high: { 
-                name: "مرحلة الثانوي", yearsList: ["السنة الأولى ثانوي", "السنة الثانية ثانوي", "السنة الثالثة ثانوي"], 
+                name: "مرحلة الثانوي", 
+                yearsList: ["السنة الأولى ثانوي", "السنة الثانية ثانوي", "السنة الثالثة ثانوي"], 
                 subjectsByYear: { 
-                    "السنة الأولى ثانوي": { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "العلوم الإسلامية": { summer: [], curriculum: [] }, "المتفرقات": { summer: [], curriculum: [] } },
-                    "السنة الثانية ثانوي": { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "العلوم الإسلامية": { summer: [], curriculum: [] }, "المتفرقات": { summer: [], curriculum: [] } },
-                    "السنة الثالثة ثانوي": { "اللغة العربية": { summer: [], curriculum: [] }, "الرياضيات": { summer: [], curriculum: [] }, "التاريخ والجغرافيا": { summer: [], curriculum: [] }, "العلوم الإسلامية": { summer: [], curriculum: [] }, "المتفرقات": { summer: [], curriculum: [] } }
+                    "السنة الأولى ثانوي": { 
+                        "اللغة العربية": { summer: [], curriculum: [] }, 
+                        "الرياضيات": { summer: [], curriculum: [] }, 
+                        "التاريخ والجغرافيا": { summer: [], curriculum: [] }, 
+                        "العلوم الإسلامية": { summer: [], curriculum: [] }, 
+                        "العلوم الفيزيائية": { summer: [], curriculum: [] },
+                        "المتفرقات": { summer: [], curriculum: [] } 
+                    },
+                    "السنة الثانية ثانوي": { 
+                        "اللغة العربية": { summer: [], curriculum: [] }, 
+                        "الرياضيات": { summer: [], curriculum: [] }, 
+                        "التاريخ والجغرافيا": { summer: [], curriculum: [] }, 
+                        "العلوم الإسلامية": { summer: [], curriculum: [] }, 
+                        "العلوم الفيزيائية": { summer: [], curriculum: [] },
+                        "المتفرقات": { summer: [], curriculum: [] } 
+                    },
+                    "السنة الثالثة ثانوي": { 
+                        "اللغة العربية": { summer: [], curriculum: [] }, 
+                        "الرياضيات": { summer: [], curriculum: [] }, 
+                        "التاريخ والجغرافيا": { summer: [], curriculum: [] }, 
+                        "العلوم الإسلامية": { summer: [], curriculum: [] }, 
+                        "العلوم الفيزيائية": { summer: [], curriculum: [] },
+                        "المتفرقات": { summer: [], curriculum: [] } 
+                    }
                 } 
             } 
         }; 
@@ -962,7 +1008,7 @@
             titleText = currentYear; icon = "fas fa-graduation-cap"; 
         } 
         let html = `<button class="back-btn" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع</button><div class="page-title"><i class="${icon}"></i> ${titleText}</div><div class="subjects-grid">`; 
-        const subjectIcons = {"اللغة العربية":"fas fa-language","الرياضيات":"fas fa-calculator","التربية الإسلامية":"fas fa-mosque","التربية العلمية":"fas fa-flask","التاريخ والجغرافيا":"fas fa-landmark","المتفرقات":"fas fa-puzzle-piece","العلوم الإسلامية":"fas fa-star-and-crescent"}; 
+        const subjectIcons = {"اللغة العربية":"fas fa-language","الرياضيات":"fas fa-calculator","التربية الإسلامية":"fas fa-mosque","التربية العلمية":"fas fa-flask","التاريخ والجغرافيا":"fas fa-landmark","المتفرقات":"fas fa-puzzle-piece","العلوم الإسلامية":"fas fa-star-and-crescent","العلوم الفيزيائية":"fas fa-atom"}; 
         for(let subject in subjectsObj){ 
             let subIcon = subjectIcons[subject] || "fas fa-book"; 
             html += `<div class="subject-card" data-subject="${subject}"><div class="subject-header"><i class="${subIcon}"></i> ${subject}</div></div>`; 
@@ -1080,7 +1126,7 @@
         const errorDiv = document.getElementById("teacherLoginError"); 
         if(!email || !password){ errorDiv.innerText = "❌ الرجاء إدخال البريد الإلكتروني وكلمة المرور"; return; } 
         if(!auth) { errorDiv.innerText = "❌ خطأ في الاتصال"; return; } 
-        try { await auth.signInWithEmailAndPassword(email, password); hideAllModals(); alert("✅ تم تسجيل الدخول كمعلم بنجاح!"); } catch(error) { let msg = "❌ فشل تسجيل الدخول"; if(error.code === 'auth/user-not-found') msg = "❌ لا يوجد حساب بهذا البريد"; else if(error.code === 'auth/wrong-password') msg = "❌ كلمة المرور غير صحيحة"; else if(error.code === 'auth/invalid-email') msg = "❌ البريد الإلكتروني غير صالح"; errorDiv.innerText = msg; } 
+        try { await auth.signInWithEmailAndPassword(email, password); hideAllModals(); alert("✅ تم تسجيل الدخول كأستاذ بنجاح!"); } catch(error) { let msg = "❌ فشل تسجيل الدخول"; if(error.code === 'auth/user-not-found') msg = "❌ لا يوجد حساب بهذا البريد"; else if(error.code === 'auth/wrong-password') msg = "❌ كلمة المرور غير صحيحة"; else if(error.code === 'auth/invalid-email') msg = "❌ البريد الإلكتروني غير صالح"; errorDiv.innerText = msg; } 
     }
     
     async function handleMemberLogin() { 
@@ -1089,7 +1135,7 @@
         const errorDiv = document.getElementById("memberLoginError"); 
         if(!email || !password){ errorDiv.innerText = "❌ الرجاء إدخال البريد الإلكتروني وكلمة المرور"; return; } 
         if(!auth) { errorDiv.innerText = "❌ خطأ في الاتصال"; return; } 
-        try { await auth.signInWithEmailAndPassword(email, password); const isApproved = await checkMemberApproval(email); if(!isApproved) { await auth.signOut(); errorDiv.innerText = "❌ لم يتم قبول عضويتك بعد. يرجى الانتظار حتى يوافق المعلم على طلبك"; return; } hideAllModals(); alert("✅ تم تسجيل الدخول كعضو بنجاح!"); } catch(error) { let msg = "❌ فشل تسجيل الدخول"; if(error.code === 'auth/user-not-found') msg = "❌ لا يوجد حساب بهذا البريد"; else if(error.code === 'auth/wrong-password') msg = "❌ كلمة المرور غير صحيحة"; else if(error.code === 'auth/invalid-email') msg = "❌ البريد الإلكتروني غير صالح"; errorDiv.innerText = msg; } 
+        try { await auth.signInWithEmailAndPassword(email, password); const isApproved = await checkMemberApproval(email); if(!isApproved) { await auth.signOut(); errorDiv.innerText = "❌ لم يتم قبول عضويتك بعد. يرجى الانتظار حتى يوافق الأستاذ على طلبك"; return; } hideAllModals(); alert("✅ تم تسجيل الدخول كعضو بنجاح!"); } catch(error) { let msg = "❌ فشل تسجيل الدخول"; if(error.code === 'auth/user-not-found') msg = "❌ لا يوجد حساب بهذا البريد"; else if(error.code === 'auth/wrong-password') msg = "❌ كلمة المرور غير صحيحة"; else if(error.code === 'auth/invalid-email') msg = "❌ البريد الإلكتروني غير صالح"; errorDiv.innerText = msg; } 
     }
     
     async function handleMemberRegister() { 
@@ -1101,7 +1147,7 @@
         if(password !== confirm){ errorDiv.innerText = "❌ كلمتا المرور غير متطابقتين"; return; } 
         if(password.length < 6){ errorDiv.innerText = "❌ كلمة المرور يجب أن تكون 6 أحرف على الأقل"; return; } 
         if(!auth) { errorDiv.innerText = "❌ خطأ في الاتصال"; return; } 
-        try { await auth.createUserWithEmailAndPassword(email, password); await addJoinRequest(email); await auth.signOut(); hideAllModals(); alert("✅ تم إنشاء الحساب بنجاح! سيتم مراجعة طلب انضمامك من قبل المعلم."); } catch(error) { let msg = "❌ فشل إنشاء الحساب"; if(error.code === 'auth/email-already-in-use') msg = "❌ هذا البريد الإلكتروني مستخدم بالفعل"; else if(error.code === 'auth/invalid-email') msg = "❌ البريد الإلكتروني غير صالح"; else if(error.code === 'auth/weak-password') msg = "❌ كلمة المرور ضعيفة جداً"; errorDiv.innerText = msg; } 
+        try { await auth.createUserWithEmailAndPassword(email, password); await addJoinRequest(email); await auth.signOut(); hideAllModals(); alert("✅ تم إنشاء الحساب بنجاح! سيتم مراجعة طلب انضمامك من قبل الأستاذ."); } catch(error) { let msg = "❌ فشل إنشاء الحساب"; if(error.code === 'auth/email-already-in-use') msg = "❌ هذا البريد الإلكتروني مستخدم بالفعل"; else if(error.code === 'auth/invalid-email') msg = "❌ البريد الإلكتروني غير صالح"; else if(error.code === 'auth/weak-password') msg = "❌ كلمة المرور ضعيفة جداً"; errorDiv.innerText = msg; } 
     }
     
     function showLogoutConfirm() { document.getElementById("logoutConfirmModal").style.display = "flex"; }
@@ -1109,7 +1155,7 @@
     
     function showCommunitySection() { 
         if(!currentUser) { showAuthChoice(); return; } 
-        if(!currentUserIsApproved && !isAdminMode) { alert("⚠️ لم يتم قبول عضويتك بعد. يرجى الانتظار حتى يوافق المعلم على طلبك"); return; } 
+        if(!currentUserIsApproved && !isAdminMode) { alert("⚠️ لم يتم قبول عضويتك بعد. يرجى الانتظار حتى يوافق الأستاذ على طلبك"); return; } 
         hideMainStages();
         let html = `<div class="community-section"><button class="community-back-btn" id="communityBackBtn"><i class="fas fa-arrow-right"></i> رجوع للرئيسية</button><div class="section-title"><i class="fas fa-globe"></i> مجتمع الأستاذ محمد التعليمي <i class="fas fa-heart" style="color:#d62828;"></i></div><div class="community-stage-buttons"><button class="community-stage-btn primary active" data-stage="primary">📚 المرحلة الابتدائية</button><button class="community-stage-btn middle" data-stage="middle">🏫 مرحلة المتوسط</button><button class="community-stage-btn high" data-stage="high">🎓 مرحلة الثانوي</button></div><div id="communityLinksContainer" class="community-links-container"></div><div style="text-align:center; margin-top:25px; padding:15px; background:#e8eaf6; border-radius:28px; font-size:0.85rem; color:#4a148c;"><i class="fas fa-info-circle"></i> بعد الانضمام إلى القنوات والمجموعات، يمكنك مشاهدة الدروس من خلال اختيار المرحلة التعليمية من الأعلى</div></div>`;
         document.getElementById("dynamicArea").innerHTML = html;
@@ -1136,11 +1182,7 @@
         if(!database) { document.getElementById("dynamicArea").innerHTML = `<div style="text-align:center; padding:50px; background:#fff0f0; border-radius:35px;"><i class="fas fa-database" style="font-size:3rem; color:#d62828;"></i><h3 style="color:#d62828;">⚠️ خطأ في الاتصال بقاعدة البيانات</h3><button onclick="location.reload()" style="background:#006233; color:white; border:none; padding:10px 30px; border-radius:60px; margin-top:15px; cursor:pointer;">🔄 إعادة تحميل</button></div>`; return; }
         await Promise.all([loadDataFromFirebase(), loadLockSettings(), loadInviteLinks(), loadNews()]); 
         bindMainStageButtons();
-        
-        if(!restoreFullNavigationState()) {
-            showMainStages();
-        }
-        
+        if(!restoreFullNavigationState()) { showMainStages(); }
         if(database) { database.ref('lessons').on('value', async () => { await loadDataFromFirebase(); refreshCurrentView(); }); }
     }
     
@@ -1174,7 +1216,7 @@
         document.getElementById("cancelLogoutBtn")?.addEventListener("click", () => hideAllModals());
         
         const teacherGear = document.getElementById("teacherGearIcon"); const adminPanel = document.getElementById("adminPanel");
-        if(teacherGear) teacherGear.onclick = () => { if(currentUser && isAdminMode){ if(adminPanel) adminPanel.style.display = adminPanel.style.display === "none" ? "block" : "none"; if(adminPanel.style.display === "block") { loadJoinRequests(); } } else if(currentUser && !isAdminMode){ alert("⚠️ هذه اللوحة للمعلم فقط"); } else { showAuthChoice(); } };
+        if(teacherGear) teacherGear.onclick = () => { if(currentUser && isAdminMode){ if(adminPanel) adminPanel.style.display = adminPanel.style.display === "none" ? "block" : "none"; if(adminPanel.style.display === "block") { loadJoinRequests(); } } else if(currentUser && !isAdminMode){ alert("⚠️ هذه اللوحة للأستاذ فقط"); } else { showAuthChoice(); } };
         
         window.onclick = (e) => { 
             if(e.target.classList.contains("add-lesson-modal")) e.target.style.display = "none"; 
