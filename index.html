@@ -136,7 +136,6 @@
         }
         .social-links a:hover{transform:scale(1.15);color:var(--rating-active)}
         
-        /* ===== زر تبديل الوضع الليلي ===== */
         .theme-toggle{
             background:rgba(255,255,255,0.15);
             border:none;
@@ -180,12 +179,103 @@
         .teacher-gear:hover{background:rgba(255,255,255,0.3);transform:rotate(30deg)}
         .teacher-gear i{font-size:1.2rem;color:var(--rating-active)}
         
-        /* ===== شريط الأخبار ===== */
-        .news-ticker{background:#d62828;color:white;padding:10px 20px;border-radius:50px;margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 4px 15px rgba(214,40,40,0.3)}
-        .news-ticker-label{background:#b71c1c;padding:5px 15px;border-radius:50px;font-weight:800;font-size:0.85rem;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
-        .news-ticker-content{flex:1;overflow:hidden}
-        .news-ticker-content marquee{font-size:1rem;font-weight:500;direction:rtl}
-        .news-ticker-empty{color:var(--rating-active);font-size:0.9rem}
+        /* ===== شريط المستجدات - سرعة مريحة للقراءة ===== */
+        .news-ticker{
+            background:#d62828;
+            color:white;
+            padding:10px 20px;
+            border-radius:50px;
+            margin-bottom:20px;
+            display:flex;
+            align-items:center;
+            gap:12px;
+            flex-wrap:nowrap;
+            box-shadow:0 4px 15px rgba(214,40,40,0.3);
+            overflow:hidden;
+            min-height:50px;
+            width:100%;
+            transition:var(--transition)
+        }
+        .news-ticker-label{
+            background:#b71c1c;
+            padding:5px 15px;
+            border-radius:50px;
+            font-weight:800;
+            font-size:0.8rem;
+            display:inline-flex;
+            align-items:center;
+            gap:6px;
+            white-space:nowrap;
+            flex-shrink:0
+        }
+        .news-ticker-content{
+            flex:1;
+            overflow:hidden;
+            min-width:0
+        }
+        .news-ticker-content marquee{
+            font-size:0.95rem;
+            font-weight:500;
+            direction:rtl;
+            display:block;
+            white-space:nowrap;
+            letter-spacing:0.5px;
+            padding:4px 0;
+            -webkit-font-smoothing:antialiased;
+            -moz-osx-font-smoothing:grayscale
+        }
+        .news-ticker-content marquee:hover{
+            animation-play-state:paused
+        }
+        .news-ticker-empty{
+            color:#ffd966;
+            font-size:0.85rem;
+            padding:4px 0;
+            white-space:nowrap
+        }
+        
+        @media (max-width:768px){
+            .news-ticker{
+                padding:8px 12px;
+                border-radius:30px;
+                gap:8px;
+                min-height:44px
+            }
+            .news-ticker-label{
+                font-size:0.7rem;
+                padding:4px 10px
+            }
+            .news-ticker-content marquee{
+                font-size:0.85rem;
+                letter-spacing:0.3px
+            }
+        }
+        @media (max-width:480px){
+            .news-ticker{
+                padding:6px 10px;
+                border-radius:25px;
+                gap:6px;
+                min-height:38px
+            }
+            .news-ticker-label{
+                font-size:0.6rem;
+                padding:3px 8px
+            }
+            .news-ticker-label i{
+                font-size:0.7rem
+            }
+            .news-ticker-content marquee{
+                font-size:0.75rem;
+                letter-spacing:0.2px
+            }
+            .news-ticker-empty{
+                font-size:0.65rem
+            }
+        }
+        [data-theme="dark"] .news-ticker{
+            background:#b71c1c;
+            box-shadow:0 4px 15px rgba(214,40,40,0.2)
+        }
         
         /* ===== العد التنازلي ===== */
         .countdown-container{
@@ -1319,9 +1409,15 @@
         </div>
     </header>
     
+    <!-- ===== شريط المستجدات ===== -->
     <div id="newsTicker" class="news-ticker">
-        <div class="news-ticker-label"><i class="fas fa-bullhorn"></i> 📢 آخر المستجدات</div>
-        <div class="news-ticker-content" id="newsTickerContent"><div class="news-ticker-empty">جاري التحميل...</div></div>
+        <div class="news-ticker-label">
+            <i class="fas fa-bullhorn"></i> 
+            <span class="news-label-text">📢 المستجدات</span>
+        </div>
+        <div class="news-ticker-content" id="newsTickerContent">
+            <div class="news-ticker-empty">جاري التحميل...</div>
+        </div>
     </div>
     
     <div id="membershipBanner" class="membership-banner">
@@ -1637,7 +1733,6 @@
         document.documentElement.setAttribute('data-theme', newTheme);
         localStorage.setItem('theme', newTheme);
         
-        // تحديث الأيقونة
         const btn = document.querySelector('.theme-toggle i');
         if (btn) {
             btn.className = newTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
@@ -1647,7 +1742,6 @@
     }
     window.toggleTheme = toggleTheme;
 
-    // استعادة الوضع المحفوظ
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
     document.addEventListener('DOMContentLoaded', function() {
@@ -1660,7 +1754,6 @@
     // =============================================
     // ✅ نظام التقييم (Rating System)
     // =============================================
-    // تخزين التقييمات في localStorage (بديل عن Firebase للتقييمات)
     function getRatings() {
         try {
             return JSON.parse(localStorage.getItem('lesson_ratings') || '{}');
@@ -1672,10 +1765,8 @@
         if (!ratings[lessonId]) {
             ratings[lessonId] = { total: 0, count: 0, users: {} };
         }
-        // إذا كان المستخدم مسجل، استخدم uid كمفتاح
         const userId = currentUser ? currentUser.uid : 'guest_' + Date.now();
         if (ratings[lessonId].users[userId]) {
-            // تحديث تقييم موجود
             ratings[lessonId].total -= ratings[lessonId].users[userId];
             ratings[lessonId].total += rating;
             ratings[lessonId].users[userId] = rating;
@@ -1714,12 +1805,10 @@
             const stars = container.querySelectorAll('i');
             const savedRating = getUserRating(lessonId);
             
-            // تعبئة التقييم المحفوظ
             stars.forEach((star, index) => {
                 star.classList.toggle('active', index < savedRating);
             });
             
-            // تحديث العرض
             updateRatingDisplay(lessonId);
             
             stars.forEach(star => {
@@ -1727,14 +1816,11 @@
                     const rating = parseInt(this.dataset.value);
                     const result = saveRatingToStorage(lessonId, rating);
                     
-                    // تحديث النجوم
                     stars.forEach((s, idx) => {
                         s.classList.toggle('active', idx < rating);
                     });
                     
-                    // تحديث العرض
                     updateRatingDisplay(lessonId);
-                    
                     showToast('⭐ تم تقييم الدرس بنجاح', 'success', 2000);
                 });
                 
@@ -1767,6 +1853,21 @@
         }
     }
     window.initRatingSystem = initRatingSystem;
+
+    // =============================================
+    // ✅ شريط الأخبار - سرعة مريحة للقراءة
+    // =============================================
+    function renderNewsTicker() { 
+        const container = document.getElementById("newsTickerContent"); 
+        if (!container) return; 
+        
+        if (newsText && newsText.trim() !== "") { 
+            // ✅ scrollamount="2" = سرعة مريحة للقراءة
+            container.innerHTML = `<marquee behavior="scroll" direction="right" scrollamount="2" truespeed="truespeed" onmouseover="this.stop()" onmouseout="this.start()">${escapeHtml(newsText)}</marquee>`; 
+        } else { 
+            container.innerHTML = `<div class="news-ticker-empty">📢 لا توجد مستجدات حالياً</div>`; 
+        } 
+    }
 
     // =============================================
     // إعدادات Firebase
@@ -1877,6 +1978,60 @@
         showUnifiedPopup();
     }
     window.showAppropriatePopup = showAppropriatePopup;
+    
+    // =============================================
+    // تحميل الأخبار مع تخزين مؤقت
+    // =============================================
+    let newsCache = null;
+    let newsCacheTime = 0;
+    const NEWS_CACHE_DURATION = 60000;
+
+    async function loadNews() {
+        if (!database) return;
+        
+        const now = Date.now();
+        if (newsCache && (now - newsCacheTime) < NEWS_CACHE_DURATION) {
+            newsText = newsCache;
+            document.getElementById("adminNewsText").value = newsText;
+            renderNewsTicker();
+            return;
+        }
+        
+        try { 
+            const snapshot = await database.ref('settings/news').once('value'); 
+            const saved = snapshot.val(); 
+            if (saved && saved.text) { 
+                newsText = saved.text;
+                newsCache = saved.text;
+                newsCacheTime = now;
+            } else {
+                newsText = "📢 مرحباً بكم في منصة الأستاذ محمد التعليمية";
+                newsCache = newsText;
+                newsCacheTime = now;
+            }
+            document.getElementById("adminNewsText").value = newsText; 
+            renderNewsTicker(); 
+        } catch(e) { 
+            console.error("Error loading news:", e);
+            newsText = "📢 مرحباً بكم في منصة الأستاذ محمد التعليمية";
+            renderNewsTicker();
+        } 
+    }
+
+    async function saveNews() { 
+        if (!database || !isAdminMode) return; 
+        const newText = document.getElementById("adminNewsText").value.trim(); 
+        if (!newText) { 
+            showToast('⚠️ الرجاء إدخال نص للإعلان', 'warning');
+            return; 
+        } 
+        newsText = newText; 
+        await database.ref('settings/news').set({ text: newsText, updatedAt: Date.now() }); 
+        newsCache = newsText;
+        newsCacheTime = Date.now();
+        renderNewsTicker(); 
+        showToast('✅ تم حفظ شريط الأخبار بنجاح', 'success'); 
+    }
     
     // =============================================
     // التواريخ والعدادات
@@ -2037,7 +2192,7 @@
     }
     
     // =============================================
-    // دوال إدارة الأساتذة والأعضاء (مختصرة مع إشعارات)
+    // دوال إدارة الأساتذة والأعضاء
     // =============================================
     async function loadTeachersList() {
         if (!isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) {
@@ -2413,38 +2568,6 @@
     }
     
     // =============================================
-    // شريط الأخبار
-    // =============================================
-    async function loadNews() {
-        if (!database) return;
-        try { 
-            const snapshot = await database.ref('settings/news').once('value'); 
-            const saved = snapshot.val(); 
-            if (saved && saved.text) { newsText = saved.text; } 
-            document.getElementById("adminNewsText").value = newsText; 
-            renderNewsTicker(); 
-        } catch(e) { console.error("Error loading news:", e); }
-    }
-    async function saveNews() { 
-        if (!database || !isAdminMode) return; 
-        const newText = document.getElementById("adminNewsText").value.trim(); 
-        if (!newText) { showToast('⚠️ الرجاء إدخال نص للإعلان', 'warning'); return; } 
-        newsText = newText; 
-        await database.ref('settings/news').set({ text: newsText, updatedAt: Date.now() }); 
-        renderNewsTicker(); 
-        showToast('✅ تم حفظ شريط الأخبار بنجاح', 'success'); 
-    }
-    function renderNewsTicker() { 
-        const container = document.getElementById("newsTickerContent"); 
-        if (!container) return; 
-        if (newsText && newsText.trim() !== "") { 
-            container.innerHTML = `<marquee behavior="scroll" direction="right" scrollamount="5" onmouseover="this.stop()" onmouseout="this.start()">${escapeHtml(newsText)}</marquee>`; 
-        } else { 
-            container.innerHTML = `<div class="news-ticker-empty">📢 لا توجد مستجدات حالياً</div>`; 
-        } 
-    }
-    
-    // =============================================
     // روابط المجتمع
     // =============================================
     async function loadInviteLinks() { 
@@ -2655,7 +2778,6 @@
                 
                 html += `<div class="lesson-item"><div class="lesson-title">${badge}<span>📌 ${escapeHtml(lesson.title)}</span>`;
                 
-                // ✅ نظام التقييم
                 html += `<div class="rating-container" data-lesson-id="${lesson.id}">
                             <div class="stars" data-lesson-id="${lesson.id}">
                                 <i class="fas fa-star" data-value="1"></i>
@@ -2720,7 +2842,6 @@
         document.getElementById("dynamicArea").innerHTML = html; 
         document.getElementById("backBtn")?.addEventListener("click", goBack); 
         
-        // ✅ تهيئة نظام التقييم
         setTimeout(initRatingSystem, 100);
         
         document.querySelectorAll(".watch-btn").forEach(btn => { 
