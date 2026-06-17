@@ -16,7 +16,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <style>
-        /* ===== متغيرات الألوان ===== */
+        /* ... جميع الأنماط السابقة ... */
         :root {
             --bg-primary: #f0f4f0;
             --bg-secondary: #ffffff;
@@ -179,7 +179,7 @@
         .search-result-item .result-sub{font-size:0.65rem;color:var(--text-muted)}
         .search-no-results{padding:20px;text-align:center;color:var(--text-muted)}
         
-        .auth-buttons{display:flex;gap:6px;align-items:center}
+        .auth-buttons{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
         .auth-btn{
             padding:5px 14px;
             border-radius:60px;
@@ -196,6 +196,8 @@
         .auth-btn:hover{transform:scale(1.05)}
         .login-btn{background:#ffd966;color:#006233}
         .login-btn:hover{background:#ffe082}
+        .register-btn{background:#4CAF50;color:white}
+        .register-btn:hover{background:#45a049}
         .logout-btn{background:#d62828;color:white}
         .logout-btn:hover{background:#b71c1c}
         
@@ -1079,7 +1081,7 @@
             padding:30px;
             border-radius:50px;
             width:90%;
-            max-width:380px;
+            max-width:400px;
             text-align:center
         }
         .auth-content h2{color:var(--text-primary);margin-bottom:16px;font-size:1.3rem}
@@ -1107,6 +1109,20 @@
         .auth-content .error{color:#d62828;margin-top:8px;font-size:0.75rem}
         .auth-content .close-btn{background:#ccc;color:#333;margin-top:4px}
         .auth-content .link-btn{background:none;color:#ff8c42;border:1px solid #ff8c42;margin-top:8px}
+        .auth-content .success-msg{
+            background:#e8f5e9;
+            color:#2e7d32;
+            padding:14px;
+            border-radius:12px;
+            margin:12px 0;
+            font-weight:700;
+            display:none;
+            border-right:4px solid #4CAF50;
+            font-size:0.9rem;
+            line-height:1.6;
+            text-align:right;
+        }
+        .auth-content .success-msg .big-emoji{font-size:2rem;display:block;margin-bottom:6px}
         
         .logout-confirm-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:6000;justify-content:center;align-items:center}
         .logout-confirm-content{
@@ -1274,7 +1290,6 @@
         }
         @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
         
-        /* ===== لوحة التحكم ===== */
         .admin-panel{
             display:none;
             position:fixed;
@@ -1354,7 +1369,7 @@
             border-radius:14px;
             padding:10px;
             margin-top:6px;
-            max-height:180px;
+            max-height:200px;
             overflow-y:auto
         }
         .request-item{
@@ -1519,8 +1534,11 @@
             </button>
             
             <div id="authButtons" class="auth-buttons">
-                <button id="loginBtn" class="auth-btn login-btn" onclick="showAuthChoice()">
+                <button id="loginBtn" class="auth-btn login-btn" onclick="showLoginChoice()">
                     <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
+                </button>
+                <button id="registerBtn" class="auth-btn register-btn" onclick="showRegisterChoice()">
+                    <i class="fas fa-user-plus"></i> طلب تسجيل
                 </button>
                 <button id="logoutBtn" class="auth-btn logout-btn" onclick="showLogoutConfirm()" style="display:none;">
                     <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
@@ -1690,20 +1708,59 @@
     </div>
 </div>
 
-<!-- ===== نماذج تسجيل الدخول ===== -->
-<div id="authChoiceModal" class="auth-modal">
+<!-- ===== نافذة اختيار تسجيل الدخول ===== -->
+<div id="loginChoiceModal" class="auth-modal">
     <div class="auth-content">
         <div style="font-size:2.8rem;">🔐</div>
         <h2>تسجيل الدخول</h2>
         <p style="color:var(--text-secondary);">اختر نوع الحساب:</p>
-        <div style="display:flex; gap:12px; justify-content:center; margin:16px 0">
-            <button id="teacherLoginChoiceBtn" style="background:#d62828; width:auto; padding:8px 20px; color:white;">👨‍🏫 أستاذ</button>
-            <button id="memberLoginChoiceBtn" style="background:#006233; width:auto; padding:8px 20px; color:white;">👨‍🎓 عضو</button>
+        <div style="display:flex; flex-direction:column; gap:10px; margin:16px 0">
+            <button id="loginAdminBtn" style="background:#d62828; width:100%; padding:10px; color:white; border-radius:60px; border:none; font-weight:700; cursor:pointer;">
+                👑 الإدارة (المدير)
+            </button>
+            <button id="loginTeacherBtn" style="background:#ff8c42; width:100%; padding:10px; color:white; border-radius:60px; border:none; font-weight:700; cursor:pointer;">
+                👨‍🏫 أستاذ
+            </button>
+            <button id="loginMemberBtn" style="background:#006233; width:100%; padding:10px; color:white; border-radius:60px; border:none; font-weight:700; cursor:pointer;">
+                👨‍🎓 عضو
+            </button>
         </div>
-        <button id="closeChoiceBtn" class="close-btn">إلغاء</button>
+        <button id="closeLoginChoiceBtn" class="close-btn">إلغاء</button>
     </div>
 </div>
 
+<!-- ===== نافذة اختيار طلب التسجيل ===== -->
+<div id="registerChoiceModal" class="auth-modal">
+    <div class="auth-content">
+        <div style="font-size:2.8rem;">📝</div>
+        <h2>طلب تسجيل جديد</h2>
+        <p style="color:var(--text-secondary);">اختر نوع الحساب الذي تريد التسجيل به:</p>
+        <div style="display:flex; flex-direction:column; gap:10px; margin:16px 0">
+            <button id="registerTeacherChoiceBtn" style="background:#ff8c42; width:100%; padding:10px; color:white; border-radius:60px; border:none; font-weight:700; cursor:pointer;">
+                👨‍🏫 أستاذ
+            </button>
+            <button id="registerMemberChoiceBtn" style="background:#006233; width:100%; padding:10px; color:white; border-radius:60px; border:none; font-weight:700; cursor:pointer;">
+                👨‍🎓 عضو
+            </button>
+        </div>
+        <button id="closeRegisterChoiceBtn" class="close-btn">إلغاء</button>
+    </div>
+</div>
+
+<!-- ===== نافذة تسجيل الدخول كمدير ===== -->
+<div id="adminLoginModal" class="auth-modal">
+    <div class="auth-content">
+        <div style="font-size:2rem;">👑</div>
+        <h2>تسجيل الدخول كمدير</h2>
+        <input type="email" id="adminEmail" placeholder="البريد الإلكتروني" dir="ltr">
+        <input type="password" id="adminPassword" placeholder="كلمة المرور" dir="ltr">
+        <div id="adminLoginError" class="error"></div>
+        <button id="adminLoginBtn" style="background:#d62828; color:white;">تسجيل الدخول</button>
+        <button id="closeAdminLoginBtn" class="close-btn">إلغاء</button>
+    </div>
+</div>
+
+<!-- ===== نافذة تسجيل الدخول كأستاذ ===== -->
 <div id="teacherLoginModal" class="auth-modal">
     <div class="auth-content">
         <div style="font-size:2rem;">👨‍🏫</div>
@@ -1711,11 +1768,12 @@
         <input type="email" id="teacherEmail" placeholder="البريد الإلكتروني" dir="ltr">
         <input type="password" id="teacherPassword" placeholder="كلمة المرور" dir="ltr">
         <div id="teacherLoginError" class="error"></div>
-        <button id="teacherLoginBtn" style="background:#d62828; color:white;">تسجيل الدخول</button>
+        <button id="teacherLoginBtn" style="background:#ff8c42; color:white;">تسجيل الدخول</button>
         <button id="closeTeacherLoginBtn" class="close-btn">إلغاء</button>
     </div>
 </div>
 
+<!-- ===== نافذة تسجيل الدخول كعضو ===== -->
 <div id="memberLoginModal" class="auth-modal">
     <div class="auth-content">
         <div style="font-size:2rem;">👨‍🎓</div>
@@ -1724,21 +1782,47 @@
         <input type="password" id="memberPassword" placeholder="كلمة المرور" dir="ltr">
         <div id="memberLoginError" class="error"></div>
         <button id="memberLoginBtn" style="background:#006233; color:white;">تسجيل الدخول</button>
-        <button id="showMemberRegisterBtn" class="link-btn">📝 إنشاء حساب جديد</button>
         <button id="closeMemberLoginBtn" class="close-btn">إلغاء</button>
     </div>
 </div>
 
+<!-- ===== نافذة طلب تسجيل أستاذ ===== -->
+<div id="registerTeacherModal" class="auth-modal">
+    <div class="auth-content">
+        <div style="font-size:2rem;">👨‍🏫</div>
+        <h2>طلب تسجيل كأستاذ</h2>
+        <p style="color:var(--text-secondary); font-size:0.85rem;">📌 سيتم إرسال طلبك إلى المدير للموافقة عليه</p>
+        <div id="registerTeacherSuccess" class="success-msg">
+            <span class="big-emoji">✅</span>
+            تم إرسال طلب التسجيل بنجاح!<br>
+            <span style="font-size:0.8rem; font-weight:400;">سيتم مراجعة طلبك من قبل المدير، وسيتم إعلامك عند الموافقة.</span>
+        </div>
+        <input type="email" id="registerTeacherEmail" placeholder="البريد الإلكتروني" dir="ltr" value="">
+        <input type="password" id="registerTeacherPassword" placeholder="كلمة المرور" dir="ltr" value="">
+        <input type="password" id="registerTeacherConfirm" placeholder="تأكيد كلمة المرور" dir="ltr" value="">
+        <div id="registerTeacherError" class="error"></div>
+        <button id="registerTeacherSubmitBtn" style="background:#ff8c42; color:white;">إرسال الطلب</button>
+        <button id="closeRegisterTeacherBtn" class="close-btn">إلغاء</button>
+    </div>
+</div>
+
+<!-- ===== نافذة طلب تسجيل عضو ===== -->
 <div id="registerMemberModal" class="auth-modal">
     <div class="auth-content">
-        <div style="font-size:2rem;">📝</div>
-        <h2>إنشاء حساب جديد</h2>
-        <input type="email" id="registerEmail" placeholder="البريد الإلكتروني" dir="ltr">
-        <input type="password" id="registerPassword" placeholder="كلمة المرور" dir="ltr">
-        <input type="password" id="registerConfirm" placeholder="تأكيد كلمة المرور" dir="ltr">
-        <div id="registerError" class="error"></div>
-        <button id="registerBtn" style="background:#006233; color:white;">إنشاء حساب</button>
-        <button id="closeRegisterBtn" class="close-btn">إلغاء</button>
+        <div style="font-size:2rem;">👨‍🎓</div>
+        <h2>طلب تسجيل كعضو</h2>
+        <p style="color:var(--text-secondary); font-size:0.85rem;">📌 سيتم إرسال طلبك إلى المدير للموافقة عليه</p>
+        <div id="registerMemberSuccess" class="success-msg">
+            <span class="big-emoji">✅</span>
+            تم إرسال طلب التسجيل بنجاح!<br>
+            <span style="font-size:0.8rem; font-weight:400;">سيتم مراجعة طلبك من قبل المدير، وسيتم إعلامك عند الموافقة.</span>
+        </div>
+        <input type="email" id="registerMemberEmail" placeholder="البريد الإلكتروني" dir="ltr" value="">
+        <input type="password" id="registerMemberPassword" placeholder="كلمة المرور" dir="ltr" value="">
+        <input type="password" id="registerMemberConfirm" placeholder="تأكيد كلمة المرور" dir="ltr" value="">
+        <div id="registerMemberError" class="error"></div>
+        <button id="registerMemberSubmitBtn" style="background:#006233; color:white;">إرسال الطلب</button>
+        <button id="closeRegisterMemberBtn" class="close-btn">إلغاء</button>
     </div>
 </div>
 
@@ -1761,11 +1845,10 @@
     </div>
 </div>
 
-<!-- ===== لوحة تحكم الأستاذ ===== -->
+<!-- ===== لوحة التحكم ===== -->
 <div class="admin-panel" id="adminPanel">
     <h4>🔐 لوحة التحكم</h4>
     
-    <!-- قسم التحكم بالدروس (متاح للجميع) -->
     <div id="lockSection">
         <h5>⏸️ التحكم بتوقيف الدروس</h5>
         <div class="lock-section">
@@ -1798,7 +1881,6 @@
         </div>
     </div>
     
-    <!-- قسم الأخبار (متاح للجميع) -->
     <div id="newsSection">
         <h5><i class="fas fa-newspaper"></i> شريط الأخبار المتحرك</h5>
         <div class="invite-links-section">
@@ -1807,7 +1889,6 @@
         </div>
     </div>
     
-    <!-- قسم روابط الدعوة (متاح للجميع) -->
     <div id="inviteLinksSection">
         <h5><i class="fas fa-link"></i> روابط الدعوة للمجتمع</h5>
         <div class="invite-links-section">
@@ -1824,16 +1905,14 @@
         <button id="saveInviteLinksBtn" class="lock-action-btn start">💾 حفظ روابط الدعوة</button>
     </div>
     
-    <!-- قسم طلبات الانضمام (للمدير فقط) -->
     <div id="requestsSection">
-        <h5><i class="fas fa-users"></i> إدارة الأعضاء <span id="requestsCount" style="background:#d62828; color:white; padding:2px 8px; border-radius:20px; font-size:0.6rem;">0</span></h5>
+        <h5><i class="fas fa-users"></i> طلبات التسجيل <span id="requestsCount" style="background:#d62828; color:white; padding:2px 8px; border-radius:20px; font-size:0.6rem;">0</span></h5>
         <div id="joinRequestsList" class="requests-panel"><div class="empty-requests">جاري تحميل الطلبات...</div></div>
         
         <h5 style="margin-top:12px;"><i class="fas fa-user-check"></i> الأعضاء المعتمدون</h5>
         <div id="approvedMembersList" class="requests-panel"><div class="empty-requests">جاري تحميل الأعضاء...</div></div>
     </div>
     
-    <!-- قسم إدارة الأساتذة (للمدير فقط) -->
     <div id="teacherManagementSection" style="display:none;">
         <hr style="margin:10px 0; border-color:var(--border-color);">
         <h5><i class="fas fa-chalkboard-teacher"></i> 👑 إدارة الأساتذة</h5>
@@ -2223,17 +2302,42 @@
     window.sendContactMessage = sendContactMessage;
 
     // =============================================
+    // نوافذ تسجيل الدخول وطلب التسجيل
+    // =============================================
+    function showLoginChoice() {
+        document.getElementById('loginChoiceModal').style.display = 'flex';
+    }
+    window.showLoginChoice = showLoginChoice;
+
+    function showRegisterChoice() {
+        document.getElementById('registerChoiceModal').style.display = 'flex';
+    }
+    window.showRegisterChoice = showRegisterChoice;
+
+    // =============================================
     // تحديث أزرار تسجيل الدخول/الخروج
     // =============================================
     function updateAuthButtons() {
         const loginBtn = document.getElementById('loginBtn');
+        const registerBtn = document.getElementById('registerBtn');
         const logoutBtn = document.getElementById('logoutBtn');
         
         if (currentUser) {
             if (loginBtn) loginBtn.style.display = 'none';
-            if (logoutBtn) logoutBtn.style.display = 'inline-flex';
+            if (registerBtn) registerBtn.style.display = 'none';
+            if (logoutBtn) {
+                logoutBtn.style.display = 'inline-flex';
+                if (isAdminMode && currentUser?.email === MASTER_TEACHER_EMAIL) {
+                    logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> تسجيل الخروج (مدير)';
+                } else if (isAdminMode) {
+                    logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> تسجيل الخروج (أستاذ)';
+                } else {
+                    logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> تسجيل الخروج (عضو)';
+                }
+            }
         } else {
             if (loginBtn) loginBtn.style.display = 'inline-flex';
+            if (registerBtn) registerBtn.style.display = 'inline-flex';
             if (logoutBtn) logoutBtn.style.display = 'none';
         }
     }
@@ -2245,22 +2349,80 @@
     function updateAdminPanel() {
         const isMaster = currentUser?.email === MASTER_TEACHER_EMAIL;
         const isTeacher = isAdminMode && !isMaster;
+        const isMember = currentUser && !isAdminMode;
         
         const teacherManagementSection = document.getElementById('teacherManagementSection');
         const requestsSection = document.getElementById('requestsSection');
+        const lockSection = document.getElementById('lockSection');
+        const newsSection = document.getElementById('newsSection');
+        const inviteLinksSection = document.getElementById('inviteLinksSection');
+        const adminPanel = document.getElementById('adminPanel');
+        const gearIcon = document.getElementById('teacherGearIcon');
+        
+        if (isMember) {
+            if (adminPanel) adminPanel.style.display = 'none';
+            if (gearIcon) gearIcon.style.display = 'none';
+            return;
+        }
+        
+        if (gearIcon) gearIcon.style.display = 'flex';
+        if (adminPanel) adminPanel.style.display = 'block';
         
         if (isMaster) {
-            // المدير: كل الصلاحيات
             if (teacherManagementSection) teacherManagementSection.style.display = 'block';
             if (requestsSection) requestsSection.style.display = 'block';
+            if (lockSection) lockSection.style.display = 'block';
+            if (newsSection) newsSection.style.display = 'block';
+            if (inviteLinksSection) inviteLinksSection.style.display = 'block';
         } else if (isTeacher) {
-            // الأستاذ العادي: صلاحيات محدودة
             if (teacherManagementSection) teacherManagementSection.style.display = 'none';
             if (requestsSection) requestsSection.style.display = 'none';
-        } else {
-            if (teacherManagementSection) teacherManagementSection.style.display = 'none';
-            if (requestsSection) requestsSection.style.display = 'none';
+            if (lockSection) lockSection.style.display = 'block';
+            if (newsSection) newsSection.style.display = 'block';
+            if (inviteLinksSection) inviteLinksSection.style.display = 'block';
         }
+    }
+
+    // =============================================
+    // تحديث واجهة المستخدم
+    // =============================================
+    function updateUserInterface() {
+        const banner = document.getElementById("membershipBanner");
+        const bannerSpan = document.getElementById("bannerUserType");
+        const gearIcon = document.getElementById("teacherGearIcon");
+        const revokeBtn = document.getElementById("revokeMembershipBtn");
+        
+        if (!currentUser) {
+            if (banner) banner.style.display = "none";
+            if (gearIcon) gearIcon.style.display = "none";
+            if (revokeBtn) revokeBtn.style.display = "none";
+            updateAuthButtons();
+            return;
+        }
+        
+        const email = currentUser.email;
+        const isMaster = email === MASTER_TEACHER_EMAIL;
+        const isTeacher = isAdminMode && !isMaster;
+        const isMember = currentUser && !isAdminMode;
+        
+        if (banner) banner.style.display = "flex";
+        
+        if (isMaster) {
+            if (bannerSpan) bannerSpan.innerHTML = `👑 المدير ${escapeHtml(email)}`;
+            if (gearIcon) gearIcon.style.display = "flex";
+            if (revokeBtn) revokeBtn.style.display = "none";
+        } else if (isTeacher) {
+            if (bannerSpan) bannerSpan.innerHTML = `👨‍🏫 الأستاذ ${escapeHtml(email)}`;
+            if (gearIcon) gearIcon.style.display = "flex";
+            if (revokeBtn) revokeBtn.style.display = "none";
+        } else if (isMember) {
+            if (bannerSpan) bannerSpan.innerHTML = `👨‍🎓 مرحباً ${escapeHtml(email)}`;
+            if (gearIcon) gearIcon.style.display = "none";
+            if (revokeBtn) revokeBtn.style.display = "inline-flex";
+        }
+        
+        updateAdminPanel();
+        updateAuthButtons();
     }
 
     // =============================================
@@ -2682,7 +2844,8 @@
             approvedMembers = Object.entries(data).map(([key, value]) => ({
                 key: key,
                 email: value.email || key.replace(/_/g, '.'),
-                approvedAt: value.approvedAt || Date.now()
+                approvedAt: value.approvedAt || Date.now(),
+                userType: value.userType || 'عضو'
             }));
             renderApprovedMembersList();
         } catch(e) { console.error("Error loading approved members:", e); }
@@ -2698,13 +2861,14 @@
         let html = '';
         approvedMembers.forEach(member => {
             const isCurrentUser = member.email === currentUser?.email;
-            html += `<div class="request-item" style="border-right-color:${isCurrentUser ? '#006233' : '#ff9800'};">
+            const typeColor = member.userType === 'أستاذ' ? '#d62828' : '#006233';
+            html += `<div class="request-item" style="border-right-color:${typeColor};">
                 <div>
                     <div class="request-email">📧 ${escapeHtml(member.email)} ${isCurrentUser ? '👤 (أنت)' : ''}</div>
-                    <div class="request-date">📅 ${new Date(member.approvedAt).toLocaleDateString('ar')}</div>
+                    <div class="request-date">📅 ${new Date(member.approvedAt).toLocaleDateString('ar')} | ${member.userType || 'عضو'}</div>
                 </div>
                 <div>
-                    <button class="revoke-btn" onclick='deleteMember("${escapeHtml(member.email)}")'><i class="fas fa-user-times"></i> إلغاء العضوية</button>
+                    ${isCurrentUser ? '<span style="color:#006233; font-weight:bold;">أنت</span>' : `<button class="revoke-btn" onclick='deleteMember("${escapeHtml(member.email)}")'><i class="fas fa-user-times"></i> إلغاء العضوية</button>`}
                 </div>
             </div>`;
         });
@@ -2806,17 +2970,29 @@
     if (document.getElementById('newLessonType')) toggleLessonFields();
     
     async function addNewLesson() {
+        if (!isAdminMode) {
+            showToast('⚠️ غير مصرح لك - هذه الصلاحية للأستاذ فقط', 'error');
+            return;
+        }
+        
         const title = document.getElementById('newLessonTitle').value.trim();
         const lessonType = document.getElementById('newLessonType').value;
         if (!title) { showToast('⚠️ الرجاء إدخال عنوان الدرس', 'warning'); return; }
         if (!currentStage || !currentSubject || !currentLessonType) { showToast('⚠️ الرجاء اختيار المرحلة والمادة أولاً', 'warning'); return; }
+        
         let lessonData = { 
-            title, stage: currentStage, subject: currentSubject, 
-            lesson_type: currentLessonType, content_type: lessonType, 
-            created_at: new Date().toISOString() 
+            title, 
+            stage: currentStage, 
+            subject: currentSubject, 
+            lesson_type: currentLessonType, 
+            content_type: lessonType, 
+            created_at: new Date().toISOString(),
+            created_by: currentUser?.email || 'unknown'
         };
+        
         if (currentStage === "primary") lessonData.substage = currentSubStage;
         else lessonData.year = currentYear;
+        
         if (lessonType === 'pdf' || lessonType === 'image') {
             const internalUrl = document.getElementById('newLessonInternalUrl').value.trim();
             if (!internalUrl) { showToast('⚠️ الرجاء إدخال رابط العرض', 'warning'); return; }
@@ -2828,6 +3004,7 @@
             lessonData.external_url = externalUrl;
             lessonData.platform = lessonType;
         }
+        
         const lessonId = Date.now().toString();
         await database.ref('lessons/' + lessonId).set(lessonData);
         showToast('✅ تم إضافة الدرس بنجاح', 'success');
@@ -3042,25 +3219,52 @@
         const countSpan = document.getElementById('requestsCount'); 
         if (!container) return; 
         if (joinRequests.length === 0) { 
-            container.innerHTML = '<div class="empty-requests">📭 لا توجد طلبات انضمام جديدة</div>'; 
+            container.innerHTML = '<div class="empty-requests">📭 لا توجد طلبات تسجيل جديدة</div>'; 
             if (countSpan) countSpan.innerText = '0'; 
             return; 
         } 
         if (countSpan) countSpan.innerText = joinRequests.length; 
         let html = ''; 
         joinRequests.forEach(req => { 
-            html += `<div class="request-item"><div><div class="request-email">📧 ${escapeHtml(req.email)}</div><div class="request-date">📅 ${new Date(req.createdAt).toLocaleDateString('ar')}</div></div><div class="request-actions"><button class="approve-btn" data-id="${req.id}" data-email="${escapeHtml(req.email)}">✅ قبول</button><button class="reject-btn" data-id="${req.id}">❌ رفض</button></div></div>`; 
+            const userType = req.userType || 'عضو';
+            const typeColor = userType === 'أستاذ' ? '#d62828' : '#006233';
+            html += `<div class="request-item" style="border-right-color:${typeColor};">
+                <div>
+                    <div class="request-email">📧 ${escapeHtml(req.email)}</div>
+                    <div class="request-date">📅 ${new Date(req.createdAt).toLocaleDateString('ar')} | ${userType}</div>
+                </div>
+                <div class="request-actions">
+                    <button class="approve-btn" data-id="${req.id}" data-email="${escapeHtml(req.email)}" data-type="${userType}">✅ قبول</button>
+                    <button class="reject-btn" data-id="${req.id}">❌ رفض</button>
+                </div>
+            </div>`; 
         }); 
         container.innerHTML = html; 
         document.querySelectorAll('.approve-btn').forEach(btn => { 
             btn.addEventListener('click', async () => { 
                 const id = btn.getAttribute('data-id'); 
                 const email = btn.getAttribute('data-email'); 
-                await database.ref('members/approved/' + email.replace(/\./g, '_')).set({ email, approvedAt: Date.now() }); 
+                const userType = btn.getAttribute('data-type');
+                
+                await database.ref('members/approved/' + email.replace(/\./g, '_')).set({ 
+                    email, 
+                    approvedAt: Date.now(), 
+                    userType: userType 
+                });
+                
+                if (userType === 'أستاذ') {
+                    await database.ref('teachers/' + email.replace(/\./g, '_')).set({ 
+                        email, 
+                        addedAt: Date.now(), 
+                        addedBy: currentUser.email 
+                    });
+                }
+                
                 await database.ref('members/joinRequests/' + id).remove(); 
-                showToast(`✅ تم قبول طلب ${email}`, 'success'); 
+                showToast(`✅ تم قبول طلب ${email} كـ ${userType}`, 'success'); 
                 await loadJoinRequests(); 
                 await loadApprovedMembers(); 
+                if (userType === 'أستاذ') await loadTeachersList();
             }); 
         }); 
         document.querySelectorAll('.reject-btn').forEach(btn => { 
@@ -3080,7 +3284,14 @@
             return snapshot.exists(); 
         } catch(e) { return false; } 
     }
-    async function addJoinRequest(email) { if (!database) return; await database.ref('members/joinRequests/' + Date.now()).set({ email, createdAt: Date.now() }); }
+    async function addJoinRequest(email, userType) { 
+        if (!database) return; 
+        await database.ref('members/joinRequests/' + Date.now()).set({ 
+            email, 
+            userType: userType,
+            createdAt: Date.now() 
+        }); 
+    }
     
     // =============================================
     // تحميل الدروس
@@ -3149,6 +3360,10 @@
     }
     
     async function deleteLesson(id) {
+        if (!isAdminMode) {
+            showToast('⚠️ غير مصرح لك - هذه الصلاحية للأستاذ فقط', 'error');
+            return;
+        }
         if (confirm("هل أنت متأكد من حذف هذا الدرس؟")) {
             await database.ref('lessons/' + id).remove();
             showToast('✅ تم حذف الدرس بنجاح', 'success');
@@ -3430,18 +3645,57 @@
         document.getElementById("revokeConfirmModal").style.display = "none";
     }
     
-    function showAuthChoice() { document.getElementById("authChoiceModal").style.display = "flex"; }
-    
     // =============================================
     // دوال المصادقة
     // =============================================
+    async function handleAdminLogin() {
+        const email = document.getElementById("adminEmail").value.trim();
+        const password = document.getElementById("adminPassword").value;
+        const errorDiv = document.getElementById("adminLoginError");
+        
+        errorDiv.innerText = '';
+        
+        if (!email || !password) { errorDiv.innerText = "❌ الرجاء إدخال البريد الإلكتروني وكلمة المرور"; return; }
+        if (!auth) { errorDiv.innerText = "❌ خطأ في الاتصال"; return; }
+        if (email !== MASTER_TEACHER_EMAIL) {
+            errorDiv.innerText = "❌ هذا البريد ليس مديراً";
+            return;
+        }
+        
+        try {
+            await auth.signInWithEmailAndPassword(email, password);
+            hideAllModals();
+            showToast('✅ تم تسجيل الدخول كمدير بنجاح!', 'success');
+        } catch(error) {
+            let msg = "❌ فشل تسجيل الدخول";
+            if (error.code === 'auth/user-not-found') msg = "❌ لا يوجد حساب بهذا البريد";
+            else if (error.code === 'auth/wrong-password') msg = "❌ كلمة المرور غير صحيحة";
+            else if (error.code === 'auth/invalid-email') msg = "❌ البريد الإلكتروني غير صالح";
+            errorDiv.innerText = msg;
+        }
+    }
+    
     async function handleTeacherLogin() { 
         const email = document.getElementById("teacherEmail").value.trim(); 
         const password = document.getElementById("teacherPassword").value; 
         const errorDiv = document.getElementById("teacherLoginError"); 
+        
+        errorDiv.innerText = '';
+        
         if (!email || !password) { errorDiv.innerText = "❌ الرجاء إدخال البريد الإلكتروني وكلمة المرور"; return; } 
         if (!auth) { errorDiv.innerText = "❌ خطأ في الاتصال"; return; } 
-        try { await auth.signInWithEmailAndPassword(email, password); hideAllModals(); showToast('✅ تم تسجيل الدخول كأستاذ بنجاح!', 'success'); } catch(error) { 
+        
+        try { 
+            const isTeacher = await checkTeacherPermissions(email);
+            if (!isTeacher) {
+                errorDiv.innerText = "❌ هذا البريد ليس لديه صلاحية أستاذ";
+                return;
+            }
+            
+            await auth.signInWithEmailAndPassword(email, password); 
+            hideAllModals(); 
+            showToast('✅ تم تسجيل الدخول كأستاذ بنجاح!', 'success'); 
+        } catch(error) { 
             let msg = "❌ فشل تسجيل الدخول"; 
             if (error.code === 'auth/user-not-found') msg = "❌ لا يوجد حساب بهذا البريد"; 
             else if (error.code === 'auth/wrong-password') msg = "❌ كلمة المرور غير صحيحة"; 
@@ -3454,14 +3708,25 @@
         const email = document.getElementById("memberEmail").value.trim(); 
         const password = document.getElementById("memberPassword").value; 
         const errorDiv = document.getElementById("memberLoginError"); 
+        
+        errorDiv.innerText = '';
+        
         if (!email || !password) { errorDiv.innerText = "❌ الرجاء إدخال البريد الإلكتروني وكلمة المرور"; return; } 
         if (!auth) { errorDiv.innerText = "❌ خطأ في الاتصال"; return; } 
+        
         try { 
             const isApproved = await checkMemberApproval(email);
             if (!isApproved) { 
-                errorDiv.innerText = "⏳ عذراً، لم يتم الموافقة على طلب عضويتك بعد. يرجى الانتظار حتى يوافق الأستاذ على طلبك."; 
+                errorDiv.innerText = "⏳ عذراً، لم يتم الموافقة على طلب عضويتك بعد. يرجى الانتظار حتى يوافق المدير على طلبك."; 
                 return;
             } 
+            
+            const isTeacher = await checkTeacherPermissions(email);
+            if (isTeacher || email === MASTER_TEACHER_EMAIL) {
+                errorDiv.innerText = "❌ هذا الحساب مسجل كأستاذ/مدير، يرجى استخدام خيار تسجيل الدخول المناسب"; 
+                return;
+            }
+            
             await auth.signInWithEmailAndPassword(email, password); 
             hideAllModals(); 
             showToast('✅ تم تسجيل الدخول كعضو بنجاح!', 'success'); 
@@ -3475,29 +3740,141 @@
         } 
     }
     
-    async function handleMemberRegister() { 
-        const email = document.getElementById("registerEmail").value.trim(); 
-        const password = document.getElementById("registerPassword").value; 
-        const confirm = document.getElementById("registerConfirm").value; 
-        const errorDiv = document.getElementById("registerError"); 
-        if (!email || !password) { errorDiv.innerText = "❌ الرجاء ملء جميع الحقول"; return; } 
-        if (isFakeEmail(email)) { errorDiv.innerText = "❌ لا يمكن التسجيل ببريد إلكتروني وهمي. يرجى استخدام بريد حقيقي"; return; }
-        if (password !== confirm) { errorDiv.innerText = "❌ كلمتا المرور غير متطابقتين"; return; } 
-        if (password.length < 6) { errorDiv.innerText = "❌ كلمة المرور يجب أن تكون 6 أحرف على الأقل"; return; } 
-        if (!auth) { errorDiv.innerText = "❌ خطأ في الاتصال"; return; } 
-        try { 
+    // ===== دوال طلب التسجيل (المعدلة) =====
+    async function handleRegisterTeacher() {
+        const email = document.getElementById("registerTeacherEmail").value.trim();
+        const password = document.getElementById("registerTeacherPassword").value;
+        const confirm = document.getElementById("registerTeacherConfirm").value;
+        const errorDiv = document.getElementById("registerTeacherError");
+        const successDiv = document.getElementById("registerTeacherSuccess");
+        
+        // إخفاء الرسائل السابقة
+        errorDiv.innerText = '';
+        successDiv.style.display = 'none';
+        
+        if (!email || !password || !confirm) { 
+            errorDiv.innerText = "❌ الرجاء ملء جميع الحقول"; 
+            return; 
+        }
+        if (isFakeEmail(email)) { 
+            errorDiv.innerText = "❌ لا يمكن التسجيل ببريد إلكتروني وهمي"; 
+            return; 
+        }
+        if (password !== confirm) { 
+            errorDiv.innerText = "❌ كلمتا المرور غير متطابقتين"; 
+            return; 
+        }
+        if (password.length < 6) { 
+            errorDiv.innerText = "❌ كلمة المرور يجب أن تكون 6 أحرف على الأقل"; 
+            return; 
+        }
+        if (!auth) { 
+            errorDiv.innerText = "❌ خطأ في الاتصال"; 
+            return; 
+        }
+        
+        try {
+            // إنشاء الحساب في Firebase Auth
             await auth.createUserWithEmailAndPassword(email, password);
-            await addJoinRequest(email);
+            
+            // إضافة طلب انضمام إلى قاعدة البيانات
+            await addJoinRequest(email, 'أستاذ');
+            
+            // تسجيل الخروج فوراً (لأنه يحتاج موافقة)
             await auth.signOut();
-            hideAllModals(); 
-            showToast('✅ تم إنشاء الحساب بنجاح! سيتم مراجعة طلب انضمامك من قبل الأستاذ.', 'success'); 
-        } catch(error) { 
-            let msg = "❌ فشل إنشاء الحساب"; 
-            if (error.code === 'auth/email-already-in-use') msg = "❌ هذا البريد الإلكتروني مستخدم بالفعل"; 
-            else if (error.code === 'auth/invalid-email') msg = "❌ البريد الإلكتروني غير صالح"; 
-            else if (error.code === 'auth/weak-password') msg = "❌ كلمة المرور ضعيفة جداً"; 
-            errorDiv.innerText = msg; 
-        } 
+            
+            // إظهار رسالة النجاح
+            successDiv.style.display = 'block';
+            
+            // تفريغ الحقول
+            document.getElementById("registerTeacherEmail").value = '';
+            document.getElementById("registerTeacherPassword").value = '';
+            document.getElementById("registerTeacherConfirm").value = '';
+            
+            // إشعار فوري
+            showToast('✅ تم إرسال طلب التسجيل كأستاذ! سيتم مراجعة طلبك من قبل المدير.', 'success', 5000);
+            
+            // إخفاء النافذة بعد 4 ثواني
+            setTimeout(() => {
+                hideAllModals();
+                successDiv.style.display = 'none';
+            }, 4000);
+            
+        } catch(error) {
+            let msg = "❌ فشل إنشاء الحساب";
+            if (error.code === 'auth/email-already-in-use') msg = "❌ هذا البريد الإلكتروني مستخدم بالفعل";
+            else if (error.code === 'auth/invalid-email') msg = "❌ البريد الإلكتروني غير صالح";
+            else if (error.code === 'auth/weak-password') msg = "❌ كلمة المرور ضعيفة جداً";
+            errorDiv.innerText = msg;
+        }
+    }
+    
+    async function handleRegisterMember() {
+        const email = document.getElementById("registerMemberEmail").value.trim();
+        const password = document.getElementById("registerMemberPassword").value;
+        const confirm = document.getElementById("registerMemberConfirm").value;
+        const errorDiv = document.getElementById("registerMemberError");
+        const successDiv = document.getElementById("registerMemberSuccess");
+        
+        // إخفاء الرسائل السابقة
+        errorDiv.innerText = '';
+        successDiv.style.display = 'none';
+        
+        if (!email || !password || !confirm) { 
+            errorDiv.innerText = "❌ الرجاء ملء جميع الحقول"; 
+            return; 
+        }
+        if (isFakeEmail(email)) { 
+            errorDiv.innerText = "❌ لا يمكن التسجيل ببريد إلكتروني وهمي"; 
+            return; 
+        }
+        if (password !== confirm) { 
+            errorDiv.innerText = "❌ كلمتا المرور غير متطابقتين"; 
+            return; 
+        }
+        if (password.length < 6) { 
+            errorDiv.innerText = "❌ كلمة المرور يجب أن تكون 6 أحرف على الأقل"; 
+            return; 
+        }
+        if (!auth) { 
+            errorDiv.innerText = "❌ خطأ في الاتصال"; 
+            return; 
+        }
+        
+        try {
+            // إنشاء الحساب في Firebase Auth
+            await auth.createUserWithEmailAndPassword(email, password);
+            
+            // إضافة طلب انضمام إلى قاعدة البيانات
+            await addJoinRequest(email, 'عضو');
+            
+            // تسجيل الخروج فوراً (لأنه يحتاج موافقة)
+            await auth.signOut();
+            
+            // إظهار رسالة النجاح
+            successDiv.style.display = 'block';
+            
+            // تفريغ الحقول
+            document.getElementById("registerMemberEmail").value = '';
+            document.getElementById("registerMemberPassword").value = '';
+            document.getElementById("registerMemberConfirm").value = '';
+            
+            // إشعار فوري
+            showToast('✅ تم إرسال طلب التسجيل كعضو! سيتم مراجعة طلبك من قبل المدير.', 'success', 5000);
+            
+            // إخفاء النافذة بعد 4 ثواني
+            setTimeout(() => {
+                hideAllModals();
+                successDiv.style.display = 'none';
+            }, 4000);
+            
+        } catch(error) {
+            let msg = "❌ فشل إنشاء الحساب";
+            if (error.code === 'auth/email-already-in-use') msg = "❌ هذا البريد الإلكتروني مستخدم بالفعل";
+            else if (error.code === 'auth/invalid-email') msg = "❌ البريد الإلكتروني غير صالح";
+            else if (error.code === 'auth/weak-password') msg = "❌ كلمة المرور ضعيفة جداً";
+            errorDiv.innerText = msg;
+        }
     }
     
     function showLogoutConfirm() { 
@@ -3511,7 +3888,7 @@
     }
     
     function showCommunitySection() { 
-        if (!currentUser) { showAuthChoice(); return; } 
+        if (!currentUser) { showLoginChoice(); return; } 
         if (!currentUserIsApproved && !isAdminMode) { showToast('⚠️ لم يتم قبول عضويتك بعد', 'warning'); return; } 
         hideMainStages();
         let html = `<div class="community-section"><button class="community-back-btn" id="communityBackBtn"><i class="fas fa-arrow-right"></i> رجوع للرئيسية</button><div class="section-title"><i class="fas fa-globe"></i> مجتمع الأستاذ محمد التعليمي <i class="fas fa-heart" style="color:#d62828;"></i></div><div class="community-stage-buttons"><button class="community-stage-btn primary active" data-stage="primary">📚 المرحلة الابتدائية</button><button class="community-stage-btn middle" data-stage="middle">🏫 مرحلة المتوسط</button><button class="community-stage-btn high" data-stage="high">🎓 مرحلة الثانوي</button></div><div id="communityLinksContainer" class="community-links-container"></div><div style="text-align:center; margin-top:18px; padding:10px; background:#e8eaf6; border-radius:25px; font-size:0.75rem; color:#4a148c;"><i class="fas fa-info-circle"></i> بعد الانضمام إلى القنوات والمجموعات، يمكنك مشاهدة الدروس من خلال اختيار المرحلة التعليمية من الأعلى</div></div>`;
@@ -3605,17 +3982,47 @@
     // أحداث DOM
     // =============================================
     document.addEventListener("DOMContentLoaded", () => {
-        // نماذج المصادقة
-        document.getElementById("teacherLoginChoiceBtn")?.addEventListener("click", () => { document.getElementById("authChoiceModal").style.display = "none"; document.getElementById("teacherLoginModal").style.display = "flex"; });
-        document.getElementById("memberLoginChoiceBtn")?.addEventListener("click", () => { document.getElementById("authChoiceModal").style.display = "none"; document.getElementById("memberLoginModal").style.display = "flex"; });
-        document.getElementById("closeChoiceBtn")?.addEventListener("click", hideAllModals);
+        // نافذة اختيار تسجيل الدخول
+        document.getElementById("loginAdminBtn")?.addEventListener("click", () => {
+            document.getElementById("loginChoiceModal").style.display = "none";
+            document.getElementById("adminLoginModal").style.display = "flex";
+        });
+        document.getElementById("loginTeacherBtn")?.addEventListener("click", () => {
+            document.getElementById("loginChoiceModal").style.display = "none";
+            document.getElementById("teacherLoginModal").style.display = "flex";
+        });
+        document.getElementById("loginMemberBtn")?.addEventListener("click", () => {
+            document.getElementById("loginChoiceModal").style.display = "none";
+            document.getElementById("memberLoginModal").style.display = "flex";
+        });
+        document.getElementById("closeLoginChoiceBtn")?.addEventListener("click", hideAllModals);
+        
+        // نافذة اختيار طلب التسجيل
+        document.getElementById("registerTeacherChoiceBtn")?.addEventListener("click", () => {
+            document.getElementById("registerChoiceModal").style.display = "none";
+            document.getElementById("registerTeacherModal").style.display = "flex";
+        });
+        document.getElementById("registerMemberChoiceBtn")?.addEventListener("click", () => {
+            document.getElementById("registerChoiceModal").style.display = "none";
+            document.getElementById("registerMemberModal").style.display = "flex";
+        });
+        document.getElementById("closeRegisterChoiceBtn")?.addEventListener("click", hideAllModals);
+        
+        // نماذج تسجيل الدخول
+        document.getElementById("adminLoginBtn")?.addEventListener("click", handleAdminLogin);
+        document.getElementById("closeAdminLoginBtn")?.addEventListener("click", hideAllModals);
         document.getElementById("teacherLoginBtn")?.addEventListener("click", handleTeacherLogin);
         document.getElementById("closeTeacherLoginBtn")?.addEventListener("click", hideAllModals);
         document.getElementById("memberLoginBtn")?.addEventListener("click", handleMemberLogin);
         document.getElementById("closeMemberLoginBtn")?.addEventListener("click", hideAllModals);
-        document.getElementById("showMemberRegisterBtn")?.addEventListener("click", () => { document.getElementById("memberLoginModal").style.display = "none"; document.getElementById("registerMemberModal").style.display = "flex"; });
-        document.getElementById("registerBtn")?.addEventListener("click", handleMemberRegister);
-        document.getElementById("closeRegisterBtn")?.addEventListener("click", hideAllModals);
+        
+        // طلب تسجيل أستاذ - استخدام المعرف الصحيح
+        document.getElementById("registerTeacherSubmitBtn")?.addEventListener("click", handleRegisterTeacher);
+        document.getElementById("closeRegisterTeacherBtn")?.addEventListener("click", hideAllModals);
+        
+        // طلب تسجيل عضو - استخدام المعرف الصحيح
+        document.getElementById("registerMemberSubmitBtn")?.addEventListener("click", handleRegisterMember);
+        document.getElementById("closeRegisterMemberBtn")?.addEventListener("click", hideAllModals);
         
         // لوحة التحكم
         document.getElementById("summerStopBtn")?.addEventListener("click", () => stopLessons('summer'));
@@ -3632,11 +4039,17 @@
         
         // تعديل درس خارجي
         document.getElementById("confirmEditLessonBtn")?.addEventListener("click", async () => { 
+            if (!isAdminMode) {
+                showToast('⚠️ غير مصرح لك - هذه الصلاحية للأستاذ فقط', 'error');
+                return;
+            }
             if (editingLessonId) { 
                 await database.ref('lessons/' + editingLessonId).update({ 
                     title: document.getElementById("editLessonTitle").value, 
                     platform: document.getElementById("editLessonPlatform").value, 
-                    external_url: document.getElementById("editLessonUrl").value 
+                    external_url: document.getElementById("editLessonUrl").value,
+                    updated_at: new Date().toISOString(),
+                    updated_by: currentUser?.email || 'unknown'
                 }); 
                 showToast('✅ تم تعديل الدرس', 'success'); 
             } 
@@ -3648,12 +4061,18 @@
         
         // تعديل درس داخلي
         document.getElementById("confirmEditInternalBtn")?.addEventListener("click", async () => { 
+            if (!isAdminMode) {
+                showToast('⚠️ غير مصرح لك - هذه الصلاحية للأستاذ فقط', 'error');
+                return;
+            }
             if (editingInternalLessonId) { 
                 await database.ref('lessons/' + editingInternalLessonId).update({ 
                     title: document.getElementById("editInternalTitle").value, 
                     content_type: document.getElementById("editInternalType").value, 
                     internal_url: document.getElementById("editInternalUrl").value, 
-                    download_url: document.getElementById("editInternalDownload").value 
+                    download_url: document.getElementById("editInternalDownload").value,
+                    updated_at: new Date().toISOString(),
+                    updated_by: currentUser?.email || 'unknown'
                 }); 
                 showToast('✅ تم تعديل الدرس', 'success'); 
             } 
@@ -3674,7 +4093,7 @@
         document.getElementById("confirmRevokeBtn")?.addEventListener("click", revokeOwnMembership);
         document.getElementById("cancelRevokeBtn")?.addEventListener("click", () => document.getElementById("revokeConfirmModal").style.display = "none");
         
-        // أيقونة الأستاذ
+        // أيقونة الأستاذ/المدير
         const teacherGear = document.getElementById("teacherGearIcon");
         const adminPanel = document.getElementById("adminPanel");
         if (teacherGear) {
@@ -3686,6 +4105,8 @@
                             loadJoinRequests(); 
                             loadApprovedMembers();
                             loadTeachersList();
+                            document.getElementById('requestsSection').style.display = 'block';
+                            document.getElementById('teacherManagementSection').style.display = 'block';
                         } else {
                             document.getElementById('requestsSection').style.display = 'none';
                             document.getElementById('teacherManagementSection').style.display = 'none';
@@ -3695,7 +4116,7 @@
                 } else if (currentUser && !isAdminMode) { 
                     showToast('⚠️ هذه اللوحة للأستاذ فقط', 'warning'); 
                 } else { 
-                    showAuthChoice(); 
+                    showLoginChoice(); 
                 } 
             };
         }
@@ -3727,11 +4148,6 @@
             auth.onAuthStateChanged(async (user) => { 
                 const previousUser = currentUser;
                 currentUser = user; 
-                const banner = document.getElementById("membershipBanner"); 
-                const bannerSpan = document.getElementById("bannerUserType"); 
-                const gearIcon = document.getElementById("teacherGearIcon");
-                const teacherSection = document.getElementById("teacherManagementSection");
-                const revokeBtn = document.getElementById("revokeMembershipBtn");
                 
                 if (user) { 
                     const email = user.email; 
@@ -3740,47 +4156,29 @@
                     
                     if (!isApprovedMember && !isTeacher && email !== MASTER_TEACHER_EMAIL) {
                         await auth.signOut();
-                        showToast('⏳ عذراً، لم يتم الموافقة على طلب عضويتك بعد', 'warning');
+                        showToast('⏳ عذراً، لم يتم الموافقة على طلبك بعد', 'warning');
                         clearNavigationState();
                         updateUIAfterLogout();
                         return;
                     }
                     
-                    if (isApprovedMember) { 
+                    if (isApprovedMember && !isTeacher && email !== MASTER_TEACHER_EMAIL) {
                         isAdminMode = false; 
-                        currentUserIsApproved = true; 
-                        if (bannerSpan) bannerSpan.innerHTML = `👨‍🎓 مرحباً ${escapeHtml(email)}`; 
-                        if (banner) banner.style.display = "flex"; 
-                        if (gearIcon) gearIcon.style.display = "none";
-                        if (teacherSection) teacherSection.style.display = "none";
-                        if (revokeBtn) revokeBtn.style.display = "inline-flex";
-                    } else if (isTeacher || email === MASTER_TEACHER_EMAIL) { 
+                        currentUserIsApproved = true;
+                    } else if (isTeacher || email === MASTER_TEACHER_EMAIL) {
                         isAdminMode = true; 
-                        currentUserIsApproved = true; 
-                        
-                        if (email === MASTER_TEACHER_EMAIL) {
-                            if (bannerSpan) bannerSpan.innerHTML = `👑 المدير ${escapeHtml(email)}`; 
-                            if (teacherSection) teacherSection.style.display = "block";
-                            if (revokeBtn) revokeBtn.style.display = "none";
-                            loadTeachersList();
-                        } else {
-                            if (bannerSpan) bannerSpan.innerHTML = `👨‍🏫 الأستاذ ${escapeHtml(email)}`; 
-                            if (teacherSection) teacherSection.style.display = "none";
-                            if (revokeBtn) revokeBtn.style.display = "none";
-                        }
-                        
-                        if (banner) banner.style.display = "flex"; 
-                        if (gearIcon) gearIcon.style.display = "flex";
-                        
-                        updateAdminPanel();
+                        currentUserIsApproved = true;
                     }
                     
-                    await loadInviteLinks(); 
+                    updateUserInterface();
+                    
                     if (isAdminMode && currentUser?.email === MASTER_TEACHER_EMAIL) {
                         await loadJoinRequests(); 
                         await loadApprovedMembers();
+                        await loadTeachersList();
                     }
                     
+                    await loadInviteLinks(); 
                     updateAuthButtons();
                     
                     if (previousUser === null && !isRestoringState) {
