@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <meta name="robots" content="noindex, nofollow">
     <title>الأستاذ محمد للتعليم | منصة تعليم جزائرية ذكية</title>
-    <meta name="description" content="منصة تعليمية جزائرية متكاملة للمراحل الابتدائي والمتوسط والثانوي. دروس صيفية ومقررة مع نظام عضوية متقدم.">
-    <meta name="keywords" content="تعليم, منصة تعليمية, دروس, أستاذ محمد, جزائر, ابتدائي, متوسط, ثانوي">
+    <meta name="description" content="منصة تعليمية جزائرية متكاملة للمراحل الابتدائي والمتوسط والثانوي.">
+    <meta name="keywords" content="تعليم, منصة تعليمية, دروس, أستاذ محمد, جزائر">
     <meta name="author" content="الأستاذ محمد">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
     
@@ -64,7 +64,6 @@
             --rating-active: #ffc107;
         }
 
-        /* ===== الأنماط الأساسية ===== */
         *{margin:0;padding:0;box-sizing:border-box}
         body{
             font-family:'Tajawal',sans-serif;
@@ -75,7 +74,6 @@
         }
         .container{max-width:1300px;margin:0 auto;padding:20px 24px}
         
-        /* ===== الهيدر مع الشعار المحسن ===== */
         .header{
             background:linear-gradient(115deg,#006233 0%,#009c4a 100%);
             border-radius:60px;
@@ -120,7 +118,6 @@
             font-size:0.75rem;
             opacity:0.9
         }
-        
         .header-left{
             display:flex;
             align-items:center;
@@ -128,7 +125,6 @@
             flex-wrap:wrap
         }
         
-        /* ===== شريط البحث ===== */
         .search-wrapper{
             position:relative;
             min-width:180px
@@ -183,7 +179,6 @@
         .search-result-item .result-sub{font-size:0.65rem;color:var(--text-muted)}
         .search-no-results{padding:20px;text-align:center;color:var(--text-muted)}
         
-        /* ===== أزرار تسجيل الدخول/الخروج ===== */
         .auth-buttons{display:flex;gap:6px;align-items:center}
         .auth-btn{
             padding:5px 14px;
@@ -204,7 +199,6 @@
         .logout-btn{background:#d62828;color:white}
         .logout-btn:hover{background:#b71c1c}
         
-        /* ===== زر الاتصال ===== */
         .contact-btn{
             background:rgba(255,255,255,0.15);
             border:2px solid rgba(255,255,255,0.2);
@@ -226,7 +220,6 @@
             transform:scale(1.05)
         }
         
-        /* ===== نافذة الاتصال ===== */
         .contact-modal-overlay{
             display:none;
             position:fixed;
@@ -340,7 +333,6 @@
         .teacher-gear:hover{background:rgba(255,255,255,0.3);transform:rotate(30deg)}
         .teacher-gear i{font-size:1rem;color:#ffd966}
         
-        /* ===== شريط المستجدات ===== */
         .news-ticker{
             background:#d62828;
             color:white;
@@ -390,7 +382,6 @@
             white-space:nowrap
         }
         
-        /* ===== العد التنازلي ===== */
         .countdown-container{
             background:var(--bg-secondary);
             border-radius:60px;
@@ -434,7 +425,6 @@
             font-weight:700
         }
         
-        /* ===== الأزرار الرئيسية ===== */
         .main-stages{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin:20px 0 35px;transition:var(--transition)}
         .main-stages.hide-stages{display:none}
         .stage-btn{
@@ -463,7 +453,6 @@
         .stage-btn.high-btn{background:linear-gradient(135deg,#ff8c42,#e67e22)}
         .stage-btn.community-btn{background:linear-gradient(135deg,#6a1b9a,#8e24aa);border:2px solid #ffd966}
         
-        /* ===== بطاقات ===== */
         .sub-stages{display:flex;flex-wrap:wrap;justify-content:center;gap:20px;margin:20px 0 35px}
         .sub-stage-card{
             background:var(--bg-secondary);
@@ -555,7 +544,6 @@
             color:var(--text-primary)
         }
         
-        /* ===== قائمة الدروس ===== */
         .lessons-list{
             background:var(--bg-secondary);
             border-radius:30px;
@@ -604,7 +592,6 @@
         .badge-telegram{background:#0088cc;color:white}
         .badge-facebook{background:#1877f2;color:white}
         
-        /* ===== نظام التقييم ===== */
         .rating-container{
             display:flex;
             align-items:center;
@@ -635,7 +622,6 @@
             color:var(--text-muted)
         }
         
-        /* ===== الأزرار ===== */
         .watch-btn{
             background:#006233;
             color:white;
@@ -794,7 +780,6 @@
         }
         .page-title i{font-size:1.4rem}
         
-        /* ===== عارض المحتوى ===== */
         .lesson-content-viewer{
             background:var(--bg-secondary);
             border-radius:30px;
@@ -841,9 +826,6 @@
         .inline-image-viewer{max-width:100%;max-height:55vh;border-radius:12px;display:block;margin:0 auto}
         .lesson-footer{text-align:center;padding-top:10px;border-top:1px solid var(--border-color)}
         
-        /* ============================================= */
-        /* الإشعارات الفورية */
-        /* ============================================= */
         .toast-container{
             position:fixed;
             bottom:16px;
@@ -894,9 +876,6 @@
             100%{transform:translateX(80px);opacity:0}
         }
         
-        /* ============================================= */
-        /* علب الحوار */
-        /* ============================================= */
         .popup-overlay{
             display:none;
             position:fixed;
@@ -1046,7 +1025,6 @@
         #visitorDeniedPopup .visitor-popup-content h3{color:#d62828}
         #visitorDeniedPopup .visitor-popup-content .popup-emoji{font-size:3.5rem}
         
-        /* ===== النوافذ المنبثقة الأخرى ===== */
         .add-lesson-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:5000;justify-content:center;align-items:center}
         .add-lesson-content{
             background:var(--popup-bg);
@@ -1151,7 +1129,6 @@
         .confirm-logout-btn{background:#d62828;color:white}
         .cancel-logout-btn{background:#ccc;color:#333}
         
-        /* ===== مجتمع ===== */
         .community-section{
             background:linear-gradient(135deg,#f3e5f5,#e1bee7);
             border-radius:35px;
@@ -1225,7 +1202,6 @@
             display:inline-block
         }
         
-        /* ===== بانر العضوية ===== */
         .membership-banner{
             background:#006233;
             color:white;
@@ -1278,7 +1254,6 @@
         .welcome-emoji{font-size:2.2rem;margin-bottom:6px}
         .welcome-card h3{color:var(--text-primary);font-size:1.1rem;margin-bottom:4px;font-weight:800}
         .welcome-card p{color:var(--text-secondary);font-size:0.8rem}
-        /* تم حذف زر تسجيل الدخول من هنا */
         
         .footer{
             background:#0c2e1e;
@@ -1419,8 +1394,8 @@
         .invite-links-section .stage-title{font-weight:700;color:var(--text-primary);margin:6px 0 3px;font-size:0.85rem}
         
         #teacherManagementSection{display:none;margin-top:8px}
+        #requestsSection{display:block}
         
-        /* ===== التجاوب ===== */
         @media (max-width:992px){
             .header{padding:10px 16px}
             .logo h1{font-size:1.2rem}
@@ -1504,7 +1479,6 @@
 </head>
 <body>
 <div class="container">
-    <!-- ===== الهيدر مع الشعار المحسن ===== -->
     <header class="header">
         <div class="logo" onclick="goHome()" style="cursor:pointer;">
             <div class="logo-icon">
@@ -1535,18 +1509,15 @@
             </div>
         </div>
         <div class="header-left">
-            <!-- ===== شريط البحث ===== -->
             <div class="search-wrapper">
                 <input type="text" id="searchInput" placeholder="🔍 ابحث في الدروس..." class="search-input" onkeyup="searchLessons(event)">
                 <div id="searchResults" class="search-results"></div>
             </div>
             
-            <!-- ===== زر الاتصال ===== -->
             <button class="contact-btn" onclick="openContactModal()">
                 <i class="fas fa-envelope"></i> اتصل بنا
             </button>
             
-            <!-- ===== أزرار تسجيل الدخول/الخروج ===== -->
             <div id="authButtons" class="auth-buttons">
                 <button id="loginBtn" class="auth-btn login-btn" onclick="showAuthChoice()">
                     <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
@@ -1563,7 +1534,6 @@
         </div>
     </header>
     
-    <!-- ===== شريط المستجدات ===== -->
     <div id="newsTicker" class="news-ticker">
         <div class="news-ticker-label">
             <i class="fas fa-bullhorn"></i> 
@@ -1582,7 +1552,6 @@
         </div>
     </div>
     
-    <!-- ===== العداد الرئيسي ===== -->
     <div class="countdown-container" id="countdownContainer">
         <div class="countdown-title">📅 العودة إلى الدراسة 📅</div>
         <div class="countdown-timer" id="countdownTimer">
@@ -1604,10 +1573,8 @@
     <div id="dynamicArea"><div style="text-align:center; padding:50px;"><div class="loading-spinner"></div><p style="margin-top:10px; color:var(--text-primary);">جاري تحميل البيانات...</p></div></div>
 </div>
 
-<!-- ===== حاوية الإشعارات ===== -->
 <div id="toastContainer" class="toast-container"></div>
 
-<!-- ===== نافذة الاتصال ===== -->
 <div id="contactModal" class="contact-modal-overlay" onclick="if(event.target===this) closeContactModal()">
     <div class="contact-modal">
         <h3>📧 اتصل بنا</h3>
@@ -1633,7 +1600,6 @@
     </div>
 </div>
 
-<!-- ===== التذييل (تم حذف زر تسجيل الدخول منه) ===== -->
 <div class="footer"><p>© الأستاذ محمد للتعليم - الجزائر | تعليم ذكي للمستقبل</p></div>
 
 <!-- ===== النوافذ المنبثقة ===== -->
@@ -1689,7 +1655,6 @@
     </div>
 </div>
 
-<!-- ===== بوب أب الزائر ===== -->
 <div id="visitorDeniedPopup" class="visitor-popup">
     <div class="visitor-popup-content">
         <div class="popup-emoji">🚫👋</div>
@@ -1699,7 +1664,6 @@
     </div>
 </div>
 
-<!-- ===== نافذة موحدة للدروس ===== -->
 <div id="unifiedPopup" class="popup-overlay">
     <div class="popup-card">
         <div class="popup-icon-wrapper">
@@ -1778,7 +1742,6 @@
     </div>
 </div>
 
-<!-- ===== نوافذ التأكيد ===== -->
 <div id="logoutConfirmModal" class="logout-confirm-modal">
     <div class="logout-confirm-content">
         <div style="font-size:2rem;">🚪</div>
@@ -1800,63 +1763,77 @@
 
 <!-- ===== لوحة تحكم الأستاذ ===== -->
 <div class="admin-panel" id="adminPanel">
-    <h4>🔐 لوحة تحكم الأستاذ</h4>
-    <div class="lock-section">
+    <h4>🔐 لوحة التحكم</h4>
+    
+    <!-- قسم التحكم بالدروس (متاح للجميع) -->
+    <div id="lockSection">
         <h5>⏸️ التحكم بتوقيف الدروس</h5>
-        <div class="lock-item">
-            <div><span class="lock-label summer">🏖️ الدروس الصيفية</span><span id="summerLockStatusBadge" class="lock-status locked">مقفلة</span></div>
-            <div class="lock-row"><input type="date" id="summerStopDate" class="lock-date-input" value="2026-06-27"></div>
-            <div class="popup-choice">
-                <label><input type="radio" name="summerPopupChoice" value="holiday" checked> 🏖️ علبة العطلة</label>
-                <label><input type="radio" name="summerPopupChoice" value="stop"> ⏸️ علبة التوقف</label>
+        <div class="lock-section">
+            <div class="lock-item">
+                <div><span class="lock-label summer">🏖️ الدروس الصيفية</span><span id="summerLockStatusBadge" class="lock-status locked">مقفلة</span></div>
+                <div class="lock-row"><input type="date" id="summerStopDate" class="lock-date-input" value="2026-06-27"></div>
+                <div class="popup-choice">
+                    <label><input type="radio" name="summerPopupChoice" value="holiday" checked> 🏖️ علبة العطلة</label>
+                    <label><input type="radio" name="summerPopupChoice" value="stop"> ⏸️ علبة التوقف</label>
+                </div>
+                <div class="lock-row">
+                    <button id="summerStopBtn" class="lock-action-btn stop">⏸️ توقيف</button>
+                    <button id="summerStartBtn" class="lock-action-btn start">▶️ استئناف</button>
+                </div>
+                <div id="summerInfo" class="lock-info"></div>
             </div>
-            <div class="lock-row">
-                <button id="summerStopBtn" class="lock-action-btn stop">⏸️ توقيف</button>
-                <button id="summerStartBtn" class="lock-action-btn start">▶️ استئناف</button>
+            <div class="lock-item">
+                <div><span class="lock-label curriculum">📖 الدروس المقررة (البرنامج)</span><span id="curriculumLockStatusBadge" class="lock-status locked">مقفلة</span></div>
+                <div class="lock-row"><input type="date" id="curriculumStopDate" class="lock-date-input" value="2026-08-16"></div>
+                <div class="popup-choice">
+                    <label><input type="radio" name="curriculumPopupChoice" value="holiday" checked> 🏖️ علبة العطلة</label>
+                    <label><input type="radio" name="curriculumPopupChoice" value="stop"> ⏸️ علبة التوقف</label>
+                </div>
+                <div class="lock-row">
+                    <button id="curriculumStopBtn" class="lock-action-btn stop">⏸️ توقيف</button>
+                    <button id="curriculumStartBtn" class="lock-action-btn start">▶️ استئناف</button>
+                </div>
+                <div id="curriculumInfo" class="lock-info"></div>
             </div>
-            <div id="summerInfo" class="lock-info"></div>
         </div>
-        <div class="lock-item">
-            <div><span class="lock-label curriculum">📖 الدروس المقررة (البرنامج)</span><span id="curriculumLockStatusBadge" class="lock-status locked">مقفلة</span></div>
-            <div class="lock-row"><input type="date" id="curriculumStopDate" class="lock-date-input" value="2026-08-16"></div>
-            <div class="popup-choice">
-                <label><input type="radio" name="curriculumPopupChoice" value="holiday" checked> 🏖️ علبة العطلة</label>
-                <label><input type="radio" name="curriculumPopupChoice" value="stop"> ⏸️ علبة التوقف</label>
-            </div>
-            <div class="lock-row">
-                <button id="curriculumStopBtn" class="lock-action-btn stop">⏸️ توقيف</button>
-                <button id="curriculumStartBtn" class="lock-action-btn start">▶️ استئناف</button>
-            </div>
-            <div id="curriculumInfo" class="lock-info"></div>
+    </div>
+    
+    <!-- قسم الأخبار (متاح للجميع) -->
+    <div id="newsSection">
+        <h5><i class="fas fa-newspaper"></i> شريط الأخبار المتحرك</h5>
+        <div class="invite-links-section">
+            <div class="form-group"><label>محتوى شريط الأخبار</label><input type="text" id="adminNewsText" placeholder="أدخل النص..." style="width:100%; padding:6px 12px; border-radius:50px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text-primary);"></div>
+            <button id="saveNewsBtn" class="lock-action-btn start">💾 حفظ شريط الأخبار</button>
         </div>
     </div>
     
-    <h5><i class="fas fa-newspaper"></i> شريط الأخبار المتحرك</h5>
-    <div class="invite-links-section">
-        <div class="form-group"><label>محتوى شريط الأخبار</label><input type="text" id="adminNewsText" placeholder="أدخل النص..." style="width:100%; padding:6px 12px; border-radius:50px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text-primary);"></div>
-        <button id="saveNewsBtn" class="lock-action-btn start">💾 حفظ شريط الأخبار</button>
+    <!-- قسم روابط الدعوة (متاح للجميع) -->
+    <div id="inviteLinksSection">
+        <h5><i class="fas fa-link"></i> روابط الدعوة للمجتمع</h5>
+        <div class="invite-links-section">
+            <div class="stage-title">📚 المرحلة الابتدائية</div>
+            <div class="form-group"><label>رابط Telegram</label><input type="url" id="adminTelegramPrimary" placeholder="https://t.me/..." dir="ltr" value="https://t.me/+A_vFc__1MeRiZTBk"></div>
+            <div class="form-group"><label>رابط Facebook</label><input type="url" id="adminFacebookPrimary" placeholder="https://facebook.com/groups/..." dir="ltr" value="https://www.facebook.com/groups/1317083163089038/"></div>
+            <div class="stage-title">🏫 مرحلة المتوسط</div>
+            <div class="form-group"><label>رابط Telegram</label><input type="url" id="adminTelegramMiddle" placeholder="https://t.me/..." dir="ltr" value="https://t.me/+hhGuQrYaE55hMjI8"></div>
+            <div class="form-group"><label>رابط Facebook</label><input type="url" id="adminFacebookMiddle" placeholder="https://facebook.com/groups/..." dir="ltr" value="https://www.facebook.com/groups/2220629488691724"></div>
+            <div class="stage-title">🎓 مرحلة الثانوي</div>
+            <div class="form-group"><label>رابط Telegram</label><input type="url" id="adminTelegramHigh" placeholder="https://t.me/..." dir="ltr" value="https://t.me/+RW-kr1fY7xg1ZmZk"></div>
+            <div class="form-group"><label>رابط Facebook</label><input type="url" id="adminFacebookHigh" placeholder="https://facebook.com/groups/..." dir="ltr" value="https://www.facebook.com/groups/811441095239367"></div>
+        </div>
+        <button id="saveInviteLinksBtn" class="lock-action-btn start">💾 حفظ روابط الدعوة</button>
     </div>
     
-    <h5><i class="fas fa-link"></i> روابط الدعوة للمجتمع</h5>
-    <div class="invite-links-section">
-        <div class="stage-title">📚 المرحلة الابتدائية</div>
-        <div class="form-group"><label>رابط Telegram</label><input type="url" id="adminTelegramPrimary" placeholder="https://t.me/..." dir="ltr" value="https://t.me/+A_vFc__1MeRiZTBk"></div>
-        <div class="form-group"><label>رابط Facebook</label><input type="url" id="adminFacebookPrimary" placeholder="https://facebook.com/groups/..." dir="ltr" value="https://www.facebook.com/groups/1317083163089038/"></div>
-        <div class="stage-title">🏫 مرحلة المتوسط</div>
-        <div class="form-group"><label>رابط Telegram</label><input type="url" id="adminTelegramMiddle" placeholder="https://t.me/..." dir="ltr" value="https://t.me/+hhGuQrYaE55hMjI8"></div>
-        <div class="form-group"><label>رابط Facebook</label><input type="url" id="adminFacebookMiddle" placeholder="https://facebook.com/groups/..." dir="ltr" value="https://www.facebook.com/groups/2220629488691724"></div>
-        <div class="stage-title">🎓 مرحلة الثانوي</div>
-        <div class="form-group"><label>رابط Telegram</label><input type="url" id="adminTelegramHigh" placeholder="https://t.me/..." dir="ltr" value="https://t.me/+RW-kr1fY7xg1ZmZk"></div>
-        <div class="form-group"><label>رابط Facebook</label><input type="url" id="adminFacebookHigh" placeholder="https://facebook.com/groups/..." dir="ltr" value="https://www.facebook.com/groups/811441095239367"></div>
+    <!-- قسم طلبات الانضمام (للمدير فقط) -->
+    <div id="requestsSection">
+        <h5><i class="fas fa-users"></i> إدارة الأعضاء <span id="requestsCount" style="background:#d62828; color:white; padding:2px 8px; border-radius:20px; font-size:0.6rem;">0</span></h5>
+        <div id="joinRequestsList" class="requests-panel"><div class="empty-requests">جاري تحميل الطلبات...</div></div>
+        
+        <h5 style="margin-top:12px;"><i class="fas fa-user-check"></i> الأعضاء المعتمدون</h5>
+        <div id="approvedMembersList" class="requests-panel"><div class="empty-requests">جاري تحميل الأعضاء...</div></div>
     </div>
-    <button id="saveInviteLinksBtn" class="lock-action-btn start">💾 حفظ روابط الدعوة</button>
     
-    <h5><i class="fas fa-users"></i> إدارة الأعضاء <span id="requestsCount" style="background:#d62828; color:white; padding:2px 8px; border-radius:20px; font-size:0.6rem;">0</span></h5>
-    <div id="joinRequestsList" class="requests-panel"><div class="empty-requests">جاري تحميل الطلبات...</div></div>
-    
-    <h5 style="margin-top:12px;"><i class="fas fa-user-check"></i> الأعضاء المعتمدون</h5>
-    <div id="approvedMembersList" class="requests-panel"><div class="empty-requests">جاري تحميل الأعضاء...</div></div>
-    
+    <!-- قسم إدارة الأساتذة (للمدير فقط) -->
     <div id="teacherManagementSection" style="display:none;">
         <hr style="margin:10px 0; border-color:var(--border-color);">
         <h5><i class="fas fa-chalkboard-teacher"></i> 👑 إدارة الأساتذة</h5>
@@ -1876,7 +1853,7 @@
 
 <script>
     // =============================================
-    // ✅ الإشعارات الفورية (Toast)
+    // الإشعارات الفورية
     // =============================================
     function showToast(message, type = 'info', duration = 3500) {
         const container = document.getElementById('toastContainer');
@@ -1906,7 +1883,7 @@
     window.showToast = showToast;
 
     // =============================================
-    // ✅ الوضع الليلي (Dark Mode)
+    // الوضع الليلي
     // =============================================
     function toggleTheme() {
         const currentTheme = document.documentElement.getAttribute('data-theme');
@@ -1933,7 +1910,7 @@
     });
 
     // =============================================
-    // ✅ العودة للصفحة الرئيسية
+    // العودة للصفحة الرئيسية
     // =============================================
     function goHome() {
         currentStage = null;
@@ -1945,14 +1922,13 @@
         clearNavigationState();
         showMainStages();
         showToast('🏠 تم العودة للصفحة الرئيسية', 'info', 1500);
-        // إخفاء نتائج البحث
         document.getElementById('searchResults').classList.remove('active');
         document.getElementById('searchInput').value = '';
     }
     window.goHome = goHome;
 
     // =============================================
-    // ✅ نظام التقييم (Rating System)
+    // نظام التقييم
     // =============================================
     function getRatings() {
         try {
@@ -2055,7 +2031,7 @@
     window.initRatingSystem = initRatingSystem;
 
     // =============================================
-    // ✅ البحث في الدروس
+    // البحث في الدروس
     // =============================================
     let searchTimeout = null;
     let lastSearchResults = [];
@@ -2082,7 +2058,6 @@
         const resultsContainer = document.getElementById('searchResults');
         
         try {
-            // البحث في المرحلة الابتدائية
             if (platformData && platformData.primary) {
                 Object.keys(platformData.primary).forEach(subStage => {
                     const subjects = platformData.primary[subStage].subjects;
@@ -2107,7 +2082,6 @@
                 });
             }
             
-            // البحث في المتوسط
             if (platformData && platformData.middle && platformData.middle.subjectsByYear) {
                 Object.keys(platformData.middle.subjectsByYear).forEach(year => {
                     const subjects = platformData.middle.subjectsByYear[year];
@@ -2132,7 +2106,6 @@
                 });
             }
             
-            // البحث في الثانوي
             if (platformData && platformData.high && platformData.high.subjectsByYear) {
                 Object.keys(platformData.high.subjectsByYear).forEach(year => {
                     const subjects = platformData.high.subjectsByYear[year];
@@ -2212,7 +2185,7 @@
     window.goToSearchResult = goToSearchResult;
 
     // =============================================
-    // ✅ نافذة الاتصال
+    // نافذة الاتصال
     // =============================================
     function openContactModal() {
         const modal = document.getElementById('contactModal');
@@ -2250,7 +2223,7 @@
     window.sendContactMessage = sendContactMessage;
 
     // =============================================
-    // ✅ تحديث أزرار تسجيل الدخول/الخروج
+    // تحديث أزرار تسجيل الدخول/الخروج
     // =============================================
     function updateAuthButtons() {
         const loginBtn = document.getElementById('loginBtn');
@@ -2267,7 +2240,31 @@
     window.updateAuthButtons = updateAuthButtons;
 
     // =============================================
-    // ✅ شريط الأخبار
+    // تحديث لوحة التحكم حسب الصلاحيات
+    // =============================================
+    function updateAdminPanel() {
+        const isMaster = currentUser?.email === MASTER_TEACHER_EMAIL;
+        const isTeacher = isAdminMode && !isMaster;
+        
+        const teacherManagementSection = document.getElementById('teacherManagementSection');
+        const requestsSection = document.getElementById('requestsSection');
+        
+        if (isMaster) {
+            // المدير: كل الصلاحيات
+            if (teacherManagementSection) teacherManagementSection.style.display = 'block';
+            if (requestsSection) requestsSection.style.display = 'block';
+        } else if (isTeacher) {
+            // الأستاذ العادي: صلاحيات محدودة
+            if (teacherManagementSection) teacherManagementSection.style.display = 'none';
+            if (requestsSection) requestsSection.style.display = 'none';
+        } else {
+            if (teacherManagementSection) teacherManagementSection.style.display = 'none';
+            if (requestsSection) requestsSection.style.display = 'none';
+        }
+    }
+
+    // =============================================
+    // شريط الأخبار
     // =============================================
     function renderNewsTicker() { 
         const container = document.getElementById("newsTickerContent"); 
@@ -2598,7 +2595,7 @@
     }
     
     // =============================================
-    // دوال إدارة الأساتذة والأعضاء
+    // دوال إدارة الأساتذة (للمدير فقط)
     // =============================================
     async function loadTeachersList() {
         if (!isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) {
@@ -2628,7 +2625,10 @@
     }
     
     async function addTeacher() {
-        if (currentUser?.email !== MASTER_TEACHER_EMAIL) { showToast('⚠️ غير مصرح لك', 'error'); return; }
+        if (currentUser?.email !== MASTER_TEACHER_EMAIL) { 
+            showToast('⚠️ غير مصرح لك - هذه الصلاحية للمدير فقط', 'error'); 
+            return; 
+        }
         const email = document.getElementById('newTeacherEmail').value.trim();
         if (!email) { showToast('⚠️ الرجاء إدخال البريد الإلكتروني', 'warning'); return; }
         if (email === MASTER_TEACHER_EMAIL) { showToast('⚠️ هذا هو بريدك بالفعل!', 'warning'); return; }
@@ -2644,7 +2644,10 @@
     }
     
     async function deleteTeacher(email) {
-        if (currentUser?.email !== MASTER_TEACHER_EMAIL) { showToast('⚠️ غير مصرح لك', 'error'); return; }
+        if (currentUser?.email !== MASTER_TEACHER_EMAIL) { 
+            showToast('⚠️ غير مصرح لك - هذه الصلاحية للمدير فقط', 'error'); 
+            return; 
+        }
         if (email === MASTER_TEACHER_EMAIL) { showToast('⚠️ لا يمكن حذف المدير!', 'warning'); return; }
         if (!confirm(`⚠️ هل أنت متأكد من حذف الأستاذ ${email}؟`)) return;
         try {
@@ -2669,10 +2672,10 @@
     }
     
     // =============================================
-    // إدارة الأعضاء المعتمدين
+    // إدارة الأعضاء المعتمدين (للمدير فقط)
     // =============================================
     async function loadApprovedMembers() {
-        if (!database || !isAdminMode) return;
+        if (!database || !isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) return;
         try {
             const snapshot = await database.ref('members/approved').once('value');
             const data = snapshot.val() || {};
@@ -2709,7 +2712,10 @@
     }
     
     async function deleteMember(email) {
-        if (!isAdminMode) { showToast('⚠️ غير مصرح لك', 'error'); return; }
+        if (!isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) { 
+            showToast('⚠️ غير مصرح لك - هذه الصلاحية للمدير فقط', 'error'); 
+            return; 
+        }
         if (!confirm(`⚠️ هل أنت متأكد من إلغاء عضوية ${email}؟`)) return;
         try {
             await database.ref('members/approved/' + email.replace(/\./g, '_')).remove();
@@ -2767,7 +2773,6 @@
         const teacherSection = document.getElementById("teacherManagementSection");
         if (teacherSection) teacherSection.style.display = "none";
         
-        // تم حذف زر تسجيل الدخول من هنا
         updateAuthButtons();
         refreshCurrentView();
         hideAllModals();
@@ -3021,10 +3026,10 @@
     }
     
     // =============================================
-    // إدارة طلبات الانضمام
+    // إدارة طلبات الانضمام (للمدير فقط)
     // =============================================
     async function loadJoinRequests() { 
-        if (!database || !isAdminMode) return; 
+        if (!database || !isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) return; 
         try { 
             const snapshot = await database.ref('members/joinRequests').once('value'); 
             const requests = snapshot.val() || {}; 
@@ -3389,9 +3394,7 @@
     
     function showMainStages() { 
         showMainStagesButtons();
-        let html = `<div class="welcome-card"><div class="welcome-emoji">👨‍🏫📚</div><h3>مرحباً بك في منصة الأستاذ محمد</h3><p>اختر المرحلة الدراسية أو مجتمعنا من الأعلى للبدء</p>`;
-        // تم حذف زر تسجيل الدخول من هنا
-        html += `</div>`;
+        let html = `<div class="welcome-card"><div class="welcome-emoji">👨‍🏫📚</div><h3>مرحباً بك في منصة الأستاذ محمد</h3><p>اختر المرحلة الدراسية أو مجتمعنا من الأعلى للبدء</p></div>`;
         document.getElementById("dynamicArea").innerHTML = html; 
         clearNavigationState();
     }
@@ -3567,7 +3570,6 @@
         
         setupDateChangeListeners();
         
-        // تحديث أزرار تسجيل الدخول/الخروج
         updateAuthButtons();
         
         const restored = restoreNavigationState();
@@ -3680,9 +3682,15 @@
                 if (currentUser && isAdminMode) { 
                     adminPanel.style.display = adminPanel.style.display === "none" ? "block" : "none"; 
                     if (adminPanel.style.display === "block") { 
-                        loadJoinRequests(); 
-                        loadApprovedMembers();
-                        if (currentUser?.email === MASTER_TEACHER_EMAIL) loadTeachersList();
+                        if (currentUser?.email === MASTER_TEACHER_EMAIL) {
+                            loadJoinRequests(); 
+                            loadApprovedMembers();
+                            loadTeachersList();
+                        } else {
+                            document.getElementById('requestsSection').style.display = 'none';
+                            document.getElementById('teacherManagementSection').style.display = 'none';
+                        }
+                        updateAdminPanel();
                     } 
                 } else if (currentUser && !isAdminMode) { 
                     showToast('⚠️ هذه اللوحة للأستاذ فقط', 'warning'); 
@@ -3709,7 +3717,6 @@
             if (e.target.classList.contains("logout-confirm-modal") && e.target === document.getElementById("revokeConfirmModal")) { 
                 document.getElementById("revokeConfirmModal").style.display = "none"; 
             } 
-            // إغلاق نتائج البحث عند النقر خارجها
             if (!e.target.closest('.search-wrapper')) {
                 document.getElementById('searchResults').classList.remove('active');
             }
@@ -3750,25 +3757,30 @@
                     } else if (isTeacher || email === MASTER_TEACHER_EMAIL) { 
                         isAdminMode = true; 
                         currentUserIsApproved = true; 
-                        if (bannerSpan) bannerSpan.innerHTML = `👨‍🏫 مرحباً أستاذ ${escapeHtml(email)}`; 
+                        
+                        if (email === MASTER_TEACHER_EMAIL) {
+                            if (bannerSpan) bannerSpan.innerHTML = `👑 المدير ${escapeHtml(email)}`; 
+                            if (teacherSection) teacherSection.style.display = "block";
+                            if (revokeBtn) revokeBtn.style.display = "none";
+                            loadTeachersList();
+                        } else {
+                            if (bannerSpan) bannerSpan.innerHTML = `👨‍🏫 الأستاذ ${escapeHtml(email)}`; 
+                            if (teacherSection) teacherSection.style.display = "none";
+                            if (revokeBtn) revokeBtn.style.display = "none";
+                        }
+                        
                         if (banner) banner.style.display = "flex"; 
                         if (gearIcon) gearIcon.style.display = "flex";
-                        if (email === MASTER_TEACHER_EMAIL && teacherSection) {
-                            teacherSection.style.display = "block";
-                            loadTeachersList();
-                        } else if (teacherSection) {
-                            teacherSection.style.display = "none";
-                        }
-                        if (revokeBtn) revokeBtn.style.display = "none";
+                        
+                        updateAdminPanel();
                     }
                     
                     await loadInviteLinks(); 
-                    if (isAdminMode) {
+                    if (isAdminMode && currentUser?.email === MASTER_TEACHER_EMAIL) {
                         await loadJoinRequests(); 
                         await loadApprovedMembers();
                     }
                     
-                    // تحديث أزرار تسجيل الدخول/الخروج
                     updateAuthButtons();
                     
                     if (previousUser === null && !isRestoringState) {
