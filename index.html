@@ -16,7 +16,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <style>
-        /* ... جميع الأنماط السابقة ... */
         :root {
             --bg-primary: #f0f4f0;
             --bg-secondary: #ffffff;
@@ -39,6 +38,9 @@
             --rating-color: #ddd;
             --rating-active: #ffc107;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --admin-color: #d62828;
+            --teacher-color: #ff8c42;
+            --member-color: #006233;
         }
 
         [data-theme="dark"] {
@@ -62,6 +64,9 @@
             --toast-shadow: rgba(0,0,0,0.5);
             --rating-color: #444466;
             --rating-active: #ffc107;
+            --admin-color: #d62828;
+            --teacher-color: #ff8c42;
+            --member-color: #006233;
         }
 
         *{margin:0;padding:0;box-sizing:border-box}
@@ -334,6 +339,20 @@
         }
         .teacher-gear:hover{background:rgba(255,255,255,0.3);transform:rotate(30deg)}
         .teacher-gear i{font-size:1rem;color:#ffd966}
+        
+        .admin-gear{
+            background:rgba(255,255,255,0.15);
+            border-radius:50%;
+            width:34px;
+            height:34px;
+            display:none;
+            align-items:center;
+            justify-content:center;
+            cursor:pointer;
+            transition:var(--transition)
+        }
+        .admin-gear:hover{background:rgba(255,255,255,0.3);transform:rotate(30deg)}
+        .admin-gear i{font-size:1rem;color:#ffd700}
         
         .news-ticker{
             background:#d62828;
@@ -1306,7 +1325,32 @@
             overflow-y:auto;
             color:var(--text-primary)
         }
-        .admin-panel h4{color:var(--text-primary);margin-bottom:12px;border-bottom:2px solid #ffc107;padding-bottom:6px;font-size:1.1rem}
+        .admin-panel h4{
+            color:var(--text-primary);
+            margin-bottom:12px;
+            border-bottom:2px solid #ffc107;
+            padding-bottom:6px;
+            font-size:1.1rem;
+            display:flex;
+            align-items:center;
+            gap:8px;
+        }
+        .admin-panel h4 .admin-badge{
+            background:#d62828;
+            color:white;
+            padding:2px 10px;
+            border-radius:20px;
+            font-size:0.6rem;
+            font-weight:700;
+        }
+        .admin-panel h4 .teacher-badge{
+            background:#ff8c42;
+            color:white;
+            padding:2px 10px;
+            border-radius:20px;
+            font-size:0.6rem;
+            font-weight:700;
+        }
         .admin-panel h5{color:#b45309;margin:10px 0 6px;font-size:0.95rem}
         .admin-panel input,.admin-panel select{
             width:100%;
@@ -1410,6 +1454,7 @@
         
         #teacherManagementSection{display:none;margin-top:8px}
         #requestsSection{display:block}
+        #adminOnlySection{display:block}
         
         @media (max-width:992px){
             .header{padding:10px 16px}
@@ -1549,6 +1594,7 @@
                 <i class="fas fa-moon"></i>
             </button>
             <div id="teacherGearIcon" class="teacher-gear"><i class="fas fa-cog"></i></div>
+            <div id="adminGearIcon" class="admin-gear"><i class="fas fa-crown"></i></div>
         </div>
     </header>
     
@@ -1752,7 +1798,8 @@
     <div class="auth-content">
         <div style="font-size:2rem;">👑</div>
         <h2>تسجيل الدخول كمدير</h2>
-        <input type="email" id="adminEmail" placeholder="البريد الإلكتروني" dir="ltr">
+        <p style="color:var(--text-secondary); font-size:0.8rem;">📌 البريد الإلكتروني: <strong style="color:#d62828;">hemikamohammed08@gmail.com</strong></p>
+        <input type="email" id="adminEmail" placeholder="البريد الإلكتروني" dir="ltr" value="hemikamohammed08@gmail.com">
         <input type="password" id="adminPassword" placeholder="كلمة المرور" dir="ltr">
         <div id="adminLoginError" class="error"></div>
         <button id="adminLoginBtn" style="background:#d62828; color:white;">تسجيل الدخول</button>
@@ -1845,9 +1892,12 @@
     </div>
 </div>
 
-<!-- ===== لوحة التحكم ===== -->
+<!-- ===== لوحة التحكم (لا تظهر إلا عند الضغط على الترس) ===== -->
 <div class="admin-panel" id="adminPanel">
-    <h4>🔐 لوحة التحكم</h4>
+    <h4 id="panelTitle">
+        <span>🔐 لوحة التحكم</span>
+        <span class="admin-badge" id="panelBadge">مدير</span>
+    </h4>
     
     <div id="lockSection">
         <h5>⏸️ التحكم بتوقيف الدروس</h5>
@@ -1905,27 +1955,29 @@
         <button id="saveInviteLinksBtn" class="lock-action-btn start">💾 حفظ روابط الدعوة</button>
     </div>
     
-    <div id="requestsSection">
-        <h5><i class="fas fa-users"></i> طلبات التسجيل <span id="requestsCount" style="background:#d62828; color:white; padding:2px 8px; border-radius:20px; font-size:0.6rem;">0</span></h5>
-        <div id="joinRequestsList" class="requests-panel"><div class="empty-requests">جاري تحميل الطلبات...</div></div>
+    <div id="adminOnlySection">
+        <div id="requestsSection">
+            <h5><i class="fas fa-users"></i> طلبات التسجيل <span id="requestsCount" style="background:#d62828; color:white; padding:2px 8px; border-radius:20px; font-size:0.6rem;">0</span></h5>
+            <div id="joinRequestsList" class="requests-panel"><div class="empty-requests">جاري تحميل الطلبات...</div></div>
+            
+            <h5 style="margin-top:12px;"><i class="fas fa-user-check"></i> الأعضاء المعتمدون</h5>
+            <div id="approvedMembersList" class="requests-panel"><div class="empty-requests">جاري تحميل الأعضاء...</div></div>
+        </div>
         
-        <h5 style="margin-top:12px;"><i class="fas fa-user-check"></i> الأعضاء المعتمدون</h5>
-        <div id="approvedMembersList" class="requests-panel"><div class="empty-requests">جاري تحميل الأعضاء...</div></div>
-    </div>
-    
-    <div id="teacherManagementSection" style="display:none;">
-        <hr style="margin:10px 0; border-color:var(--border-color);">
-        <h5><i class="fas fa-chalkboard-teacher"></i> 👑 إدارة الأساتذة</h5>
-        <div class="invite-links-section">
-            <div class="form-group">
-                <label>البريد الإلكتروني للأستاذ الجديد:</label>
-                <input type="email" id="newTeacherEmail" placeholder="example@email.com" dir="ltr">
+        <div id="teacherManagementSection">
+            <hr style="margin:10px 0; border-color:var(--border-color);">
+            <h5><i class="fas fa-chalkboard-teacher"></i> 👑 إدارة الأساتذة</h5>
+            <div class="invite-links-section">
+                <div class="form-group">
+                    <label>البريد الإلكتروني للأستاذ الجديد:</label>
+                    <input type="email" id="newTeacherEmail" placeholder="example@email.com" dir="ltr">
+                </div>
+                <button id="addTeacherBtn" class="lock-action-btn start">➕ إضافة أستاذ</button>
+                <div id="teachersList" style="margin-top:10px;">
+                    <div class="lock-info">جاري تحميل قائمة الأساتذة...</div>
+                </div>
+                <div class="lock-info" style="margin-top:6px;">👑 أنت المدير، يمكنك إضافة أو حذف أي أستاذ</div>
             </div>
-            <button id="addTeacherBtn" class="lock-action-btn start">➕ إضافة أستاذ</button>
-            <div id="teachersList" style="margin-top:10px;">
-                <div class="lock-info">جاري تحميل قائمة الأساتذة...</div>
-            </div>
-            <div class="lock-info" style="margin-top:6px;">👑 أنت المدير، يمكنك إضافة أو حذف أي أستاذ</div>
         </div>
     </div>
 </div>
@@ -2349,37 +2401,32 @@
     function updateAdminPanel() {
         const isMaster = currentUser?.email === MASTER_TEACHER_EMAIL;
         const isTeacher = isAdminMode && !isMaster;
-        const isMember = currentUser && !isAdminMode;
         
-        const teacherManagementSection = document.getElementById('teacherManagementSection');
-        const requestsSection = document.getElementById('requestsSection');
-        const lockSection = document.getElementById('lockSection');
-        const newsSection = document.getElementById('newsSection');
-        const inviteLinksSection = document.getElementById('inviteLinksSection');
+        const adminOnlySection = document.getElementById('adminOnlySection');
         const adminPanel = document.getElementById('adminPanel');
-        const gearIcon = document.getElementById('teacherGearIcon');
+        const panelBadge = document.getElementById('panelBadge');
+        const panelTitle = document.getElementById('panelTitle');
         
-        if (isMember) {
-            if (adminPanel) adminPanel.style.display = 'none';
-            if (gearIcon) gearIcon.style.display = 'none';
-            return;
-        }
-        
-        if (gearIcon) gearIcon.style.display = 'flex';
-        if (adminPanel) adminPanel.style.display = 'block';
-        
+        // لوحة التحكم تبقى مخفية حتى الضغط على الترس
+        // ولكن نحدث محتواها تحسباً
         if (isMaster) {
-            if (teacherManagementSection) teacherManagementSection.style.display = 'block';
-            if (requestsSection) requestsSection.style.display = 'block';
-            if (lockSection) lockSection.style.display = 'block';
-            if (newsSection) newsSection.style.display = 'block';
-            if (inviteLinksSection) inviteLinksSection.style.display = 'block';
+            if (panelBadge) {
+                panelBadge.className = 'admin-badge';
+                panelBadge.textContent = '👑 مدير';
+            }
+            if (adminOnlySection) adminOnlySection.style.display = 'block';
+            if (panelTitle) {
+                panelTitle.innerHTML = '<span>🔐 لوحة التحكم</span><span class="admin-badge">👑 مدير</span>';
+            }
         } else if (isTeacher) {
-            if (teacherManagementSection) teacherManagementSection.style.display = 'none';
-            if (requestsSection) requestsSection.style.display = 'none';
-            if (lockSection) lockSection.style.display = 'block';
-            if (newsSection) newsSection.style.display = 'block';
-            if (inviteLinksSection) inviteLinksSection.style.display = 'block';
+            if (panelBadge) {
+                panelBadge.className = 'teacher-badge';
+                panelBadge.textContent = '👨‍🏫 أستاذ';
+            }
+            if (adminOnlySection) adminOnlySection.style.display = 'none';
+            if (panelTitle) {
+                panelTitle.innerHTML = '<span>🔐 لوحة التحكم</span><span class="teacher-badge">👨‍🏫 أستاذ</span>';
+            }
         }
     }
 
@@ -2389,13 +2436,17 @@
     function updateUserInterface() {
         const banner = document.getElementById("membershipBanner");
         const bannerSpan = document.getElementById("bannerUserType");
-        const gearIcon = document.getElementById("teacherGearIcon");
         const revokeBtn = document.getElementById("revokeMembershipBtn");
+        const teacherGear = document.getElementById("teacherGearIcon");
+        const adminGear = document.getElementById("adminGearIcon");
+        const adminPanel = document.getElementById("adminPanel");
         
         if (!currentUser) {
             if (banner) banner.style.display = "none";
-            if (gearIcon) gearIcon.style.display = "none";
             if (revokeBtn) revokeBtn.style.display = "none";
+            if (teacherGear) teacherGear.style.display = "none";
+            if (adminGear) adminGear.style.display = "none";
+            if (adminPanel) adminPanel.style.display = "none";
             updateAuthButtons();
             return;
         }
@@ -2409,21 +2460,90 @@
         
         if (isMaster) {
             if (bannerSpan) bannerSpan.innerHTML = `👑 المدير ${escapeHtml(email)}`;
-            if (gearIcon) gearIcon.style.display = "flex";
+            if (teacherGear) teacherGear.style.display = "none";
+            if (adminGear) adminGear.style.display = "flex";
             if (revokeBtn) revokeBtn.style.display = "none";
         } else if (isTeacher) {
             if (bannerSpan) bannerSpan.innerHTML = `👨‍🏫 الأستاذ ${escapeHtml(email)}`;
-            if (gearIcon) gearIcon.style.display = "flex";
+            if (teacherGear) teacherGear.style.display = "flex";
+            if (adminGear) adminGear.style.display = "none";
             if (revokeBtn) revokeBtn.style.display = "none";
         } else if (isMember) {
             if (bannerSpan) bannerSpan.innerHTML = `👨‍🎓 مرحباً ${escapeHtml(email)}`;
-            if (gearIcon) gearIcon.style.display = "none";
+            if (teacherGear) teacherGear.style.display = "none";
+            if (adminGear) adminGear.style.display = "none";
             if (revokeBtn) revokeBtn.style.display = "inline-flex";
         }
+        
+        // ❌ لوحة التحكم لا تظهر تلقائياً - تبقى مخفية
+        if (adminPanel) adminPanel.style.display = "none";
         
         updateAdminPanel();
         updateAuthButtons();
     }
+
+    // =============================================
+    // أيقونة الأستاذ - تظهر لوحة التحكم عند الضغط
+    // =============================================
+    document.addEventListener('DOMContentLoaded', function() {
+        const teacherGear = document.getElementById('teacherGearIcon');
+        const adminGear = document.getElementById('adminGearIcon');
+        const adminPanel = document.getElementById('adminPanel');
+        
+        if (teacherGear) {
+            teacherGear.addEventListener('click', function() {
+                if (currentUser && isAdminMode && currentUser?.email !== MASTER_TEACHER_EMAIL) {
+                    // تبديل الظهور/الإخفاء
+                    if (adminPanel.style.display === 'block') {
+                        adminPanel.style.display = 'none';
+                    } else {
+                        adminPanel.style.display = 'block';
+                        // تحديث لوحة الأستاذ
+                        document.getElementById('adminOnlySection').style.display = 'none';
+                        const badge = document.getElementById('panelBadge');
+                        if (badge) {
+                            badge.className = 'teacher-badge';
+                            badge.textContent = '👨‍🏫 أستاذ';
+                        }
+                        updateAdminPanel();
+                    }
+                } else if (currentUser && !isAdminMode) {
+                    showToast('⚠️ هذه اللوحة للأستاذ فقط', 'warning');
+                } else {
+                    showLoginChoice();
+                }
+            });
+        }
+        
+        if (adminGear) {
+            adminGear.addEventListener('click', function() {
+                if (currentUser && isAdminMode && currentUser?.email === MASTER_TEACHER_EMAIL) {
+                    // تبديل الظهور/الإخفاء
+                    if (adminPanel.style.display === 'block') {
+                        adminPanel.style.display = 'none';
+                    } else {
+                        adminPanel.style.display = 'block';
+                        // تحديث لوحة المدير
+                        document.getElementById('adminOnlySection').style.display = 'block';
+                        const badge = document.getElementById('panelBadge');
+                        if (badge) {
+                            badge.className = 'admin-badge';
+                            badge.textContent = '👑 مدير';
+                        }
+                        // تحميل البيانات
+                        loadJoinRequests();
+                        loadApprovedMembers();
+                        loadTeachersList();
+                        updateAdminPanel();
+                    }
+                } else if (currentUser && !isAdminMode) {
+                    showToast('⚠️ هذه اللوحة للمدير فقط', 'warning');
+                } else {
+                    showLoginChoice();
+                }
+            });
+        }
+    });
 
     // =============================================
     // شريط الأخبار
@@ -2772,13 +2892,17 @@
             let html = '<div style="font-weight:bold; margin-bottom:8px;">📋 قائمة الأساتذة المسجلين:</div>';
             let count = 0;
             for (let [emailKey, data] of Object.entries(teachers)) {
-                count++;
                 const email = data.email || emailKey.replace(/_/g, '.');
-                const isMaster = email === MASTER_TEACHER_EMAIL;
-                html += `<div class="request-item" style="border-right-color:${isMaster ? '#006233' : '#d62828'};">
-                    <div><div class="request-email">📧 ${escapeHtml(email)} ${isMaster ? '👑' : ''}</div>
-                    <div class="request-date">📅 ${new Date(data.addedAt).toLocaleDateString('ar')}</div></div>
-                    <div>${!isMaster ? `<button class="delete-btn" onclick='deleteTeacher("${escapeHtml(email)}")'><i class="fas fa-user-minus"></i> حذف</button>` : '<span style="color:#006233; font-weight:bold;">👑 المدير</span>'}</div>
+                if (email === MASTER_TEACHER_EMAIL) continue;
+                count++;
+                html += `<div class="request-item" style="border-right-color:#d62828;">
+                    <div>
+                        <div class="request-email">📧 ${escapeHtml(email)}</div>
+                        <div class="request-date">📅 ${new Date(data.addedAt).toLocaleDateString('ar')}</div>
+                    </div>
+                    <div>
+                        <button class="delete-btn" onclick='deleteTeacher("${escapeHtml(email)}")'><i class="fas fa-user-minus"></i> حذف</button>
+                    </div>
                 </div>`;
             }
             if (count === 0) html += '<div class="empty-requests">📭 لا يوجد أساتذة مسجلون</div>';
@@ -2793,7 +2917,7 @@
         }
         const email = document.getElementById('newTeacherEmail').value.trim();
         if (!email) { showToast('⚠️ الرجاء إدخال البريد الإلكتروني', 'warning'); return; }
-        if (email === MASTER_TEACHER_EMAIL) { showToast('⚠️ هذا هو بريدك بالفعل!', 'warning'); return; }
+        if (email === MASTER_TEACHER_EMAIL) { showToast('⚠️ هذا هو بريد المدير! لا يمكن إضافته كأستاذ', 'warning'); return; }
         if (isFakeEmail(email)) { showToast('❌ لا يمكن إضافة بريد إلكتروني وهمي كأستاذ', 'error'); return; }
         try {
             const check = await database.ref('teachers/' + email.replace(/\./g, '_')).once('value');
@@ -2861,14 +2985,17 @@
         let html = '';
         approvedMembers.forEach(member => {
             const isCurrentUser = member.email === currentUser?.email;
+            const isAdmin = member.email === MASTER_TEACHER_EMAIL;
             const typeColor = member.userType === 'أستاذ' ? '#d62828' : '#006233';
             html += `<div class="request-item" style="border-right-color:${typeColor};">
                 <div>
-                    <div class="request-email">📧 ${escapeHtml(member.email)} ${isCurrentUser ? '👤 (أنت)' : ''}</div>
+                    <div class="request-email">📧 ${escapeHtml(member.email)} ${isCurrentUser ? '👤 (أنت)' : ''} ${isAdmin ? '👑' : ''}</div>
                     <div class="request-date">📅 ${new Date(member.approvedAt).toLocaleDateString('ar')} | ${member.userType || 'عضو'}</div>
                 </div>
                 <div>
-                    ${isCurrentUser ? '<span style="color:#006233; font-weight:bold;">أنت</span>' : `<button class="revoke-btn" onclick='deleteMember("${escapeHtml(member.email)}")'><i class="fas fa-user-times"></i> إلغاء العضوية</button>`}
+                    ${isAdmin ? '<span style="color:#d62828; font-weight:bold;">👑 المدير</span>' : 
+                    isCurrentUser ? '<span style="color:#006233; font-weight:bold;">أنت</span>' : 
+                    `<button class="revoke-btn" onclick='deleteMember("${escapeHtml(member.email)}")'><i class="fas fa-user-times"></i> إلغاء العضوية</button>`}
                 </div>
             </div>`;
         });
@@ -2880,6 +3007,7 @@
             showToast('⚠️ غير مصرح لك - هذه الصلاحية للمدير فقط', 'error'); 
             return; 
         }
+        if (email === MASTER_TEACHER_EMAIL) { showToast('⚠️ لا يمكن حذف المدير!', 'warning'); return; }
         if (!confirm(`⚠️ هل أنت متأكد من إلغاء عضوية ${email}؟`)) return;
         try {
             await database.ref('members/approved/' + email.replace(/\./g, '_')).remove();
@@ -2901,6 +3029,7 @@
     
     async function revokeOwnMembership() {
         if (!currentUser) { showToast('⚠️ لا يوجد مستخدم مسجل', 'warning'); return; }
+        if (currentUser.email === MASTER_TEACHER_EMAIL) { showToast('⚠️ لا يمكن للمدير إلغاء عضويته!', 'warning'); return; }
         if (!confirm(`⚠️ هل أنت متأكد من إلغاء عضويتك؟`)) return;
         try {
             const email = currentUser.email;
@@ -2928,14 +3057,14 @@
         const banner = document.getElementById("membershipBanner");
         if (banner) banner.style.display = "none";
         
-        const gearIcon = document.getElementById("teacherGearIcon");
-        if (gearIcon) gearIcon.style.display = "none";
+        const teacherGear = document.getElementById("teacherGearIcon");
+        if (teacherGear) teacherGear.style.display = "none";
+        
+        const adminGear = document.getElementById("adminGearIcon");
+        if (adminGear) adminGear.style.display = "none";
         
         const adminPanel = document.getElementById("adminPanel");
         if (adminPanel) adminPanel.style.display = "none";
-        
-        const teacherSection = document.getElementById("teacherManagementSection");
-        if (teacherSection) teacherSection.style.display = "none";
         
         updateAuthButtons();
         refreshCurrentView();
@@ -3740,7 +3869,6 @@
         } 
     }
     
-    // ===== دوال طلب التسجيل (المعدلة) =====
     async function handleRegisterTeacher() {
         const email = document.getElementById("registerTeacherEmail").value.trim();
         const password = document.getElementById("registerTeacherPassword").value;
@@ -3748,7 +3876,6 @@
         const errorDiv = document.getElementById("registerTeacherError");
         const successDiv = document.getElementById("registerTeacherSuccess");
         
-        // إخفاء الرسائل السابقة
         errorDiv.innerText = '';
         successDiv.style.display = 'none';
         
@@ -3774,27 +3901,17 @@
         }
         
         try {
-            // إنشاء الحساب في Firebase Auth
             await auth.createUserWithEmailAndPassword(email, password);
-            
-            // إضافة طلب انضمام إلى قاعدة البيانات
             await addJoinRequest(email, 'أستاذ');
-            
-            // تسجيل الخروج فوراً (لأنه يحتاج موافقة)
             await auth.signOut();
             
-            // إظهار رسالة النجاح
             successDiv.style.display = 'block';
-            
-            // تفريغ الحقول
             document.getElementById("registerTeacherEmail").value = '';
             document.getElementById("registerTeacherPassword").value = '';
             document.getElementById("registerTeacherConfirm").value = '';
             
-            // إشعار فوري
             showToast('✅ تم إرسال طلب التسجيل كأستاذ! سيتم مراجعة طلبك من قبل المدير.', 'success', 5000);
             
-            // إخفاء النافذة بعد 4 ثواني
             setTimeout(() => {
                 hideAllModals();
                 successDiv.style.display = 'none';
@@ -3816,7 +3933,6 @@
         const errorDiv = document.getElementById("registerMemberError");
         const successDiv = document.getElementById("registerMemberSuccess");
         
-        // إخفاء الرسائل السابقة
         errorDiv.innerText = '';
         successDiv.style.display = 'none';
         
@@ -3842,27 +3958,17 @@
         }
         
         try {
-            // إنشاء الحساب في Firebase Auth
             await auth.createUserWithEmailAndPassword(email, password);
-            
-            // إضافة طلب انضمام إلى قاعدة البيانات
             await addJoinRequest(email, 'عضو');
-            
-            // تسجيل الخروج فوراً (لأنه يحتاج موافقة)
             await auth.signOut();
             
-            // إظهار رسالة النجاح
             successDiv.style.display = 'block';
-            
-            // تفريغ الحقول
             document.getElementById("registerMemberEmail").value = '';
             document.getElementById("registerMemberPassword").value = '';
             document.getElementById("registerMemberConfirm").value = '';
             
-            // إشعار فوري
             showToast('✅ تم إرسال طلب التسجيل كعضو! سيتم مراجعة طلبك من قبل المدير.', 'success', 5000);
             
-            // إخفاء النافذة بعد 4 ثواني
             setTimeout(() => {
                 hideAllModals();
                 successDiv.style.display = 'none';
@@ -4016,11 +4122,11 @@
         document.getElementById("memberLoginBtn")?.addEventListener("click", handleMemberLogin);
         document.getElementById("closeMemberLoginBtn")?.addEventListener("click", hideAllModals);
         
-        // طلب تسجيل أستاذ - استخدام المعرف الصحيح
+        // طلب تسجيل أستاذ
         document.getElementById("registerTeacherSubmitBtn")?.addEventListener("click", handleRegisterTeacher);
         document.getElementById("closeRegisterTeacherBtn")?.addEventListener("click", hideAllModals);
         
-        // طلب تسجيل عضو - استخدام المعرف الصحيح
+        // طلب تسجيل عضو
         document.getElementById("registerMemberSubmitBtn")?.addEventListener("click", handleRegisterMember);
         document.getElementById("closeRegisterMemberBtn")?.addEventListener("click", hideAllModals);
         
@@ -4082,7 +4188,7 @@
         });
         document.getElementById("cancelEditInternalBtn")?.addEventListener("click", () => document.getElementById("editInternalLessonModal").style.display = "none");
         
-        // تسجيل الخروج
+        // تسجيل الخروج - زر الخروج في الأعلى فقط
         const membershipLogoutBtn = document.getElementById("membershipLogoutBtn");
         if (membershipLogoutBtn) membershipLogoutBtn.onclick = showLogoutConfirm;
         document.getElementById("confirmLogoutBtn")?.addEventListener("click", confirmLogout);
@@ -4092,34 +4198,6 @@
         document.getElementById("revokeMembershipBtn")?.addEventListener("click", showRevokeConfirm);
         document.getElementById("confirmRevokeBtn")?.addEventListener("click", revokeOwnMembership);
         document.getElementById("cancelRevokeBtn")?.addEventListener("click", () => document.getElementById("revokeConfirmModal").style.display = "none");
-        
-        // أيقونة الأستاذ/المدير
-        const teacherGear = document.getElementById("teacherGearIcon");
-        const adminPanel = document.getElementById("adminPanel");
-        if (teacherGear) {
-            teacherGear.onclick = () => { 
-                if (currentUser && isAdminMode) { 
-                    adminPanel.style.display = adminPanel.style.display === "none" ? "block" : "none"; 
-                    if (adminPanel.style.display === "block") { 
-                        if (currentUser?.email === MASTER_TEACHER_EMAIL) {
-                            loadJoinRequests(); 
-                            loadApprovedMembers();
-                            loadTeachersList();
-                            document.getElementById('requestsSection').style.display = 'block';
-                            document.getElementById('teacherManagementSection').style.display = 'block';
-                        } else {
-                            document.getElementById('requestsSection').style.display = 'none';
-                            document.getElementById('teacherManagementSection').style.display = 'none';
-                        }
-                        updateAdminPanel();
-                    } 
-                } else if (currentUser && !isAdminMode) { 
-                    showToast('⚠️ هذه اللوحة للأستاذ فقط', 'warning'); 
-                } else { 
-                    showLoginChoice(); 
-                } 
-            };
-        }
         
         // إغلاق النوافذ عند الضغط خارجها
         window.onclick = (e) => { 
