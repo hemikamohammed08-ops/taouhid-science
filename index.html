@@ -16,7 +16,7 @@
     
     <style>
         /* ==========================================================
-           التصميم المتكامل - مع إصلاحات الهاتف
+           التصميم المتكامل - النسخة النهائية
            ========================================================== */
 
         :root {
@@ -92,6 +92,16 @@
         [data-theme="dark"] .news-ticker-new { background: #1a2638; }
         [data-theme="dark"] .subject-card-new .header { color: #1a4a8a; }
         [data-theme="dark"] .admin-panel-new { background: #1a2638; }
+
+        input[type="email"], input[type="password"] {
+            background-image: none !important;
+            background-color: var(--bg-input) !important;
+        }
+        input:-webkit-autofill {
+            -webkit-box-shadow: 0 0 0 30px var(--bg-input) inset !important;
+            -webkit-text-fill-color: var(--text-primary) !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -314,7 +324,7 @@
         }
         .search-result-item:hover { background: var(--bg-card-hover); }
 
-        /* ---------- شريط الأخبار - مُصلح للهاتف ---------- */
+        /* ---------- شريط الأخبار ---------- */
         .news-ticker-new {
             background: var(--bg-white);
             border-radius: var(--radius-md);
@@ -1188,7 +1198,6 @@
            لوحة التحكم - مُصلحة للهاتف
            ========================================================== */
         
-        /* خلفية اللوحة */
         .admin-overlay {
             display: none;
             position: fixed;
@@ -1202,7 +1211,6 @@
         }
         .admin-overlay.active { display: block; }
 
-        /* اللوحة نفسها */
         .admin-panel-new {
             position: fixed;
             top: 50%;
@@ -1229,7 +1237,6 @@
             transform: translate(-50%, -50%) scale(1);
         }
 
-        /* زر إغلاق لوحة التحكم */
         .admin-close-btn {
             position: sticky;
             top: 0;
@@ -1427,19 +1434,6 @@
             font-size: 0.6rem;
         }
         .admin-panel-new #teacherManagementSection { display: none; margin-top: 8px; }
-        .admin-panel-new .membership-banner {
-            background: var(--gradient-primary);
-            color: white;
-            border-radius: var(--radius-lg);
-            padding: 10px 16px;
-            margin: 10px 0;
-            text-align: center;
-            display: none;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
 
         .toast-container {
             position: fixed;
@@ -1617,7 +1611,6 @@
             .visitor-popup-new .content h3 { font-size: 1.1rem; }
             .visitor-popup-new .content p { font-size: 0.9rem; }
             
-            /* ---------- لوحة التحكم على الهاتف ---------- */
             .admin-panel-new {
                 width: 95%;
                 max-width: 380px;
@@ -1644,23 +1637,7 @@
                 top: 8px;
                 left: 8px;
             }
-            .admin-panel-new .form-group input,
-            .admin-panel-new .form-group select {
-                min-height: 34px;
-                font-size: 0.75rem;
-                padding: 4px 10px;
-            }
-            .admin-panel-new .lock-date-input {
-                min-height: 28px;
-                font-size: 0.65rem;
-            }
-            .admin-panel-new .lock-action-btn {
-                min-height: 26px;
-                font-size: 0.6rem;
-                padding: 3px 10px;
-            }
             
-            /* ---------- شريط الأخبار على الهاتف ---------- */
             .news-ticker-new {
                 padding: 6px 10px;
                 min-height: 36px;
@@ -1773,32 +1750,18 @@
                 top: 6px;
                 left: 6px;
             }
-            .admin-panel-new .request-item {
-                font-size: 0.7rem;
-                padding: 4px 8px;
-            }
-            .admin-panel-new .request-email { font-size: 0.65rem; }
             
             .modal-content { padding: 14px; }
             .modal-content h3 { font-size: 0.95rem; }
-            .modal-content .form-group input,
-            .modal-content .form-group select,
-            .modal-content .form-group textarea {
-                min-height: 36px;
-                font-size: 0.8rem;
-                padding: 6px 10px;
-            }
             
             .community-new { padding: 12px; }
             .community-new .title { font-size: 1rem; }
             .community-new .stage-btn { font-size: 0.7rem; padding: 6px 14px; min-height: 32px; }
             .community-new .link-card { padding: 12px; max-width: 180px; }
-            .community-new .link-card .url { font-size: 0.6rem; }
             
             .visitor-popup-new .content { padding: 20px 16px; border-radius: 40px; }
             .visitor-popup-new .content .emoji { font-size: 2.5rem; }
             .visitor-popup-new .content h3 { font-size: 1rem; }
-            .visitor-popup-new .content p { font-size: 0.8rem; }
             
             .footer-new { font-size: 0.7rem; padding: 16px; margin-top: 32px; }
             
@@ -1828,7 +1791,7 @@
 <body>
 
 <!-- ============================================================ -->
-<!-- خلفية لوحة التحكم (للإغلاق بالنقر خارجها) -->
+<!-- خلفية لوحة التحكم -->
 <!-- ============================================================ -->
 <div id="adminOverlay" class="admin-overlay" onclick="closeAdminPanel()"></div>
 
@@ -1895,7 +1858,7 @@
         </div>
     </header>
 
-    <!-- شريط الأخبار - مُصلح للهاتف -->
+    <!-- شريط الأخبار -->
     <div id="newsTicker" class="news-ticker-new">
         <span class="label"><i class="fas fa-bullhorn"></i> المستجدات</span>
         <div class="content" id="newsTickerContent">
@@ -1954,15 +1917,15 @@
 <div id="toastContainer" class="toast-container"></div>
 
 <!-- ============================================================ -->
-<!-- جميع النوافذ المنبثقة -->
+<!-- النوافذ المنبثقة -->
 <!-- ============================================================ -->
 
 <!-- نافذة الاتصال -->
 <div id="contactModal" class="modal-overlay" onclick="if(event.target===this) closeContactModal()">
     <div class="modal-content">
         <h3>📧 اتصل بنا</h3>
-        <div class="form-group"><label>الاسم الكامل</label><input type="text" id="contactName" placeholder="أدخل اسمك"></div>
-        <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="contactEmail" placeholder="example@email.com"></div>
+        <div class="form-group"><label>الاسم الكامل</label><input type="text" id="contactName" placeholder="أدخل اسمك" autocomplete="off"></div>
+        <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="contactEmail" placeholder="example@email.com" autocomplete="off"></div>
         <div class="form-group"><label>الرسالة</label><textarea id="contactMessage" placeholder="اكتب رسالتك هنا..."></textarea></div>
         <div class="btn-group">
             <button class="btn btn-danger" onclick="closeContactModal()">إلغاء</button>
@@ -2013,7 +1976,7 @@
             </select>
         </div>
         <div id="internalLessonFields">
-            <div class="form-group"><label>رابط العرض (Google Drive):</label><input type="url" id="newLessonInternalUrl" placeholder="https://drive.google.com/file/d/xxx/preview"></div>
+            <div class="form-group"><label>رابط العرض:</label><input type="url" id="newLessonInternalUrl" placeholder="https://drive.google.com/file/d/xxx/preview"></div>
             <div class="form-group"><label>رابط التحميل:</label><input type="url" id="newLessonDownloadUrl" placeholder="https://drive.google.com/uc?export=download&id=xxx"></div>
         </div>
         <div id="externalLessonFields" style="display:none">
@@ -2059,7 +2022,7 @@
         <h2>تسجيل الدخول</h2>
         <p style="color:var(--text-secondary); font-size:0.95rem;">اختر نوع الحساب:</p>
         <div style="display:flex; flex-direction:column; gap:10px; margin:16px 0;">
-            <button id="loginAdminBtn" style="background:#dc2626; color:white; padding:12px; border-radius:var(--radius-full); border:none; font-weight:700; cursor:pointer; min-height:44px; font-size:1rem;">👑 الإدارة (المدير)</button>
+            <button id="loginAdminBtn" style="background:#dc2626; color:white; padding:12px; border-radius:var(--radius-full); border:none; font-weight:700; cursor:pointer; min-height:44px; font-size:1rem;">👑 المسؤول</button>
             <button id="loginTeacherBtn" style="background:#f59e0b; color:white; padding:12px; border-radius:var(--radius-full); border:none; font-weight:700; cursor:pointer; min-height:44px; font-size:1rem;">👨‍🏫 أستاذ</button>
             <button id="loginMemberBtn" style="background:var(--primary); color:white; padding:12px; border-radius:var(--radius-full); border:none; font-weight:700; cursor:pointer; min-height:44px; font-size:1rem;">👨‍🎓 عضو</button>
         </div>
@@ -2080,73 +2043,85 @@
     </div>
 </div>
 
+<!-- ===== نافذة تسجيل الدخول كمسؤول (بدون عبارة البريد الإلكتروني) ===== -->
 <div id="adminLoginModal" class="modal-overlay">
     <div class="modal-content">
         <div style="text-align:center; font-size:2rem;">👑</div>
-        <h2>تسجيل الدخول كمدير</h2>
-        <p style="color:var(--text-secondary); font-size:0.85rem; text-align:center;">📌 البريد: <strong style="color:#dc2626;">hemikamohammed08@gmail.com</strong></p>
-        <div class="form-group"><input type="email" id="adminEmail" placeholder="البريد الإلكتروني" dir="ltr" value="hemikamohammed08@gmail.com"></div>
-        <div class="form-group"><input type="password" id="adminPassword" placeholder="كلمة المرور" dir="ltr"></div>
-        <div id="adminLoginError" style="color:var(--danger); margin-top:4px; font-size:0.8rem;"></div>
+        <h2>تسجيل الدخول كمسؤول</h2>
+        <!-- تم إزالة عبارة البريد الإلكتروني -->
+        <div class="form-group">
+            <input type="email" id="adminEmail" placeholder="أدخل البريد الإلكتروني" dir="ltr" 
+                   autocomplete="off" value="">
+        </div>
+        <div class="form-group">
+            <input type="password" id="adminPassword" placeholder="أدخل كلمة المرور" dir="ltr" 
+                   autocomplete="new-password">
+        </div>
+        <div id="adminLoginError" style="color:var(--danger); margin-top:4px; font-size:0.8rem; min-height:20px;"></div>
         <button id="adminLoginBtn" class="btn btn-danger" style="width:100%;">تسجيل الدخول</button>
         <button id="closeAdminLoginBtn" class="btn btn-danger" style="width:100%; margin-top:4px; background:#94a3b8; color:white;">إلغاء</button>
     </div>
 </div>
 
+<!-- نافذة تسجيل الدخول كأستاذ -->
 <div id="teacherLoginModal" class="modal-overlay">
     <div class="modal-content">
         <div style="text-align:center; font-size:2rem;">👨‍🏫</div>
         <h2>تسجيل الدخول كأستاذ</h2>
-        <div class="form-group"><input type="email" id="teacherEmail" placeholder="البريد الإلكتروني" dir="ltr"></div>
-        <div class="form-group"><input type="password" id="teacherPassword" placeholder="كلمة المرور" dir="ltr"></div>
-        <div id="teacherLoginError" style="color:var(--danger); margin-top:4px; font-size:0.8rem;"></div>
+        <div class="form-group"><input type="email" id="teacherEmail" placeholder="أدخل البريد الإلكتروني" dir="ltr" autocomplete="off" value=""></div>
+        <div class="form-group"><input type="password" id="teacherPassword" placeholder="أدخل كلمة المرور" dir="ltr" autocomplete="new-password"></div>
+        <div id="teacherLoginError" style="color:var(--danger); margin-top:4px; font-size:0.8rem; min-height:20px;"></div>
         <button id="teacherLoginBtn" class="btn" style="width:100%; background:#f59e0b; color:white;">تسجيل الدخول</button>
         <button id="closeTeacherLoginBtn" class="btn btn-danger" style="width:100%; margin-top:4px; background:#94a3b8; color:white;">إلغاء</button>
     </div>
 </div>
 
+<!-- نافذة تسجيل الدخول كعضو -->
 <div id="memberLoginModal" class="modal-overlay">
     <div class="modal-content">
         <div style="text-align:center; font-size:2rem;">👨‍🎓</div>
         <h2>تسجيل الدخول كعضو</h2>
-        <div class="form-group"><input type="email" id="memberEmail" placeholder="البريد الإلكتروني" dir="ltr"></div>
-        <div class="form-group"><input type="password" id="memberPassword" placeholder="كلمة المرور" dir="ltr"></div>
-        <div id="memberLoginError" style="color:var(--danger); margin-top:4px; font-size:0.8rem;"></div>
+        <div class="form-group"><input type="email" id="memberEmail" placeholder="أدخل البريد الإلكتروني" dir="ltr" autocomplete="off" value=""></div>
+        <div class="form-group"><input type="password" id="memberPassword" placeholder="أدخل كلمة المرور" dir="ltr" autocomplete="new-password"></div>
+        <div id="memberLoginError" style="color:var(--danger); margin-top:4px; font-size:0.8rem; min-height:20px;"></div>
         <button id="memberLoginBtn" class="btn" style="width:100%; background:var(--primary); color:white;">تسجيل الدخول</button>
         <button id="closeMemberLoginBtn" class="btn btn-danger" style="width:100%; margin-top:4px; background:#94a3b8; color:white;">إلغاء</button>
     </div>
 </div>
 
+<!-- نافذة طلب تسجيل أستاذ -->
 <div id="registerTeacherModal" class="modal-overlay">
     <div class="modal-content">
         <div style="text-align:center; font-size:2rem;">👨‍🏫</div>
         <h2>طلب تسجيل كأستاذ</h2>
-        <p style="color:var(--text-secondary); font-size:0.9rem; text-align:center;">📌 سيتم إرسال طلبك إلى المدير للموافقة عليه</p>
+        <p style="color:var(--text-secondary); font-size:0.9rem; text-align:center;">📌 سيتم إرسال طلبك إلى المسؤول للموافقة عليه</p>
         <div id="registerTeacherSuccess" class="success-msg" style="display:none;">✅ تم إرسال طلب التسجيل بنجاح!</div>
-        <div class="form-group"><input type="email" id="registerTeacherEmail" placeholder="البريد الإلكتروني" dir="ltr"></div>
-        <div class="form-group"><input type="password" id="registerTeacherPassword" placeholder="كلمة المرور" dir="ltr"></div>
-        <div class="form-group"><input type="password" id="registerTeacherConfirm" placeholder="تأكيد كلمة المرور" dir="ltr"></div>
-        <div id="registerTeacherError" style="color:var(--danger); margin-top:4px; font-size:0.8rem;"></div>
+        <div class="form-group"><input type="email" id="registerTeacherEmail" placeholder="أدخل البريد الإلكتروني" dir="ltr" autocomplete="off" value=""></div>
+        <div class="form-group"><input type="password" id="registerTeacherPassword" placeholder="أدخل كلمة المرور" dir="ltr" autocomplete="new-password"></div>
+        <div class="form-group"><input type="password" id="registerTeacherConfirm" placeholder="تأكيد كلمة المرور" dir="ltr" autocomplete="new-password"></div>
+        <div id="registerTeacherError" style="color:var(--danger); margin-top:4px; font-size:0.8rem; min-height:20px;"></div>
         <button id="registerTeacherSubmitBtn" class="btn" style="width:100%; background:#f59e0b; color:white;">إرسال الطلب</button>
         <button id="closeRegisterTeacherBtn" class="btn btn-danger" style="width:100%; margin-top:4px; background:#94a3b8; color:white;">إلغاء</button>
     </div>
 </div>
 
+<!-- نافذة طلب تسجيل عضو -->
 <div id="registerMemberModal" class="modal-overlay">
     <div class="modal-content">
         <div style="text-align:center; font-size:2rem;">👨‍🎓</div>
         <h2>طلب تسجيل كعضو</h2>
-        <p style="color:var(--text-secondary); font-size:0.9rem; text-align:center;">📌 سيتم إرسال طلبك إلى المدير للموافقة عليه</p>
+        <p style="color:var(--text-secondary); font-size:0.9rem; text-align:center;">📌 سيتم إرسال طلبك إلى المسؤول للموافقة عليه</p>
         <div id="registerMemberSuccess" class="success-msg" style="display:none;">✅ تم إرسال طلب التسجيل بنجاح!</div>
-        <div class="form-group"><input type="email" id="registerMemberEmail" placeholder="البريد الإلكتروني" dir="ltr"></div>
-        <div class="form-group"><input type="password" id="registerMemberPassword" placeholder="كلمة المرور" dir="ltr"></div>
-        <div class="form-group"><input type="password" id="registerMemberConfirm" placeholder="تأكيد كلمة المرور" dir="ltr"></div>
-        <div id="registerMemberError" style="color:var(--danger); margin-top:4px; font-size:0.8rem;"></div>
+        <div class="form-group"><input type="email" id="registerMemberEmail" placeholder="أدخل البريد الإلكتروني" dir="ltr" autocomplete="off" value=""></div>
+        <div class="form-group"><input type="password" id="registerMemberPassword" placeholder="أدخل كلمة المرور" dir="ltr" autocomplete="new-password"></div>
+        <div class="form-group"><input type="password" id="registerMemberConfirm" placeholder="تأكيد كلمة المرور" dir="ltr" autocomplete="new-password"></div>
+        <div id="registerMemberError" style="color:var(--danger); margin-top:4px; font-size:0.8rem; min-height:20px;"></div>
         <button id="registerMemberSubmitBtn" class="btn" style="width:100%; background:var(--primary); color:white;">إرسال الطلب</button>
         <button id="closeRegisterMemberBtn" class="btn btn-danger" style="width:100%; margin-top:4px; background:#94a3b8; color:white;">إلغاء</button>
     </div>
 </div>
 
+<!-- نافذة تأكيد تسجيل الخروج -->
 <div id="logoutConfirmModal" class="modal-overlay">
     <div class="modal-content" style="text-align:center; max-width:320px;">
         <div style="font-size:2rem;">🚪</div>
@@ -2156,6 +2131,7 @@
     </div>
 </div>
 
+<!-- نافذة إلغاء العضوية -->
 <div id="revokeConfirmModal" class="modal-overlay">
     <div class="modal-content" style="text-align:center; max-width:320px;">
         <div style="font-size:2rem;">🚫</div>
@@ -2167,15 +2143,14 @@
 </div>
 
 <!-- ============================================================ -->
-<!-- لوحة التحكم - مع زر الإغلاق -->
+<!-- لوحة التحكم -->
 <!-- ============================================================ -->
 <div class="admin-panel-new" id="adminPanel">
-    <!-- زر الإغلاق -->
     <button class="admin-close-btn" onclick="closeAdminPanel()">
         <i class="fas fa-times"></i>
     </button>
     
-    <h4 id="panelTitle">🔐 لوحة التحكم <span class="admin-badge" id="panelBadge">مدير</span></h4>
+    <h4 id="panelTitle">🔐 لوحة التحكم <span class="admin-badge" id="panelBadge">مسؤول</span></h4>
     
     <div id="lockSection">
         <h5>⏸️ التحكم بتوقيف الدروس</h5>
@@ -2269,6 +2244,7 @@ try {
     auth = firebase.auth();
 } catch(e) {
     console.error("Firebase error:", e);
+    showToast('⚠️ خطأ في الاتصال بقاعدة البيانات', 'error');
 }
 
 // ============================================================
@@ -2345,19 +2321,51 @@ function formatDate(dateStr) {
 }
 
 // ============================================================
-// دالة إغلاق لوحة التحكم
+// دوال مسح الحقول
+// ============================================================
+function clearAuthFields() {
+    const fields = ['adminEmail', 'adminPassword', 'teacherEmail', 'teacherPassword', 
+                   'memberEmail', 'memberPassword', 'registerTeacherEmail', 
+                   'registerTeacherPassword', 'registerTeacherConfirm',
+                   'registerMemberEmail', 'registerMemberPassword', 'registerMemberConfirm'];
+    fields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    
+    ['adminLoginError', 'teacherLoginError', 'memberLoginError', 
+     'registerTeacherError', 'registerMemberError'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = '';
+    });
+    
+    ['registerTeacherSuccess', 'registerMemberSuccess'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+}
+window.clearAuthFields = clearAuthFields;
+
+// ============================================================
+// دوال الإغلاق
 // ============================================================
 function closeAdminPanel() {
     const panel = document.getElementById('adminPanel');
     const overlay = document.getElementById('adminOverlay');
-    panel.classList.remove('active');
-    overlay.classList.remove('active');
+    if (panel) panel.classList.remove('active');
+    if (overlay) overlay.classList.remove('active');
 }
 window.closeAdminPanel = closeAdminPanel;
 
-// ============================================================
-// التوست
-// ============================================================
+function hideAllModals() {
+    document.querySelectorAll('.modal-overlay.active, .popup-overlay-new.active, .visitor-popup-new.active').forEach(el => {
+        el.classList.remove('active');
+    });
+    clearAuthFields();
+    closeAdminPanel();
+}
+window.hideAllModals = hideAllModals;
+
 function showToast(message, type = 'info', duration = 3500) {
     const container = document.getElementById('toastContainer');
     if (!container) return;
@@ -2732,13 +2740,6 @@ function showRevokeConfirm() {
 }
 window.showRevokeConfirm = showRevokeConfirm;
 
-function hideAllModals() {
-    document.querySelectorAll('.modal-overlay.active, .popup-overlay-new.active, .visitor-popup-new.active').forEach(el => {
-        el.classList.remove('active');
-    });
-}
-window.hideAllModals = hideAllModals;
-
 function closeVisitorDeniedPopup() {
     document.getElementById('visitorDeniedPopup').classList.remove('active');
 }
@@ -2775,14 +2776,14 @@ async function handleAdminLogin() {
     if (!email || !password) { errorDiv.innerText = '❌ الرجاء إدخال البريد الإلكتروني وكلمة المرور'; return; }
     if (!auth) { errorDiv.innerText = '❌ خطأ في الاتصال'; return; }
     if (email !== MASTER_TEACHER_EMAIL) {
-        errorDiv.innerText = '❌ هذا البريد ليس مديراً';
+        errorDiv.innerText = '❌ هذا البريد ليس مسؤولاً';
         return;
     }
     
     try {
         await auth.signInWithEmailAndPassword(email, password);
         hideAllModals();
-        showToast('✅ تم تسجيل الدخول كمدير بنجاح!', 'success');
+        showToast('✅ تم تسجيل الدخول كمسؤول بنجاح!', 'success');
     } catch(error) {
         let msg = '❌ فشل تسجيل الدخول';
         if (error.code === 'auth/user-not-found') msg = '❌ لا يوجد حساب بهذا البريد';
@@ -2833,12 +2834,12 @@ async function handleMemberLogin() {
     try {
         const isApproved = await checkMemberApproval(email);
         if (!isApproved) {
-            errorDiv.innerText = '⏳ عذراً، لم يتم الموافقة على طلب عضويتك بعد. يرجى الانتظار حتى يوافق المدير على طلبك.';
+            errorDiv.innerText = '⏳ عذراً، لم يتم الموافقة على طلب عضويتك بعد. يرجى الانتظار حتى يوافق المسؤول على طلبك.';
             return;
         }
         const isTeacher = await checkTeacherPermissions(email);
         if (isTeacher || email === MASTER_TEACHER_EMAIL) {
-            errorDiv.innerText = '❌ هذا الحساب مسجل كأستاذ/مدير، يرجى استخدام خيار تسجيل الدخول المناسب';
+            errorDiv.innerText = '❌ هذا الحساب مسجل كأستاذ/مسؤول، يرجى استخدام خيار تسجيل الدخول المناسب';
             return;
         }
         await auth.signInWithEmailAndPassword(email, password);
@@ -2895,7 +2896,7 @@ async function handleRegisterTeacher() {
         document.getElementById('registerTeacherPassword').value = '';
         document.getElementById('registerTeacherConfirm').value = '';
         
-        showToast('✅ تم إرسال طلب التسجيل كأستاذ! سيتم مراجعة طلبك من قبل المدير.', 'success', 5000);
+        showToast('✅ تم إرسال طلب التسجيل كأستاذ! سيتم مراجعة طلبك من قبل المسؤول.', 'success', 5000);
         
         setTimeout(() => {
             hideAllModals();
@@ -2951,7 +2952,7 @@ async function handleRegisterMember() {
         document.getElementById('registerMemberPassword').value = '';
         document.getElementById('registerMemberConfirm').value = '';
         
-        showToast('✅ تم إرسال طلب التسجيل كعضو! سيتم مراجعة طلبك من قبل المدير.', 'success', 5000);
+        showToast('✅ تم إرسال طلب التسجيل كعضو! سيتم مراجعة طلبك من قبل المسؤول.', 'success', 5000);
         
         setTimeout(() => {
             hideAllModals();
@@ -3107,7 +3108,7 @@ function renderApprovedMembersList() {
                 <div class="request-date">📅 ${new Date(member.approvedAt).toLocaleDateString('ar')} | ${member.userType || 'عضو'}</div>
             </div>
             <div>
-                ${isAdmin ? '<span style="color:#dc2626; font-weight:bold;">👑 المدير</span>' : 
+                ${isAdmin ? '<span style="color:#dc2626; font-weight:bold;">👑 المسؤول</span>' : 
                 isCurrentUser ? '<span style="color:#10b981; font-weight:bold;">أنت</span>' : 
                 `<button class="revoke-btn" onclick='deleteMember("${sanitizeHtml(member.email)}")'><i class="fas fa-user-times"></i> إلغاء العضوية</button>`}
             </div>
@@ -3118,11 +3119,11 @@ function renderApprovedMembersList() {
 
 async function deleteMember(email) {
     if (!isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) {
-        showToast('⚠️ غير مصرح لك - هذه الصلاحية للمدير فقط', 'error');
+        showToast('⚠️ غير مصرح لك - هذه الصلاحية للمسؤول فقط', 'error');
         return;
     }
     if (email === MASTER_TEACHER_EMAIL) {
-        showToast('⚠️ لا يمكن حذف المدير!', 'warning');
+        showToast('⚠️ لا يمكن حذف المسؤول!', 'warning');
         return;
     }
     if (!confirm(`⚠️ هل أنت متأكد من إلغاء عضوية ${email}؟`)) return;
@@ -3154,7 +3155,7 @@ async function revokeOwnMembership() {
         return;
     }
     if (currentUser.email === MASTER_TEACHER_EMAIL) {
-        showToast('⚠️ لا يمكن للمدير إلغاء عضويته!', 'warning');
+        showToast('⚠️ لا يمكن للمسؤول إلغاء عضويته!', 'warning');
         return;
     }
     if (!confirm(`⚠️ هل أنت متأكد من إلغاء عضويتك؟`)) return;
@@ -3210,13 +3211,13 @@ async function loadTeachersList() {
 
 async function addTeacher() {
     if (currentUser?.email !== MASTER_TEACHER_EMAIL) {
-        showToast('⚠️ غير مصرح لك - هذه الصلاحية للمدير فقط', 'error');
+        showToast('⚠️ غير مصرح لك - هذه الصلاحية للمسؤول فقط', 'error');
         return;
     }
     const email = document.getElementById('newTeacherEmail').value.trim();
     if (!email) { showToast('⚠️ الرجاء إدخال البريد الإلكتروني', 'warning'); return; }
     if (email === MASTER_TEACHER_EMAIL) {
-        showToast('⚠️ هذا هو بريد المدير! لا يمكن إضافته كأستاذ', 'warning');
+        showToast('⚠️ هذا هو بريد المسؤول! لا يمكن إضافته كأستاذ', 'warning');
         return;
     }
     if (isFakeEmail(email)) {
@@ -3244,11 +3245,11 @@ async function addTeacher() {
 
 async function deleteTeacher(email) {
     if (currentUser?.email !== MASTER_TEACHER_EMAIL) {
-        showToast('⚠️ غير مصرح لك - هذه الصلاحية للمدير فقط', 'error');
+        showToast('⚠️ غير مصرح لك - هذه الصلاحية للمسؤول فقط', 'error');
         return;
     }
     if (email === MASTER_TEACHER_EMAIL) {
-        showToast('⚠️ لا يمكن حذف المدير!', 'warning');
+        showToast('⚠️ لا يمكن حذف المسؤول!', 'warning');
         return;
     }
     if (!confirm(`⚠️ هل أنت متأكد من حذف الأستاذ ${email}؟`)) return;
@@ -3281,7 +3282,7 @@ function updateAuthButtons() {
         if (logoutBtn) {
             logoutBtn.style.display = 'inline-flex';
             if (isAdminMode && currentUser?.email === MASTER_TEACHER_EMAIL) {
-                logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> تسجيل الخروج (مدير)';
+                logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> تسجيل الخروج (مسؤول)';
             } else if (isAdminMode) {
                 logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> تسجيل الخروج (أستاذ)';
             } else {
@@ -3321,7 +3322,7 @@ function updateUserInterface() {
     if (banner) banner.style.display = 'flex';
     
     if (isMaster) {
-        if (bannerSpan) bannerSpan.innerHTML = `👑 المدير ${sanitizeHtml(email)}`;
+        if (bannerSpan) bannerSpan.innerHTML = `👑 المسؤول ${sanitizeHtml(email)}`;
         if (teacherGear) teacherGear.style.display = 'none';
         if (adminGear) adminGear.style.display = 'flex';
         if (revokeBtn) revokeBtn.style.display = 'none';
@@ -3353,11 +3354,11 @@ function updateAdminPanel() {
     
     if (isMaster) {
         if (panelBadge) {
-            panelBadge.textContent = '👑 مدير';
+            panelBadge.textContent = '👑 مسؤول';
         }
         if (adminOnlySection) adminOnlySection.style.display = 'block';
         if (panelTitle) {
-            panelTitle.innerHTML = '🔐 لوحة التحكم <span class="admin-badge">👑 مدير</span>';
+            panelTitle.innerHTML = '🔐 لوحة التحكم <span class="admin-badge">👑 مسؤول</span>';
         }
     } else if (isTeacher) {
         if (panelBadge) {
@@ -3425,7 +3426,8 @@ async function loadNews() {
         } else {
             newsText = '📢 مرحباً بكم في منصة الأستاذ محمد التعليمية';
         }
-        document.getElementById('adminNewsText').value = newsText;
+        const adminNews = document.getElementById('adminNewsText');
+        if (adminNews) adminNews.value = newsText;
         renderNewsTicker();
     } catch(e) {
         console.error('Error loading news:', e);
@@ -3445,27 +3447,6 @@ async function saveNews() {
     await database.ref('settings/news').set({ text: newsText, updatedAt: Date.now() });
     renderNewsTicker();
     showToast('✅ تم حفظ شريط الأخبار بنجاح', 'success');
-}
-
-// ============================================================
-// العد التنازلي
-// ============================================================
-function updateCountdown() {
-    let targetDate = new Date(2026, 5, 27);
-    if (lockSettings && lockSettings.summerUnlockDate) {
-        const parts = lockSettings.summerUnlockDate.split('-');
-        if (parts.length === 3) targetDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    }
-    const diff = targetDate - new Date();
-    if (diff <= 0) {
-        const container = document.getElementById('countdownContainer');
-        if (container) container.innerHTML = '<div class="title">🎉 مرحباً بعودتكم</div>';
-        return;
-    }
-    document.getElementById('days').innerText = Math.floor(diff/86400000).toString().padStart(2,'0');
-    document.getElementById('hours').innerText = Math.floor((diff%86400000)/3600000).toString().padStart(2,'0');
-    document.getElementById('minutes').innerText = Math.floor((diff%3600000)/60000).toString().padStart(2,'0');
-    document.getElementById('seconds').innerText = Math.floor((diff%60000)/1000).toString().padStart(2,'0');
 }
 
 // ============================================================
@@ -3601,7 +3582,7 @@ function setupDateChangeListeners() {
             if (lockSettings && this.value) {
                 lockSettings.summerUnlockDate = this.value;
                 updateCountdown();
-                database.ref('settings/lockSettings').set(lockSettings);
+                if (database) database.ref('settings/lockSettings').set(lockSettings);
                 showToast('✅ تم تحديث تاريخ الدروس الصيفية', 'success', 2000);
             }
         });
@@ -3612,7 +3593,7 @@ function setupDateChangeListeners() {
             if (lockSettings && this.value) {
                 lockSettings.curriculumUnlockDate = this.value;
                 updateCountdown();
-                database.ref('settings/lockSettings').set(lockSettings);
+                if (database) database.ref('settings/lockSettings').set(lockSettings);
                 showToast('✅ تم تحديث تاريخ الدروس المقررة', 'success', 2000);
             }
         });
@@ -3631,6 +3612,28 @@ function isLessonAccessible(type) {
         if (!lockSettings.curriculumLocked) return true;
         return today >= new Date(lockSettings.curriculumUnlockDate);
     }
+}
+
+function updateCountdown() {
+    let targetDate = new Date(2026, 5, 27);
+    if (lockSettings && lockSettings.summerUnlockDate) {
+        const parts = lockSettings.summerUnlockDate.split('-');
+        if (parts.length === 3) targetDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    }
+    const diff = targetDate - new Date();
+    if (diff <= 0) {
+        const container = document.getElementById('countdownContainer');
+        if (container) container.innerHTML = '<div class="title">🎉 مرحباً بعودتكم</div>';
+        return;
+    }
+    const days = document.getElementById('days');
+    const hours = document.getElementById('hours');
+    const minutes = document.getElementById('minutes');
+    const seconds = document.getElementById('seconds');
+    if (days) days.innerText = Math.floor(diff/86400000).toString().padStart(2,'0');
+    if (hours) hours.innerText = Math.floor((diff%86400000)/3600000).toString().padStart(2,'0');
+    if (minutes) minutes.innerText = Math.floor((diff%3600000)/60000).toString().padStart(2,'0');
+    if (seconds) seconds.innerText = Math.floor((diff%60000)/1000).toString().padStart(2,'0');
 }
 
 // ============================================================
@@ -3815,8 +3818,451 @@ function clearNavigationState() {
 }
 
 // ============================================================
-// عرض الدروس والمحتوى
+// البيانات الأساسية
 // ============================================================
+function getDefaultPlatformData() {
+    return {
+        primary: {
+            stage1: {
+                name: 'الطور الأول',
+                years: 'تحضيري - أولى - ثانية',
+                subjects: {
+                    'اللغة العربية': { summer: [], curriculum: [] },
+                    'الرياضيات': { summer: [], curriculum: [] },
+                    'التربية الإسلامية': { summer: [], curriculum: [] }
+                }
+            },
+            stage2: {
+                name: 'الطور الثاني',
+                years: 'الثالثة - الرابعة',
+                subjects: {
+                    'اللغة العربية': { summer: [], curriculum: [] },
+                    'الرياضيات': { summer: [], curriculum: [] },
+                    'التربية العلمية': { summer: [], curriculum: [] },
+                    'التاريخ والجغرافيا': { summer: [], curriculum: [] },
+                    'التربية الإسلامية': { summer: [], curriculum: [] }
+                }
+            },
+            stage3: {
+                name: 'الطور الثالث',
+                years: 'الخامسة',
+                subjects: {
+                    'اللغة العربية': { summer: [], curriculum: [] },
+                    'الرياضيات': { summer: [], curriculum: [] },
+                    'التربية العلمية': { summer: [], curriculum: [] },
+                    'التاريخ والجغرافيا': { summer: [], curriculum: [] },
+                    'التربية الإسلامية': { summer: [], curriculum: [] }
+                }
+            }
+        },
+        middle: {
+            name: 'مرحلة المتوسط',
+            yearsList: ['السنة الأولى متوسط', 'السنة الثانية متوسط', 'السنة الثالثة متوسط', 'السنة الرابعة متوسط'],
+            subjectsByYear: {
+                'السنة الأولى متوسط': {
+                    'اللغة العربية': { summer: [], curriculum: [] },
+                    'الرياضيات': { summer: [], curriculum: [] },
+                    'التاريخ والجغرافيا': { summer: [], curriculum: [] },
+                    'التربية الإسلامية': { summer: [], curriculum: [] },
+                    'العلوم الفيزيائية': { summer: [], curriculum: [] },
+                    'المتفرقات': { summer: [], curriculum: [] }
+                },
+                'السنة الثانية متوسط': {
+                    'اللغة العربية': { summer: [], curriculum: [] },
+                    'الرياضيات': { summer: [], curriculum: [] },
+                    'التاريخ والجغرافيا': { summer: [], curriculum: [] },
+                    'التربية الإسلامية': { summer: [], curriculum: [] },
+                    'العلوم الفيزيائية': { summer: [], curriculum: [] },
+                    'المتفرقات': { summer: [], curriculum: [] }
+                },
+                'السنة الثالثة متوسط': {
+                    'اللغة العربية': { summer: [], curriculum: [] },
+                    'الرياضيات': { summer: [], curriculum: [] },
+                    'التاريخ والجغرافيا': { summer: [], curriculum: [] },
+                    'التربية الإسلامية': { summer: [], curriculum: [] },
+                    'العلوم الفيزيائية': { summer: [], curriculum: [] },
+                    'المتفرقات': { summer: [], curriculum: [] }
+                },
+                'السنة الرابعة متوسط': {
+                    'اللغة العربية': { summer: [], curriculum: [] },
+                    'الرياضيات': { summer: [], curriculum: [] },
+                    'التاريخ والجغرافيا': { summer: [], curriculum: [] },
+                    'التربية الإسلامية': { summer: [], curriculum: [] },
+                    'العلوم الفيزيائية': { summer: [], curriculum: [] },
+                    'المتفرقات': { summer: [], curriculum: [] }
+                }
+            }
+        },
+        high: {
+            name: 'مرحلة الثانوي',
+            yearsList: ['السنة الأولى ثانوي', 'السنة الثانية ثانوي', 'السنة الثالثة ثانوي'],
+            subjectsByYear: {
+                'السنة الأولى ثانوي': {
+                    'اللغة العربية': { summer: [], curriculum: [] },
+                    'الرياضيات': { summer: [], curriculum: [] },
+                    'التاريخ والجغرافيا': { summer: [], curriculum: [] },
+                    'العلوم الإسلامية': { summer: [], curriculum: [] },
+                    'العلوم الفيزيائية': { summer: [], curriculum: [] },
+                    'المتفرقات': { summer: [], curriculum: [] }
+                },
+                'السنة الثانية ثانوي': {
+                    'اللغة العربية': { summer: [], curriculum: [] },
+                    'الرياضيات': { summer: [], curriculum: [] },
+                    'التاريخ والجغرافيا': { summer: [], curriculum: [] },
+                    'العلوم الإسلامية': { summer: [], curriculum: [] },
+                    'العلوم الفيزيائية': { summer: [], curriculum: [] },
+                    'المتفرقات': { summer: [], curriculum: [] }
+                },
+                'السنة الثالثة ثانوي': {
+                    'اللغة العربية': { summer: [], curriculum: [] },
+                    'الرياضيات': { summer: [], curriculum: [] },
+                    'التاريخ والجغرافيا': { summer: [], curriculum: [] },
+                    'العلوم الإسلامية': { summer: [], curriculum: [] },
+                    'العلوم الفيزيائية': { summer: [], curriculum: [] },
+                    'المتفرقات': { summer: [], curriculum: [] }
+                }
+            }
+        }
+    };
+}
+
+// ============================================================
+// تحميل البيانات
+// ============================================================
+async function loadDataFromFirebase() {
+    if (!database) {
+        platformData = getDefaultPlatformData();
+        dataLoaded = true;
+        return;
+    }
+    
+    return new Promise((resolve) => {
+        database.ref('lessons').once('value', (snapshot) => {
+            const lessons = snapshot.val() || {};
+            platformData = getDefaultPlatformData();
+            
+            Object.keys(lessons).forEach(lessonId => {
+                const lesson = lessons[lessonId];
+                if (lesson && lesson.stage && lesson.subject && lesson.lesson_type) {
+                    if (lesson.stage === 'primary' && lesson.substage &&
+                        platformData.primary[lesson.substage] &&
+                        platformData.primary[lesson.substage].subjects[lesson.subject]) {
+                        if (platformData.primary[lesson.substage].subjects[lesson.subject][lesson.lesson_type]) {
+                            platformData.primary[lesson.substage].subjects[lesson.subject][lesson.lesson_type].push({
+                                id: lessonId,
+                                title: lesson.title,
+                                platform: lesson.platform,
+                                external_url: lesson.external_url,
+                                internal_url: lesson.internal_url,
+                                download_url: lesson.download_url,
+                                content_type: lesson.content_type
+                            });
+                        }
+                    } else if (lesson.stage === 'middle' && lesson.year &&
+                        platformData.middle.subjectsByYear[lesson.year] &&
+                        platformData.middle.subjectsByYear[lesson.year][lesson.subject]) {
+                        if (platformData.middle.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type]) {
+                            platformData.middle.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type].push({
+                                id: lessonId,
+                                title: lesson.title,
+                                platform: lesson.platform,
+                                external_url: lesson.external_url,
+                                internal_url: lesson.internal_url,
+                                download_url: lesson.download_url,
+                                content_type: lesson.content_type
+                            });
+                        }
+                    } else if (lesson.stage === 'high' && lesson.year &&
+                        platformData.high.subjectsByYear[lesson.year] &&
+                        platformData.high.subjectsByYear[lesson.year][lesson.subject]) {
+                        if (platformData.high.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type]) {
+                            platformData.high.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type].push({
+                                id: lessonId,
+                                title: lesson.title,
+                                platform: lesson.platform,
+                                external_url: lesson.external_url,
+                                internal_url: lesson.internal_url,
+                                download_url: lesson.download_url,
+                                content_type: lesson.content_type
+                            });
+                        }
+                    }
+                }
+            });
+            
+            dataLoaded = true;
+            resolve();
+        }, (error) => {
+            console.error('Error loading lessons:', error);
+            platformData = getDefaultPlatformData();
+            dataLoaded = true;
+            resolve();
+        });
+    });
+}
+
+// ============================================================
+// التنقل وعرض الصفحات
+// ============================================================
+function showMainStages() {
+    document.getElementById('mainStagesContainer').classList.remove('hidden');
+    let html = `
+        <div class="welcome-new">
+            <span class="emoji">👨‍🏫📚</span>
+            <h3>مرحباً بك في منصة الأستاذ محمد</h3>
+            <p>اختر المرحلة الدراسية أو مجتمعنا من الأعلى للبدء</p>
+        </div>
+    `;
+    document.getElementById('dynamicArea').innerHTML = html;
+    clearNavigationState();
+}
+window.showMainStages = showMainStages;
+
+function hideMainStages() {
+    document.getElementById('mainStagesContainer').classList.add('hidden');
+}
+
+function goBack() {
+    if (navigationStack.length === 0) {
+        currentStage = null;
+        currentSubStage = null;
+        currentYear = null;
+        currentSubject = null;
+        currentLessonType = null;
+        showMainStages();
+        clearNavigationState();
+        return;
+    }
+    const last = navigationStack.pop();
+    if (last.view === 'subStages') {
+        currentStage = 'primary';
+        currentSubStage = null;
+        showSubStages();
+    } else if (last.view === 'years') {
+        currentStage = last.stage;
+        currentYear = null;
+        showYears();
+    } else if (last.view === 'subjects') {
+        currentStage = last.stage;
+        currentSubStage = last.substage;
+        currentYear = last.year;
+        currentSubject = null;
+        showSubjects();
+    } else if (last.view === 'lessonTypes') {
+        currentStage = last.stage;
+        currentSubStage = last.substage;
+        currentYear = last.year;
+        currentSubject = last.subject;
+        currentLessonType = null;
+        showLessonTypes();
+    }
+    saveNavigationState();
+}
+window.goBack = goBack;
+
+function refreshCurrentView() {
+    if (!dataLoaded) {
+        setTimeout(refreshCurrentView, 500);
+        return;
+    }
+    if (currentLessonType) renderLessonsList();
+    else if (currentSubject) showLessonTypes();
+    else if (currentYear) showSubjects();
+    else if (currentSubStage) showSubjects();
+    else if (currentStage === 'primary') showSubStages();
+    else if (currentStage === 'middle' || currentStage === 'high') showYears();
+    else showMainStages();
+}
+
+function goHome() {
+    currentStage = null;
+    currentSubStage = null;
+    currentYear = null;
+    currentSubject = null;
+    currentLessonType = null;
+    navigationStack = [];
+    clearNavigationState();
+    showMainStages();
+    showToast('🏠 تم العودة للصفحة الرئيسية', 'info', 1500);
+    document.getElementById('searchResults').classList.remove('active');
+    document.getElementById('searchInput').value = '';
+}
+window.goHome = goHome;
+
+// ============================================================
+// دوال عرض الصفحات
+// ============================================================
+function showSubStages() {
+    hideMainStages();
+    let html = `
+        <button class="back-btn-new" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع</button>
+        <div class="page-title"><i class="fas fa-school"></i> المرحلة الابتدائية</div>
+        <div class="sub-stages-new">
+    `;
+    for (let [key, stage] of Object.entries(platformData.primary)) {
+        let emoji = key === 'stage1' ? '⭐' : (key === 'stage2' ? '📖' : '🎓');
+        html += `<div class="sub-stage-card-new" data-stage="${key}">
+            <span class="emoji">${emoji}</span>
+            <h3>${sanitizeHtml(stage.name)}</h3>
+            <p>${sanitizeHtml(stage.years)}</p>
+        </div>`;
+    }
+    html += `</div>`;
+    document.getElementById('dynamicArea').innerHTML = html;
+    
+    document.getElementById('backBtn')?.addEventListener('click', goBack);
+    document.querySelectorAll('.sub-stage-card-new').forEach(card => {
+        card.addEventListener('click', () => {
+            navigationStack.push({ view: 'subStages' });
+            currentSubStage = card.getAttribute('data-stage');
+            showSubjects();
+        });
+    });
+    saveNavigationState();
+}
+
+function showYears() {
+    hideMainStages();
+    let years = currentStage === 'middle' ? platformData.middle.yearsList : platformData.high.yearsList;
+    let titleText = currentStage === 'middle' ? 'مرحلة المتوسط' : 'مرحلة الثانوي';
+    let icon = currentStage === 'middle' ? 'fas fa-chalkboard-user' : 'fas fa-university';
+    let images = currentStage === 'middle' ? ['📘','📗','📙','📕'] : ['🎓','📚','🏛️'];
+    
+    let html = `
+        <button class="back-btn-new" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع</button>
+        <div class="page-title"><i class="${icon}"></i> ${titleText}</div>
+        <div class="years-new">
+    `;
+    for (let i = 0; i < years.length; i++) {
+        html += `<div class="year-card-new" data-year="${sanitizeHtml(years[i])}">
+            <span class="emoji">${images[i % images.length]}</span>
+            <h3>${sanitizeHtml(years[i])}</h3>
+        </div>`;
+    }
+    html += `</div>`;
+    document.getElementById('dynamicArea').innerHTML = html;
+    
+    document.getElementById('backBtn')?.addEventListener('click', goBack);
+    document.querySelectorAll('.year-card-new').forEach(card => {
+        card.addEventListener('click', () => {
+            navigationStack.push({ view: 'years', stage: currentStage });
+            currentYear = card.getAttribute('data-year');
+            showSubjects();
+        });
+    });
+    saveNavigationState();
+}
+
+function showSubjects() {
+    hideMainStages();
+    let subjectsObj = {}, titleText = '', icon = '';
+    if (currentStage === 'primary') {
+        subjectsObj = platformData.primary[currentSubStage].subjects;
+        titleText = platformData.primary[currentSubStage].name;
+        icon = 'fas fa-star';
+    } else if (currentStage === 'middle') {
+        subjectsObj = platformData.middle.subjectsByYear[currentYear];
+        titleText = currentYear;
+        icon = 'fas fa-book';
+    } else {
+        subjectsObj = platformData.high.subjectsByYear[currentYear];
+        titleText = currentYear;
+        icon = 'fas fa-graduation-cap';
+    }
+    
+    const subjectIcons = {
+        'اللغة العربية': 'fas fa-language',
+        'الرياضيات': 'fas fa-calculator',
+        'التربية الإسلامية': 'fas fa-mosque',
+        'التربية العلمية': 'fas fa-flask',
+        'التاريخ والجغرافيا': 'fas fa-landmark',
+        'المتفرقات': 'fas fa-puzzle-piece',
+        'العلوم الإسلامية': 'fas fa-star-and-crescent',
+        'العلوم الفيزيائية': 'fas fa-atom'
+    };
+    
+    let html = `
+        <button class="back-btn-new" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع</button>
+        <div class="page-title"><i class="${icon}"></i> ${sanitizeHtml(titleText)}</div>
+        <div class="subjects-new">
+    `;
+    for (let subject in subjectsObj) {
+        let subIcon = subjectIcons[subject] || 'fas fa-book';
+        html += `<div class="subject-card-new" data-subject="${sanitizeHtml(subject)}">
+            <div class="header"><i class="${subIcon}"></i> ${sanitizeHtml(subject)}</div>
+        </div>`;
+    }
+    html += `</div>`;
+    document.getElementById('dynamicArea').innerHTML = html;
+    
+    document.getElementById('backBtn')?.addEventListener('click', goBack);
+    document.querySelectorAll('.subject-card-new').forEach(card => {
+        card.addEventListener('click', () => {
+            navigationStack.push({
+                view: 'subjects',
+                stage: currentStage,
+                substage: currentSubStage,
+                year: currentYear
+            });
+            currentSubject = card.getAttribute('data-subject');
+            showLessonTypes();
+        });
+    });
+    saveNavigationState();
+}
+
+function showLessonTypes() {
+    hideMainStages();
+    let summerCount = 0, curriculumCount = 0;
+    if (currentStage === 'primary') {
+        summerCount = platformData.primary[currentSubStage].subjects[currentSubject].summer.length;
+        curriculumCount = platformData.primary[currentSubStage].subjects[currentSubject].curriculum.length;
+    } else if (currentStage === 'middle') {
+        summerCount = platformData.middle.subjectsByYear[currentYear][currentSubject].summer.length;
+        curriculumCount = platformData.middle.subjectsByYear[currentYear][currentSubject].curriculum.length;
+    } else {
+        summerCount = platformData.high.subjectsByYear[currentYear][currentSubject].summer.length;
+        curriculumCount = platformData.high.subjectsByYear[currentYear][currentSubject].curriculum.length;
+    }
+    
+    let html = `
+        <button class="back-btn-new" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع</button>
+        <div class="page-title"><i class="fas fa-chalkboard-teacher"></i> ${sanitizeHtml(currentSubject)}</div>
+        <div class="lesson-types-new">
+            <div class="lesson-type-card-new summer" data-type="summer">
+                <span class="emoji">🏖️</span>
+                <h3>الدروس الصيفية</h3>
+                <p>دروس العطلة والمراجعة</p>
+                <div class="count"><i class="fas fa-video"></i> ${summerCount} درس</div>
+            </div>
+            <div class="lesson-type-card-new curriculum" data-type="curriculum">
+                <span class="emoji">📖</span>
+                <h3>الدروس المقررة</h3>
+                <p>دروس البرنامج الدراسي</p>
+                <div class="count"><i class="fas fa-video"></i> ${curriculumCount} درس</div>
+            </div>
+        </div>
+    `;
+    document.getElementById('dynamicArea').innerHTML = html;
+    
+    document.getElementById('backBtn')?.addEventListener('click', goBack);
+    document.querySelectorAll('.lesson-type-card-new').forEach(card => {
+        card.addEventListener('click', () => {
+            navigationStack.push({
+                view: 'lessonTypes',
+                stage: currentStage,
+                substage: currentSubStage,
+                year: currentYear,
+                subject: currentSubject
+            });
+            currentLessonType = card.getAttribute('data-type');
+            currentPage = 1;
+            renderLessonsList();
+        });
+    });
+    saveNavigationState();
+}
+
 function getCurrentLessons() {
     try {
         if (currentStage === 'primary') {
@@ -3864,7 +4310,6 @@ function renderLessonsList() {
         paginated.forEach(lesson => {
             const isLocked = !isLessonAccessible(currentLessonType);
             const isMemberPending = currentUser && !currentUserIsApproved && !isAdminMode;
-            const isApprovedMember = currentUser && currentUserIsApproved && !isAdminMode;
             const badge = getLessonBadge(lesson);
             const ratingData = getLessonRating(lesson.id);
             
@@ -3890,8 +4335,6 @@ function renderLessonsList() {
                 html += `<span style="background:#f0f0f0; color:#999; font-size:0.65rem; margin-right:5px; padding:2px 8px; border-radius:20px;">🔒 غير متاح</span>`;
             } else if (isMemberPending) {
                 html += `<span style="background:#fef3c7; color:#92400e; font-size:0.65rem; margin-right:5px; padding:2px 8px; border-radius:20px;">⏳ قيد المراجعة</span>`;
-            } else if (isApprovedMember && isLocked) {
-                html += `<span style="background:#d1fae5; color:#065f46; font-size:0.65rem; margin-right:5px; padding:2px 8px; border-radius:20px;">✅ عضو معتمد - انتظر الفتح</span>`;
             }
             
             html += `</div><div class="actions">`;
@@ -3899,16 +4342,12 @@ function renderLessonsList() {
             if (lesson.content_type === 'pdf' || lesson.content_type === 'image') {
                 if (!isLocked && !isMemberPending) {
                     html += `<button class="lesson-btn view" data-lesson-id="${lesson.id}" data-lesson-title="${sanitizeHtml(lesson.title)}" data-internal-url="${sanitizeHtml(lesson.internal_url)}" data-download-url="${sanitizeHtml(lesson.download_url || '')}" data-content-type="${lesson.content_type}"><i class="fas fa-eye"></i> عرض</button>`;
-                } else if (isMemberPending) {
-                    html += `<button class="lesson-btn watch" onclick='showAppropriatePopup("${currentLessonType}")'><i class="fas fa-clock"></i> غير متاح</button>`;
                 } else {
                     html += `<button class="lesson-btn watch" onclick='showAppropriatePopup("${currentLessonType}")'><i class="fas fa-eye"></i> مشاهدة</button>`;
                 }
             } else {
                 if (!isLocked && !isMemberPending) {
                     html += `<button class="lesson-btn watch" data-url="${sanitizeHtml(lesson.external_url)}" data-type="${currentLessonType}"><i class="fas fa-external-link-alt"></i> مشاهدة</button>`;
-                } else if (isMemberPending) {
-                    html += `<button class="lesson-btn watch" onclick='showAppropriatePopup("${currentLessonType}")'><i class="fas fa-clock"></i> غير متاح</button>`;
                 } else {
                     html += `<button class="lesson-btn watch" onclick='showAppropriatePopup("${currentLessonType}")'><i class="fas fa-eye"></i> مشاهدة</button>`;
                 }
@@ -4147,446 +4586,6 @@ function openEditInternalModal(id, title, url, download, contentType) {
 window.openEditInternalModal = openEditInternalModal;
 
 // ============================================================
-// التنقل وعرض الصفحات
-// ============================================================
-function showMainStages() {
-    document.getElementById('mainStagesContainer').classList.remove('hidden');
-    let html = `
-        <div class="welcome-new">
-            <span class="emoji">👨‍🏫📚</span>
-            <h3>مرحباً بك في منصة الأستاذ محمد</h3>
-            <p>اختر المرحلة الدراسية أو مجتمعنا من الأعلى للبدء</p>
-        </div>
-    `;
-    document.getElementById('dynamicArea').innerHTML = html;
-    clearNavigationState();
-}
-window.showMainStages = showMainStages;
-
-function hideMainStages() {
-    document.getElementById('mainStagesContainer').classList.add('hidden');
-}
-
-function goBack() {
-    if (navigationStack.length === 0) {
-        currentStage = null;
-        currentSubStage = null;
-        currentYear = null;
-        currentSubject = null;
-        currentLessonType = null;
-        showMainStages();
-        clearNavigationState();
-        return;
-    }
-    const last = navigationStack.pop();
-    if (last.view === 'subStages') {
-        currentStage = 'primary';
-        currentSubStage = null;
-        showSubStages();
-    } else if (last.view === 'years') {
-        currentStage = last.stage;
-        currentYear = null;
-        showYears();
-    } else if (last.view === 'subjects') {
-        currentStage = last.stage;
-        currentSubStage = last.substage;
-        currentYear = last.year;
-        currentSubject = null;
-        showSubjects();
-    } else if (last.view === 'lessonTypes') {
-        currentStage = last.stage;
-        currentSubStage = last.substage;
-        currentYear = last.year;
-        currentSubject = last.subject;
-        currentLessonType = null;
-        showLessonTypes();
-    }
-    saveNavigationState();
-}
-window.goBack = goBack;
-
-function refreshCurrentView() {
-    if (!dataLoaded) return;
-    if (currentLessonType) renderLessonsList();
-    else if (currentSubject) showLessonTypes();
-    else if (currentYear) showSubjects();
-    else if (currentSubStage) showSubjects();
-    else if (currentStage === 'primary') showSubStages();
-    else if (currentStage === 'middle' || currentStage === 'high') showYears();
-    else showMainStages();
-}
-
-function showSubStages() {
-    hideMainStages();
-    let html = `
-        <button class="back-btn-new" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع</button>
-        <div class="page-title"><i class="fas fa-school"></i> المرحلة الابتدائية</div>
-        <div class="sub-stages-new">
-    `;
-    for (let [key, stage] of Object.entries(platformData.primary)) {
-        let emoji = key === 'stage1' ? '⭐' : (key === 'stage2' ? '📖' : '🎓');
-        html += `<div class="sub-stage-card-new" data-stage="${key}">
-            <span class="emoji">${emoji}</span>
-            <h3>${sanitizeHtml(stage.name)}</h3>
-            <p>${sanitizeHtml(stage.years)}</p>
-        </div>`;
-    }
-    html += `</div>`;
-    document.getElementById('dynamicArea').innerHTML = html;
-    
-    document.getElementById('backBtn')?.addEventListener('click', goBack);
-    document.querySelectorAll('.sub-stage-card-new').forEach(card => {
-        card.addEventListener('click', () => {
-            navigationStack.push({ view: 'subStages' });
-            currentSubStage = card.getAttribute('data-stage');
-            showSubjects();
-        });
-    });
-    saveNavigationState();
-}
-
-function showYears() {
-    hideMainStages();
-    let years = currentStage === 'middle' ? platformData.middle.yearsList : platformData.high.yearsList;
-    let titleText = currentStage === 'middle' ? 'مرحلة المتوسط' : 'مرحلة الثانوي';
-    let icon = currentStage === 'middle' ? 'fas fa-chalkboard-user' : 'fas fa-university';
-    let images = currentStage === 'middle' ? ['📘','📗','📙','📕'] : ['🎓','📚','🏛️'];
-    
-    let html = `
-        <button class="back-btn-new" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع</button>
-        <div class="page-title"><i class="${icon}"></i> ${titleText}</div>
-        <div class="years-new">
-    `;
-    for (let i = 0; i < years.length; i++) {
-        html += `<div class="year-card-new" data-year="${sanitizeHtml(years[i])}">
-            <span class="emoji">${images[i % images.length]}</span>
-            <h3>${sanitizeHtml(years[i])}</h3>
-        </div>`;
-    }
-    html += `</div>`;
-    document.getElementById('dynamicArea').innerHTML = html;
-    
-    document.getElementById('backBtn')?.addEventListener('click', goBack);
-    document.querySelectorAll('.year-card-new').forEach(card => {
-        card.addEventListener('click', () => {
-            navigationStack.push({ view: 'years', stage: currentStage });
-            currentYear = card.getAttribute('data-year');
-            showSubjects();
-        });
-    });
-    saveNavigationState();
-}
-
-function showSubjects() {
-    hideMainStages();
-    let subjectsObj = {}, titleText = '', icon = '';
-    if (currentStage === 'primary') {
-        subjectsObj = platformData.primary[currentSubStage].subjects;
-        titleText = platformData.primary[currentSubStage].name;
-        icon = 'fas fa-star';
-    } else if (currentStage === 'middle') {
-        subjectsObj = platformData.middle.subjectsByYear[currentYear];
-        titleText = currentYear;
-        icon = 'fas fa-book';
-    } else {
-        subjectsObj = platformData.high.subjectsByYear[currentYear];
-        titleText = currentYear;
-        icon = 'fas fa-graduation-cap';
-    }
-    
-    const subjectIcons = {
-        'اللغة العربية': 'fas fa-language',
-        'الرياضيات': 'fas fa-calculator',
-        'التربية الإسلامية': 'fas fa-mosque',
-        'التربية العلمية': 'fas fa-flask',
-        'التاريخ والجغرافيا': 'fas fa-landmark',
-        'المتفرقات': 'fas fa-puzzle-piece',
-        'العلوم الإسلامية': 'fas fa-star-and-crescent',
-        'العلوم الفيزيائية': 'fas fa-atom'
-    };
-    
-    let html = `
-        <button class="back-btn-new" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع</button>
-        <div class="page-title"><i class="${icon}"></i> ${sanitizeHtml(titleText)}</div>
-        <div class="subjects-new">
-    `;
-    for (let subject in subjectsObj) {
-        let subIcon = subjectIcons[subject] || 'fas fa-book';
-        html += `<div class="subject-card-new" data-subject="${sanitizeHtml(subject)}">
-            <div class="header"><i class="${subIcon}"></i> ${sanitizeHtml(subject)}</div>
-        </div>`;
-    }
-    html += `</div>`;
-    document.getElementById('dynamicArea').innerHTML = html;
-    
-    document.getElementById('backBtn')?.addEventListener('click', goBack);
-    document.querySelectorAll('.subject-card-new').forEach(card => {
-        card.addEventListener('click', () => {
-            navigationStack.push({
-                view: 'subjects',
-                stage: currentStage,
-                substage: currentSubStage,
-                year: currentYear
-            });
-            currentSubject = card.getAttribute('data-subject');
-            showLessonTypes();
-        });
-    });
-    saveNavigationState();
-}
-
-function showLessonTypes() {
-    hideMainStages();
-    let summerCount = 0, curriculumCount = 0;
-    if (currentStage === 'primary') {
-        summerCount = platformData.primary[currentSubStage].subjects[currentSubject].summer.length;
-        curriculumCount = platformData.primary[currentSubStage].subjects[currentSubject].curriculum.length;
-    } else if (currentStage === 'middle') {
-        summerCount = platformData.middle.subjectsByYear[currentYear][currentSubject].summer.length;
-        curriculumCount = platformData.middle.subjectsByYear[currentYear][currentSubject].curriculum.length;
-    } else {
-        summerCount = platformData.high.subjectsByYear[currentYear][currentSubject].summer.length;
-        curriculumCount = platformData.high.subjectsByYear[currentYear][currentSubject].curriculum.length;
-    }
-    
-    let html = `
-        <button class="back-btn-new" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع</button>
-        <div class="page-title"><i class="fas fa-chalkboard-teacher"></i> ${sanitizeHtml(currentSubject)}</div>
-        <div class="lesson-types-new">
-            <div class="lesson-type-card-new summer" data-type="summer">
-                <span class="emoji">🏖️</span>
-                <h3>الدروس الصيفية</h3>
-                <p>دروس العطلة والمراجعة</p>
-                <div class="count"><i class="fas fa-video"></i> ${summerCount} درس</div>
-            </div>
-            <div class="lesson-type-card-new curriculum" data-type="curriculum">
-                <span class="emoji">📖</span>
-                <h3>الدروس المقررة</h3>
-                <p>دروس البرنامج الدراسي</p>
-                <div class="count"><i class="fas fa-video"></i> ${curriculumCount} درس</div>
-            </div>
-        </div>
-    `;
-    document.getElementById('dynamicArea').innerHTML = html;
-    
-    document.getElementById('backBtn')?.addEventListener('click', goBack);
-    document.querySelectorAll('.lesson-type-card-new').forEach(card => {
-        card.addEventListener('click', () => {
-            navigationStack.push({
-                view: 'lessonTypes',
-                stage: currentStage,
-                substage: currentSubStage,
-                year: currentYear,
-                subject: currentSubject
-            });
-            currentLessonType = card.getAttribute('data-type');
-            currentPage = 1;
-            renderLessonsList();
-        });
-    });
-    saveNavigationState();
-}
-
-function goHome() {
-    currentStage = null;
-    currentSubStage = null;
-    currentYear = null;
-    currentSubject = null;
-    currentLessonType = null;
-    navigationStack = [];
-    clearNavigationState();
-    showMainStages();
-    showToast('🏠 تم العودة للصفحة الرئيسية', 'info', 1500);
-    document.getElementById('searchResults').classList.remove('active');
-    document.getElementById('searchInput').value = '';
-}
-window.goHome = goHome;
-
-// ============================================================
-// البيانات الأساسية
-// ============================================================
-function getDefaultPlatformData() {
-    return {
-        primary: {
-            stage1: {
-                name: 'الطور الأول',
-                years: 'تحضيري - أولى - ثانية',
-                subjects: {
-                    'اللغة العربية': { summer: [], curriculum: [] },
-                    'الرياضيات': { summer: [], curriculum: [] },
-                    'التربية الإسلامية': { summer: [], curriculum: [] }
-                }
-            },
-            stage2: {
-                name: 'الطور الثاني',
-                years: 'الثالثة - الرابعة',
-                subjects: {
-                    'اللغة العربية': { summer: [], curriculum: [] },
-                    'الرياضيات': { summer: [], curriculum: [] },
-                    'التربية العلمية': { summer: [], curriculum: [] },
-                    'التاريخ والجغرافيا': { summer: [], curriculum: [] },
-                    'التربية الإسلامية': { summer: [], curriculum: [] }
-                }
-            },
-            stage3: {
-                name: 'الطور الثالث',
-                years: 'الخامسة',
-                subjects: {
-                    'اللغة العربية': { summer: [], curriculum: [] },
-                    'الرياضيات': { summer: [], curriculum: [] },
-                    'التربية العلمية': { summer: [], curriculum: [] },
-                    'التاريخ والجغرافيا': { summer: [], curriculum: [] },
-                    'التربية الإسلامية': { summer: [], curriculum: [] }
-                }
-            }
-        },
-        middle: {
-            name: 'مرحلة المتوسط',
-            yearsList: ['السنة الأولى متوسط', 'السنة الثانية متوسط', 'السنة الثالثة متوسط', 'السنة الرابعة متوسط'],
-            subjectsByYear: {
-                'السنة الأولى متوسط': {
-                    'اللغة العربية': { summer: [], curriculum: [] },
-                    'الرياضيات': { summer: [], curriculum: [] },
-                    'التاريخ والجغرافيا': { summer: [], curriculum: [] },
-                    'التربية الإسلامية': { summer: [], curriculum: [] },
-                    'العلوم الفيزيائية': { summer: [], curriculum: [] },
-                    'المتفرقات': { summer: [], curriculum: [] }
-                },
-                'السنة الثانية متوسط': {
-                    'اللغة العربية': { summer: [], curriculum: [] },
-                    'الرياضيات': { summer: [], curriculum: [] },
-                    'التاريخ والجغرافيا': { summer: [], curriculum: [] },
-                    'التربية الإسلامية': { summer: [], curriculum: [] },
-                    'العلوم الفيزيائية': { summer: [], curriculum: [] },
-                    'المتفرقات': { summer: [], curriculum: [] }
-                },
-                'السنة الثالثة متوسط': {
-                    'اللغة العربية': { summer: [], curriculum: [] },
-                    'الرياضيات': { summer: [], curriculum: [] },
-                    'التاريخ والجغرافيا': { summer: [], curriculum: [] },
-                    'التربية الإسلامية': { summer: [], curriculum: [] },
-                    'العلوم الفيزيائية': { summer: [], curriculum: [] },
-                    'المتفرقات': { summer: [], curriculum: [] }
-                },
-                'السنة الرابعة متوسط': {
-                    'اللغة العربية': { summer: [], curriculum: [] },
-                    'الرياضيات': { summer: [], curriculum: [] },
-                    'التاريخ والجغرافيا': { summer: [], curriculum: [] },
-                    'التربية الإسلامية': { summer: [], curriculum: [] },
-                    'العلوم الفيزيائية': { summer: [], curriculum: [] },
-                    'المتفرقات': { summer: [], curriculum: [] }
-                }
-            }
-        },
-        high: {
-            name: 'مرحلة الثانوي',
-            yearsList: ['السنة الأولى ثانوي', 'السنة الثانية ثانوي', 'السنة الثالثة ثانوي'],
-            subjectsByYear: {
-                'السنة الأولى ثانوي': {
-                    'اللغة العربية': { summer: [], curriculum: [] },
-                    'الرياضيات': { summer: [], curriculum: [] },
-                    'التاريخ والجغرافيا': { summer: [], curriculum: [] },
-                    'العلوم الإسلامية': { summer: [], curriculum: [] },
-                    'العلوم الفيزيائية': { summer: [], curriculum: [] },
-                    'المتفرقات': { summer: [], curriculum: [] }
-                },
-                'السنة الثانية ثانوي': {
-                    'اللغة العربية': { summer: [], curriculum: [] },
-                    'الرياضيات': { summer: [], curriculum: [] },
-                    'التاريخ والجغرافيا': { summer: [], curriculum: [] },
-                    'العلوم الإسلامية': { summer: [], curriculum: [] },
-                    'العلوم الفيزيائية': { summer: [], curriculum: [] },
-                    'المتفرقات': { summer: [], curriculum: [] }
-                },
-                'السنة الثالثة ثانوي': {
-                    'اللغة العربية': { summer: [], curriculum: [] },
-                    'الرياضيات': { summer: [], curriculum: [] },
-                    'التاريخ والجغرافيا': { summer: [], curriculum: [] },
-                    'العلوم الإسلامية': { summer: [], curriculum: [] },
-                    'العلوم الفيزيائية': { summer: [], curriculum: [] },
-                    'المتفرقات': { summer: [], curriculum: [] }
-                }
-            }
-        }
-    };
-}
-
-// ============================================================
-// تحميل البيانات من Firebase
-// ============================================================
-async function loadDataFromFirebase() {
-    if (!database) {
-        platformData = getDefaultPlatformData();
-        dataLoaded = true;
-        return;
-    }
-    
-    return new Promise((resolve) => {
-        database.ref('lessons').once('value', (snapshot) => {
-            const lessons = snapshot.val() || {};
-            platformData = getDefaultPlatformData();
-            
-            Object.keys(lessons).forEach(lessonId => {
-                const lesson = lessons[lessonId];
-                if (lesson && lesson.stage && lesson.subject && lesson.lesson_type) {
-                    if (lesson.stage === 'primary' && lesson.substage &&
-                        platformData.primary[lesson.substage] &&
-                        platformData.primary[lesson.substage].subjects[lesson.subject]) {
-                        if (platformData.primary[lesson.substage].subjects[lesson.subject][lesson.lesson_type]) {
-                            platformData.primary[lesson.substage].subjects[lesson.subject][lesson.lesson_type].push({
-                                id: lessonId,
-                                title: lesson.title,
-                                platform: lesson.platform,
-                                external_url: lesson.external_url,
-                                internal_url: lesson.internal_url,
-                                download_url: lesson.download_url,
-                                content_type: lesson.content_type
-                            });
-                        }
-                    } else if (lesson.stage === 'middle' && lesson.year &&
-                        platformData.middle.subjectsByYear[lesson.year] &&
-                        platformData.middle.subjectsByYear[lesson.year][lesson.subject]) {
-                        if (platformData.middle.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type]) {
-                            platformData.middle.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type].push({
-                                id: lessonId,
-                                title: lesson.title,
-                                platform: lesson.platform,
-                                external_url: lesson.external_url,
-                                internal_url: lesson.internal_url,
-                                download_url: lesson.download_url,
-                                content_type: lesson.content_type
-                            });
-                        }
-                    } else if (lesson.stage === 'high' && lesson.year &&
-                        platformData.high.subjectsByYear[lesson.year] &&
-                        platformData.high.subjectsByYear[lesson.year][lesson.subject]) {
-                        if (platformData.high.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type]) {
-                            platformData.high.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type].push({
-                                id: lessonId,
-                                title: lesson.title,
-                                platform: lesson.platform,
-                                external_url: lesson.external_url,
-                                internal_url: lesson.internal_url,
-                                download_url: lesson.download_url,
-                                content_type: lesson.content_type
-                            });
-                        }
-                    }
-                }
-            });
-            
-            dataLoaded = true;
-            resolve();
-        }, (error) => {
-            console.error('Error loading lessons:', error);
-            platformData = getDefaultPlatformData();
-            dataLoaded = true;
-            resolve();
-        });
-    });
-}
-
-// ============================================================
 // ربط أزرار المراحل
 // ============================================================
 function bindMainStageButtons() {
@@ -4630,12 +4629,17 @@ async function init() {
         return;
     }
     
-    await Promise.all([
-        loadDataFromFirebase(),
-        loadLockSettings(),
-        loadInviteLinks(),
-        loadNews()
-    ]);
+    try {
+        await Promise.all([
+            loadDataFromFirebase(),
+            loadLockSettings(),
+            loadInviteLinks(),
+            loadNews()
+        ]);
+    } catch(e) {
+        console.error('Error loading data:', e);
+        showToast('⚠️ حدث خطأ في تحميل البيانات', 'error');
+    }
     
     bindMainStageButtons();
     setupDateChangeListeners();
@@ -4671,11 +4675,7 @@ async function init() {
 // أحداث DOM
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
-    // ============================================================
-    // أيقونات التروس (مُصلحة لإظهار لوحة التحكم مع الخلفية)
-    // ============================================================
-    
-    // أيقونة الأستاذ
+    // أيقونات التروس
     document.getElementById('teacherGearIcon')?.addEventListener('click', function() {
         if (currentUser && isAdminMode && currentUser?.email !== MASTER_TEACHER_EMAIL) {
             const panel = document.getElementById('adminPanel');
@@ -4697,7 +4697,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // أيقونة المدير
     document.getElementById('adminGearIcon')?.addEventListener('click', function() {
         if (currentUser && isAdminMode && currentUser?.email === MASTER_TEACHER_EMAIL) {
             const panel = document.getElementById('adminPanel');
@@ -4709,87 +4708,141 @@ document.addEventListener('DOMContentLoaded', () => {
                 panel.classList.add('active');
                 overlay.classList.add('active');
                 document.getElementById('adminOnlySection').style.display = 'block';
-                document.getElementById('panelBadge').textContent = '👑 مدير';
+                document.getElementById('panelBadge').textContent = '👑 مسؤول';
                 loadJoinRequests();
                 loadApprovedMembers();
                 loadTeachersList();
                 updateAdminPanel();
             }
         } else if (currentUser && !isAdminMode) {
-            showToast('⚠️ هذه اللوحة للمدير فقط', 'warning');
+            showToast('⚠️ هذه اللوحة للمسؤول فقط', 'warning');
         } else {
             showLoginChoice();
         }
     });
     
-    // ============================================================
-    // باقي الأحداث
-    // ============================================================
-    
-    // نافذة اختيار تسجيل الدخول
-    document.getElementById('loginAdminBtn')?.addEventListener('click', () => {
+    // نوافذ المصادقة
+    document.getElementById('loginAdminBtn')?.addEventListener('click', function() {
         document.getElementById('loginChoiceModal').classList.remove('active');
+        document.getElementById('adminEmail').value = '';
+        document.getElementById('adminPassword').value = '';
+        document.getElementById('adminLoginError').innerText = '';
         document.getElementById('adminLoginModal').classList.add('active');
     });
-    document.getElementById('loginTeacherBtn')?.addEventListener('click', () => {
+    
+    document.getElementById('loginTeacherBtn')?.addEventListener('click', function() {
         document.getElementById('loginChoiceModal').classList.remove('active');
+        document.getElementById('teacherEmail').value = '';
+        document.getElementById('teacherPassword').value = '';
+        document.getElementById('teacherLoginError').innerText = '';
         document.getElementById('teacherLoginModal').classList.add('active');
     });
-    document.getElementById('loginMemberBtn')?.addEventListener('click', () => {
+    
+    document.getElementById('loginMemberBtn')?.addEventListener('click', function() {
         document.getElementById('loginChoiceModal').classList.remove('active');
+        document.getElementById('memberEmail').value = '';
+        document.getElementById('memberPassword').value = '';
+        document.getElementById('memberLoginError').innerText = '';
         document.getElementById('memberLoginModal').classList.add('active');
     });
+    
     document.getElementById('closeLoginChoiceBtn')?.addEventListener('click', hideAllModals);
     
-    // نافذة اختيار طلب التسجيل
-    document.getElementById('registerTeacherChoiceBtn')?.addEventListener('click', () => {
+    document.getElementById('registerTeacherChoiceBtn')?.addEventListener('click', function() {
         document.getElementById('registerChoiceModal').classList.remove('active');
+        document.getElementById('registerTeacherEmail').value = '';
+        document.getElementById('registerTeacherPassword').value = '';
+        document.getElementById('registerTeacherConfirm').value = '';
+        document.getElementById('registerTeacherError').innerText = '';
+        document.getElementById('registerTeacherSuccess').style.display = 'none';
         document.getElementById('registerTeacherModal').classList.add('active');
     });
-    document.getElementById('registerMemberChoiceBtn')?.addEventListener('click', () => {
+    
+    document.getElementById('registerMemberChoiceBtn')?.addEventListener('click', function() {
         document.getElementById('registerChoiceModal').classList.remove('active');
+        document.getElementById('registerMemberEmail').value = '';
+        document.getElementById('registerMemberPassword').value = '';
+        document.getElementById('registerMemberConfirm').value = '';
+        document.getElementById('registerMemberError').innerText = '';
+        document.getElementById('registerMemberSuccess').style.display = 'none';
         document.getElementById('registerMemberModal').classList.add('active');
     });
+    
     document.getElementById('closeRegisterChoiceBtn')?.addEventListener('click', hideAllModals);
     
-    // نماذج تسجيل الدخول
+    // إغلاق نوافذ المصادقة مع تفريغ الحقول
+    document.getElementById('closeAdminLoginBtn')?.addEventListener('click', function() {
+        document.getElementById('adminLoginModal').classList.remove('active');
+        document.getElementById('adminEmail').value = '';
+        document.getElementById('adminPassword').value = '';
+        document.getElementById('adminLoginError').innerText = '';
+    });
+    
+    document.getElementById('closeTeacherLoginBtn')?.addEventListener('click', function() {
+        document.getElementById('teacherLoginModal').classList.remove('active');
+        document.getElementById('teacherEmail').value = '';
+        document.getElementById('teacherPassword').value = '';
+        document.getElementById('teacherLoginError').innerText = '';
+    });
+    
+    document.getElementById('closeMemberLoginBtn')?.addEventListener('click', function() {
+        document.getElementById('memberLoginModal').classList.remove('active');
+        document.getElementById('memberEmail').value = '';
+        document.getElementById('memberPassword').value = '';
+        document.getElementById('memberLoginError').innerText = '';
+    });
+    
+    document.getElementById('closeRegisterTeacherBtn')?.addEventListener('click', function() {
+        document.getElementById('registerTeacherModal').classList.remove('active');
+        document.getElementById('registerTeacherEmail').value = '';
+        document.getElementById('registerTeacherPassword').value = '';
+        document.getElementById('registerTeacherConfirm').value = '';
+        document.getElementById('registerTeacherError').innerText = '';
+        document.getElementById('registerTeacherSuccess').style.display = 'none';
+    });
+    
+    document.getElementById('closeRegisterMemberBtn')?.addEventListener('click', function() {
+        document.getElementById('registerMemberModal').classList.remove('active');
+        document.getElementById('registerMemberEmail').value = '';
+        document.getElementById('registerMemberPassword').value = '';
+        document.getElementById('registerMemberConfirm').value = '';
+        document.getElementById('registerMemberError').innerText = '';
+        document.getElementById('registerMemberSuccess').style.display = 'none';
+    });
+    
+    // أزرار تسجيل الدخول
     document.getElementById('adminLoginBtn')?.addEventListener('click', handleAdminLogin);
-    document.getElementById('closeAdminLoginBtn')?.addEventListener('click', hideAllModals);
     document.getElementById('teacherLoginBtn')?.addEventListener('click', handleTeacherLogin);
-    document.getElementById('closeTeacherLoginBtn')?.addEventListener('click', hideAllModals);
     document.getElementById('memberLoginBtn')?.addEventListener('click', handleMemberLogin);
-    document.getElementById('closeMemberLoginBtn')?.addEventListener('click', hideAllModals);
     
-    // طلب تسجيل أستاذ
+    // أزرار طلب التسجيل
     document.getElementById('registerTeacherSubmitBtn')?.addEventListener('click', handleRegisterTeacher);
-    document.getElementById('closeRegisterTeacherBtn')?.addEventListener('click', hideAllModals);
-    
-    // طلب تسجيل عضو
     document.getElementById('registerMemberSubmitBtn')?.addEventListener('click', handleRegisterMember);
-    document.getElementById('closeRegisterMemberBtn')?.addEventListener('click', hideAllModals);
     
-    // لوحة التحكم - الأزرار
+    // لوحة التحكم
     document.getElementById('summerStopBtn')?.addEventListener('click', () => stopLessons('summer'));
     document.getElementById('summerStartBtn')?.addEventListener('click', () => startLessons('summer'));
     document.getElementById('curriculumStopBtn')?.addEventListener('click', () => stopLessons('curriculum'));
     document.getElementById('curriculumStartBtn')?.addEventListener('click', () => startLessons('curriculum'));
+    
     document.getElementById('saveInviteLinksBtn')?.addEventListener('click', async () => {
         if (!isAdminMode) { showToast('⚠️ غير مصرح لك', 'error'); return; }
         await saveInviteLinksToDB();
     });
+    
     document.getElementById('saveNewsBtn')?.addEventListener('click', async () => {
         if (!isAdminMode) { showToast('⚠️ غير مصرح لك', 'error'); return; }
         await saveNews();
     });
+    
     document.getElementById('addTeacherBtn')?.addEventListener('click', addTeacher);
     
-    // إضافة درس
+    // إضافة وتعديل الدروس
     document.getElementById('confirmAddLessonBtn')?.addEventListener('click', addNewLesson);
     document.getElementById('cancelAddLessonBtn')?.addEventListener('click', () => {
         document.getElementById('addLessonModal').classList.remove('active');
     });
     
-    // تعديل درس خارجي
     document.getElementById('confirmEditLessonBtn')?.addEventListener('click', async () => {
         if (!isAdminMode) {
             showToast('⚠️ غير مصرح لك - هذه الصلاحية للأستاذ فقط', 'error');
@@ -4813,7 +4866,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('editLessonModal').classList.remove('active');
     });
     
-    // تعديل درس داخلي
     document.getElementById('confirmEditInternalBtn')?.addEventListener('click', async () => {
         if (!isAdminMode) {
             showToast('⚠️ غير مصرح لك - هذه الصلاحية للأستاذ فقط', 'error');
@@ -4838,12 +4890,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('editInternalLessonModal').classList.remove('active');
     });
     
-    // تسجيل الخروج
+    // تسجيل الخروج وإلغاء العضوية
     document.getElementById('membershipLogoutBtn')?.addEventListener('click', showLogoutConfirm);
     document.getElementById('confirmLogoutBtn')?.addEventListener('click', confirmLogout);
     document.getElementById('cancelLogoutBtn')?.addEventListener('click', hideAllModals);
     
-    // إلغاء العضوية
     document.getElementById('revokeMembershipBtn')?.addEventListener('click', showRevokeConfirm);
     document.getElementById('confirmRevokeBtn')?.addEventListener('click', revokeOwnMembership);
     document.getElementById('cancelRevokeBtn')?.addEventListener('click', () => {
@@ -4851,7 +4902,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // إغلاق النوافذ عند الضغط خارجها
-    window.onclick = (e) => {
+    window.onclick = function(e) {
         if (e.target.classList.contains('modal-overlay')) {
             hideAllModals();
         }
@@ -4864,7 +4915,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!e.target.closest('.search-wrapper-new')) {
             document.getElementById('searchResults').classList.remove('active');
         }
-        // إغلاق لوحة التحكم عند الضغط على الخلفية (تم بالفعل عبر onclick في الـ HTML)
     };
     
     // مراقبة حالة المصادقة
@@ -4897,12 +4947,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateUserInterface();
                 
                 if (isAdminMode && currentUser?.email === MASTER_TEACHER_EMAIL) {
-                    await loadJoinRequests();
-                    await loadApprovedMembers();
-                    await loadTeachersList();
+                    loadJoinRequests();
+                    loadApprovedMembers();
+                    loadTeachersList();
                 }
                 
-                await loadInviteLinks();
+                loadInviteLinks();
                 updateAuthButtons();
                 
                 if (previousUser === null && !isRestoringState) {
@@ -4926,9 +4976,9 @@ document.addEventListener('DOMContentLoaded', () => {
     init();
 });
 
-console.log('🎨 تم تحميل التصميم الجديد بنجاح!');
-console.log('📚 منصة الأستاذ محمد - النسخة النهائية مع إصلاحات الهاتف');
-console.log('✅ تم إصلاح: لوحة التحكم + شريط الأخبار للهاتف');
+console.log('🎨 تم تحميل المنصة بنجاح!');
+console.log('📚 منصة الأستاذ محمد - النسخة النهائية');
+console.log('✅ جميع الإصلاحات تم تطبيقها');
 </script>
 </body>
 </html>
