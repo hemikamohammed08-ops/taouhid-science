@@ -16,10 +16,9 @@
     
     <style>
         /* ==========================================================
-           التصميم المتكامل - النسخة النهائية المحسّنة
+           التصميم المتكامل - مع إصلاحات الهاتف
            ========================================================== */
 
-        /* ---------- المتغيرات ---------- */
         :root {
             --primary: #1a4a8a;
             --primary-light: #2a6ab8;
@@ -92,8 +91,8 @@
         [data-theme="dark"] .modal-content { background: #1a2638; }
         [data-theme="dark"] .news-ticker-new { background: #1a2638; }
         [data-theme="dark"] .subject-card-new .header { color: #1a4a8a; }
+        [data-theme="dark"] .admin-panel-new { background: #1a2638; }
 
-        /* ---------- الأساسيات ---------- */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
@@ -315,43 +314,49 @@
         }
         .search-result-item:hover { background: var(--bg-card-hover); }
 
-        /* ---------- شريط الأخبار ---------- */
+        /* ---------- شريط الأخبار - مُصلح للهاتف ---------- */
         .news-ticker-new {
             background: var(--bg-white);
             border-radius: var(--radius-md);
-            padding: 10px 20px;
-            margin-bottom: 20px;
+            padding: 8px 12px;
+            margin-bottom: 16px;
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 10px;
             box-shadow: var(--shadow-sm);
             border-right: 4px solid var(--secondary);
-            min-height: 48px;
+            min-height: 44px;
+            overflow: hidden;
         }
+
         .news-ticker-new .label {
             background: var(--gradient-secondary);
             color: #1a4a8a;
-            padding: 4px 14px;
+            padding: 3px 10px;
             border-radius: var(--radius-full);
             font-weight: 800;
-            font-size: 0.7rem;
+            font-size: 0.6rem;
             white-space: nowrap;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
+            flex-shrink: 0;
         }
         .news-ticker-new .label i { animation: blink 1.5s ease-in-out infinite; }
+
         .news-ticker-new .content {
             flex: 1;
             overflow: hidden;
             min-width: 0;
         }
+
         .news-ticker-new .content marquee {
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             color: var(--text-secondary);
             direction: rtl;
             display: block;
             white-space: nowrap;
+            padding: 2px 0;
         }
 
         @keyframes blink {
@@ -461,7 +466,7 @@
             border: 2px solid var(--secondary-light);
         }
 
-        /* ---------- بطاقات المراحل الفرعية ---------- */
+        /* ---------- بطاقات المراحل ---------- */
         .sub-stages-new {
             display: flex;
             flex-wrap: wrap;
@@ -499,7 +504,6 @@
         .sub-stage-card-new h3 { font-size: 1.2rem; font-weight: 800; }
         .sub-stage-card-new p { font-size: 0.8rem; color: var(--text-muted); }
 
-        /* ---------- بطاقات السنوات ---------- */
         .years-new {
             display: flex;
             flex-wrap: wrap;
@@ -532,7 +536,6 @@
         .year-card-new .emoji { font-size: 2rem; margin-bottom: 6px; display: block; }
         .year-card-new h3 { font-size: 1rem; font-weight: 700; }
 
-        /* ---------- بطاقات المواد ---------- */
         .subjects-new {
             display: flex;
             flex-wrap: wrap;
@@ -572,7 +575,6 @@
             gap: 10px;
         }
 
-        /* ---------- أنواع الدروس ---------- */
         .lesson-types-new {
             display: flex;
             flex-wrap: wrap;
@@ -613,7 +615,6 @@
             color: var(--text-secondary);
         }
 
-        /* ---------- قائمة الدروس ---------- */
         .lessons-list-new {
             background: var(--bg-white);
             border-radius: var(--radius-lg);
@@ -668,7 +669,6 @@
             align-items: center;
         }
 
-        /* ---------- البادجات ---------- */
         .badge {
             display: inline-flex;
             align-items: center;
@@ -683,7 +683,6 @@
         .badge-telegram { background: #0088cc; color: white; }
         .badge-facebook { background: #1877f2; color: white; }
 
-        /* ---------- التقييم ---------- */
         .rating-new {
             display: flex;
             align-items: center;
@@ -714,7 +713,6 @@
             color: var(--text-muted);
         }
 
-        /* ---------- أزرار الدروس ---------- */
         .lesson-btn {
             padding: 6px 14px;
             border-radius: var(--radius-full);
@@ -739,7 +737,6 @@
         .lesson-btn.delete { background: var(--danger); color: white; }
         .lesson-btn.delete:hover { background: #dc2626; }
 
-        /* ---------- إضافة درس ---------- */
         .add-lesson-btn-new {
             background: var(--gradient-primary);
             color: white;
@@ -762,7 +759,6 @@
             box-shadow: 0 4px 20px rgba(26,74,138,0.3);
         }
 
-        /* ---------- أزرار التنقل ---------- */
         .back-btn-new {
             background: var(--bg-white);
             color: var(--text-primary);
@@ -788,7 +784,6 @@
             transform: translateX(-3px);
         }
 
-        /* ---------- الترقيم ---------- */
         .pagination-new {
             display: flex;
             justify-content: center;
@@ -835,7 +830,6 @@
             transform: scale(1.02);
         }
 
-        /* ---------- عارض الدروس ---------- */
         .viewer-new {
             background: var(--bg-white);
             border-radius: var(--radius-lg);
@@ -877,7 +871,6 @@
         }
         .viewer-new .footer { text-align: center; padding-top: 12px; border-top: 1px solid var(--border-color); }
 
-        /* ---------- البطاقة الترحيبية ---------- */
         .welcome-new {
             text-align: center;
             padding: 32px 20px;
@@ -892,7 +885,6 @@
         .welcome-new h3 { font-size: 1.4rem; font-weight: 800; }
         .welcome-new p { color: var(--text-muted); font-size: 0.9rem; }
 
-        /* ---------- مجتمع ---------- */
         .community-new {
             background: linear-gradient(135deg, #ede9fe, #ddd6fe);
             border-radius: var(--radius-lg);
@@ -979,7 +971,6 @@
             flex-wrap: wrap;
         }
 
-        /* ---------- الفوتر ---------- */
         .footer-new {
             background: var(--primary-dark);
             border-radius: var(--radius-lg) var(--radius-lg) 0 0;
@@ -991,7 +982,6 @@
         }
         .footer-new strong { color: var(--secondary-light); }
 
-        /* ---------- النوافذ المنبثقة ---------- */
         .popup-overlay-new {
             display: none;
             position: fixed;
@@ -1078,7 +1068,6 @@
             margin-top: 6px;
         }
 
-        /* ---------- نافذة الزائر ---------- */
         .visitor-popup-new {
             display: none;
             position: fixed;
@@ -1119,7 +1108,6 @@
         }
         .visitor-popup-new .content button:hover { transform: scale(1.02); }
 
-        /* ---------- باقي النوافذ ---------- */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -1196,26 +1184,263 @@
         }
         .modal-content .btn-group button:hover { transform: scale(1.01); }
 
-        /* ---------- لوحة التحكم ---------- */
-        .admin-panel-new {
+        /* ==========================================================
+           لوحة التحكم - مُصلحة للهاتف
+           ========================================================== */
+        
+        /* خلفية اللوحة */
+        .admin-overlay {
             display: none;
             position: fixed;
-            top: 80px;
-            right: 16px;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 9998;
+        }
+        .admin-overlay.active { display: block; }
+
+        /* اللوحة نفسها */
+        .admin-panel-new {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            width: 92%;
+            max-width: 440px;
+            max-height: 85vh;
             background: var(--bg-white);
-            padding: 24px;
+            padding: 24px 20px;
             border-radius: var(--radius-lg);
-            width: 440px;
-            z-index: 1000;
+            z-index: 9999;
             box-shadow: var(--shadow-xl);
             border-right: 5px solid var(--secondary);
-            max-height: 85vh;
             overflow-y: auto;
+            display: none;
             color: var(--text-primary);
+            opacity: 0;
+            transition: all 0.3s ease;
         }
-        .admin-panel-new.active { display: block; }
+        .admin-panel-new.active {
+            display: block;
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
 
-        /* ---------- التوست ---------- */
+        /* زر إغلاق لوحة التحكم */
+        .admin-close-btn {
+            position: sticky;
+            top: 0;
+            float: left;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 10px rgba(239,68,68,0.3);
+        }
+        .admin-close-btn:hover {
+            transform: rotate(90deg) scale(1.1);
+        }
+
+        .admin-panel-new h4 {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            border-bottom: 2px solid var(--secondary);
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding-left: 40px;
+        }
+        .admin-panel-new h4 .admin-badge {
+            background: #dc2626;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: 700;
+        }
+        .admin-panel-new h4 .teacher-badge {
+            background: #f59e0b;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: 700;
+        }
+        .admin-panel-new h5 {
+            font-size: 1rem;
+            color: var(--primary);
+            margin: 12px 0 8px;
+        }
+
+        .admin-panel-new .form-group {
+            margin-bottom: 8px;
+        }
+        .admin-panel-new .form-group label {
+            font-size: 0.8rem;
+        }
+        .admin-panel-new .form-group input,
+        .admin-panel-new .form-group select {
+            min-height: 38px;
+            font-size: 0.8rem;
+            padding: 6px 12px;
+        }
+
+        .admin-panel-new .lock-section {
+            background: var(--bg-input);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            margin: 8px 0;
+        }
+        .admin-panel-new .lock-item {
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .admin-panel-new .lock-item:last-child { border-bottom: none; }
+        .admin-panel-new .lock-label {
+            font-weight: 700;
+            display: block;
+            margin-bottom: 4px;
+            font-size: 0.9rem;
+        }
+        .admin-panel-new .lock-label.summer { color: #b45309; }
+        .admin-panel-new .lock-label.curriculum { color: var(--primary); }
+        .admin-panel-new .lock-status {
+            display: inline-block;
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: var(--radius-full);
+            margin-right: 6px;
+        }
+        .admin-panel-new .lock-status.locked { background: var(--danger); color: white; }
+        .admin-panel-new .lock-status.unlocked { background: var(--success); color: white; }
+        .admin-panel-new .lock-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            margin: 6px 0;
+        }
+        .admin-panel-new .lock-date-input {
+            flex: 1;
+            min-width: 80px;
+            padding: 4px 10px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border-color);
+            background: var(--bg-input);
+            color: var(--text-primary);
+            min-height: 32px;
+            font-size: 0.75rem;
+        }
+        .admin-panel-new .lock-action-btn {
+            padding: 4px 12px;
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            font-size: 0.7rem;
+            border: none;
+            font-weight: 700;
+            min-height: 30px;
+        }
+        .admin-panel-new .lock-action-btn.stop { background: var(--danger); color: white; }
+        .admin-panel-new .lock-action-btn.start { background: var(--success); color: white; }
+        .admin-panel-new .lock-info {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .admin-panel-new .requests-panel {
+            background: var(--bg-input);
+            border-radius: var(--radius-md);
+            padding: 8px;
+            margin-top: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .admin-panel-new .request-item {
+            background: var(--bg-white);
+            border-radius: 10px;
+            padding: 6px 10px;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+            border-right: 3px solid #ff9800;
+            color: var(--text-primary);
+            font-size: 0.8rem;
+        }
+        .admin-panel-new .request-email { font-weight: 700; font-size: 0.75rem; }
+        .admin-panel-new .request-date { font-size: 0.55rem; color: var(--text-muted); }
+        .admin-panel-new .request-actions button {
+            padding: 3px 8px;
+            border-radius: var(--radius-full);
+            border: none;
+            cursor: pointer;
+            margin: 0 2px;
+            font-size: 0.6rem;
+            font-weight: 700;
+            min-height: 24px;
+        }
+        .admin-panel-new .approve-btn { background: var(--success); color: white; }
+        .admin-panel-new .reject-btn { background: var(--danger); color: white; }
+        .admin-panel-new .revoke-btn { background: var(--warning); color: white; }
+        .admin-panel-new .empty-requests {
+            text-align: center;
+            padding: 10px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+        .admin-panel-new .invite-links-section {
+            background: var(--bg-input);
+            border-radius: var(--radius-md);
+            padding: 10px;
+            margin: 6px 0;
+        }
+        .admin-panel-new .invite-links-section .stage-title {
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 4px 0 2px;
+            font-size: 0.85rem;
+        }
+        .admin-panel-new #requestsCount {
+            background: var(--danger);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.6rem;
+        }
+        .admin-panel-new #teacherManagementSection { display: none; margin-top: 8px; }
+        .admin-panel-new .membership-banner {
+            background: var(--gradient-primary);
+            color: white;
+            border-radius: var(--radius-lg);
+            padding: 10px 16px;
+            margin: 10px 0;
+            text-align: center;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
         .toast-container {
             position: fixed;
             bottom: 16px;
@@ -1266,98 +1491,29 @@
             100% { transform: translateX(80px); opacity: 0; }
         }
 
-        /* ---------- عناصر إضافية ---------- */
-        .lock-section {
-            background: var(--bg-input);
-            border-radius: var(--radius-md);
-            padding: 16px;
-            margin: 10px 0;
-        }
-        .lock-item {
-            margin-bottom: 12px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .lock-item:last-child { border-bottom: none; }
-        .lock-label { font-weight: 700; display: block; margin-bottom: 4px; }
-        .lock-label.summer { color: #b45309; }
-        .lock-label.curriculum { color: var(--primary); }
-        .lock-status {
-            display: inline-block;
-            font-size: 0.7rem;
-            padding: 2px 8px;
-            border-radius: var(--radius-full);
-            margin-right: 6px;
-        }
-        .lock-status.locked { background: var(--danger); color: white; }
-        .lock-status.unlocked { background: var(--success); color: white; }
-        .lock-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; }
-        .lock-date-input {
-            flex: 1;
-            min-width: 90px;
-            padding: 6px 12px;
-            border-radius: var(--radius-full);
-            border: 1px solid var(--border-color);
-            background: var(--bg-input);
+        .page-title {
+            font-size: 1.4rem;
+            font-weight: 800;
             color: var(--text-primary);
-            min-height: 36px;
-        }
-        .lock-action-btn {
-            padding: 6px 14px;
-            border-radius: var(--radius-full);
-            cursor: pointer;
-            font-size: 0.75rem;
-            border: none;
-            font-weight: 700;
-            min-height: 34px;
-        }
-        .lock-action-btn.stop { background: var(--danger); color: white; }
-        .lock-action-btn.start { background: var(--success); color: white; }
-        .lock-info { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
-        .requests-panel {
-            background: var(--bg-input);
-            border-radius: var(--radius-md);
-            padding: 10px;
-            margin-top: 6px;
-            max-height: 250px;
-            overflow-y: auto;
-        }
-        .request-item {
-            background: var(--bg-white);
-            border-radius: 10px;
-            padding: 8px 12px;
-            margin-bottom: 6px;
+            margin-bottom: 22px;
+            text-align: center;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 4px;
-            border-right: 3px solid #ff9800;
-            color: var(--text-primary);
+            justify-content: center;
+            gap: 8px;
         }
-        .request-email { font-weight: 700; font-size: 0.8rem; }
-        .request-date { font-size: 0.6rem; color: var(--text-muted); }
-        .request-actions button {
-            padding: 4px 10px;
-            border-radius: var(--radius-full);
-            border: none;
-            cursor: pointer;
-            margin: 0 2px;
-            font-size: 0.65rem;
-            font-weight: 700;
-            min-height: 28px;
+
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--bg-input);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
         }
-        .approve-btn { background: var(--success); color: white; }
-        .reject-btn { background: var(--danger); color: white; }
-        .revoke-btn { background: var(--warning); color: white; }
-        .empty-requests { text-align: center; padding: 12px; color: var(--text-muted); font-size: 0.85rem; }
-        .invite-links-section {
-            background: var(--bg-input);
-            border-radius: var(--radius-md);
-            padding: 14px;
-            margin: 10px 0;
-        }
-        .invite-links-section .stage-title { font-weight: 700; color: var(--text-primary); margin: 6px 0 3px; font-size: 0.9rem; }
+        @keyframes spin { 0% { transform: rotate(0); } 100% { transform: rotate(360deg); } }
+
         .membership-banner {
             background: var(--gradient-primary);
             color: white;
@@ -1403,120 +1559,282 @@
             line-height: 1.6;
             text-align: right;
         }
-        .admin-panel-new h5 { color: var(--primary); margin: 12px 0 8px; font-size: 1rem; }
-        #requestsCount {
-            background: var(--danger);
-            color: white;
-            padding: 2px 8px;
-            border-radius: 20px;
-            font-size: 0.65rem;
-        }
-        #teacherManagementSection { display: none; margin-top: 8px; }
-        .form-group { margin-bottom: 10px; }
-        .form-group label {
-            display: block;
-            font-weight: 700;
-            margin-bottom: 4px;
-            color: var(--text-primary);
-            font-size: 0.85rem;
-        }
-        .form-group input, .form-group select, .form-group textarea {
-            width: 100%;
-            padding: 10px 14px;
-            border-radius: var(--radius-full);
-            border: 1px solid var(--border-color);
-            background: var(--bg-input);
-            color: var(--text-primary);
-            font-family: 'Tajawal', sans-serif;
-            font-size: 0.9rem;
-            min-height: 44px;
-        }
-        .form-group textarea {
-            border-radius: var(--radius-md);
-            min-height: 80px;
-            resize: vertical;
-        }
-        .btn-group { display: flex; gap: 10px; margin-top: 6px; }
-        .btn-group button { flex: 1; padding: 10px; border-radius: var(--radius-full); border: none; font-weight: 700; cursor: pointer; min-height: 44px; }
-        .page-title {
-            font-size: 1.4rem;
-            font-weight: 800;
-            color: var(--text-primary);
-            margin-bottom: 22px;
-            text-align: center;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+
+        /* ==========================================================
+           إصلاحات الهاتف
+           ========================================================== */
+        @media (max-width: 992px) {
+            .admin-panel-new { max-width: 400px; }
         }
 
-        /* ---------- مستجيب ---------- */
-        @media (max-width: 992px) {
-            .admin-panel-new { width: 380px; right: 10px; }
-        }
         @media (max-width: 768px) {
-            .container { padding: 16px 20px; }
-            .header-new { flex-direction: column; align-items: stretch; border-radius: var(--radius-md); padding: 16px; }
+            .container { padding: 16px 16px; }
+            
+            .header-new {
+                flex-direction: column;
+                align-items: stretch;
+                border-radius: var(--radius-md);
+                padding: 14px;
+            }
             .logo-new { justify-content: center; }
-            .logo-text-new h1 { font-size: 1.3rem; }
+            .logo-text-new h1 { font-size: 1.2rem; }
+            .logo-text-new p { font-size: 0.65rem; }
             .header-actions { justify-content: center; flex-wrap: wrap; }
             .search-wrapper-new { min-width: 120px; flex: 1; }
-            .stage-btn-new { padding: 12px 22px; font-size: 0.95rem; min-height: 44px; }
-            .sub-stage-card-new { width: 160px; padding: 20px; }
-            .year-card-new { width: 140px; }
-            .subject-card-new { width: 100%; max-width: 240px; }
-            .lesson-type-card-new { width: 100%; max-width: 220px; padding: 24px 20px; }
-            .lesson-item-new { flex-direction: column; align-items: stretch; text-align: center; }
+            .search-input-new { min-height: 36px; font-size: 0.75rem; }
+            
+            .stage-btn-new {
+                padding: 10px 18px;
+                font-size: 0.9rem;
+                min-height: 42px;
+            }
+            
+            .sub-stage-card-new { width: 150px; padding: 18px; }
+            .year-card-new { width: 130px; padding: 16px; }
+            .subject-card-new { width: 100%; max-width: 220px; }
+            .lesson-type-card-new { width: 100%; max-width: 200px; padding: 20px; }
+            
+            .lesson-item-new {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+                padding: 14px 16px;
+            }
             .lesson-item-new .actions { justify-content: center; }
-            .admin-panel-new { width: calc(100% - 16px); right: 8px; left: 8px; top: 60px; }
-            .countdown-new .box { min-width: 55px; padding: 4px 12px; }
-            .countdown-new .box .number { font-size: 1.2rem; }
-            .viewer-new .body iframe { height: 45vh; min-height: 300px; }
-            .modal-content { padding: 20px; }
-            .community-new { padding: 20px; }
-            .community-new .link-card { width: 100%; max-width: 240px; }
-            .visitor-popup-new .content { padding: 28px 20px; }
-            .visitor-popup-new .content h3 { font-size: 1.2rem; }
-        }
-        @media (max-width: 480px) {
-            .container { padding: 10px 12px; }
-            .header-new { padding: 12px; }
-            .logo-icon-new { width: 40px; height: 40px; }
-            .logo-text-new h1 { font-size: 1.05rem; }
-            .stage-btn-new { font-size: 0.8rem; padding: 8px 14px; width: 100%; justify-content: center; }
-            .sub-stage-card-new { width: 130px; padding: 14px; }
-            .year-card-new { width: 120px; padding: 14px; }
-            .countdown-new .box { min-width: 45px; padding: 3px 8px; }
-            .countdown-new .box .number { font-size: 1rem; }
-            .popup-card-new { padding: 16px 12px; max-width: 300px; }
-            .admin-panel-new { width: 100%; right: 0; left: 0; top: 55px; border-radius: 0; max-height: 80vh; }
-            .community-new { padding: 14px; }
-            .community-new .link-card { padding: 14px; }
-            .btn { font-size: 0.7rem; padding: 6px 12px; min-height: 34px; }
-            .lesson-btn { font-size: 0.6rem; padding: 4px 10px; min-height: 28px; }
-            .modal-content { padding: 16px; }
+            
+            .countdown-new .box { min-width: 50px; padding: 4px 10px; }
+            .countdown-new .box .number { font-size: 1.1rem; }
+            
+            .viewer-new .body iframe { height: 40vh; min-height: 250px; }
+            
+            .modal-content { padding: 18px; }
             .modal-content h3 { font-size: 1.1rem; }
+            
+            .community-new { padding: 18px; }
+            .community-new .link-card { width: 100%; max-width: 220px; }
+            
+            .visitor-popup-new .content { padding: 24px 18px; }
+            .visitor-popup-new .content h3 { font-size: 1.1rem; }
+            .visitor-popup-new .content p { font-size: 0.9rem; }
+            
+            /* ---------- لوحة التحكم على الهاتف ---------- */
+            .admin-panel-new {
+                width: 95%;
+                max-width: 380px;
+                padding: 16px 14px;
+                max-height: 80vh;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) scale(0.95);
+            }
+            .admin-panel-new.active {
+                transform: translate(-50%, -50%) scale(1);
+            }
+            .admin-panel-new h4 {
+                font-size: 1rem !important;
+                padding-left: 36px;
+            }
+            .admin-panel-new h5 {
+                font-size: 0.85rem !important;
+            }
+            .admin-close-btn {
+                width: 30px;
+                height: 30px;
+                font-size: 0.9rem;
+                top: 8px;
+                left: 8px;
+            }
+            .admin-panel-new .form-group input,
+            .admin-panel-new .form-group select {
+                min-height: 34px;
+                font-size: 0.75rem;
+                padding: 4px 10px;
+            }
+            .admin-panel-new .lock-date-input {
+                min-height: 28px;
+                font-size: 0.65rem;
+            }
+            .admin-panel-new .lock-action-btn {
+                min-height: 26px;
+                font-size: 0.6rem;
+                padding: 3px 10px;
+            }
+            
+            /* ---------- شريط الأخبار على الهاتف ---------- */
+            .news-ticker-new {
+                padding: 6px 10px;
+                min-height: 36px;
+                gap: 6px;
+                border-right-width: 3px;
+            }
+            .news-ticker-new .label {
+                font-size: 0.5rem;
+                padding: 2px 8px;
+            }
+            .news-ticker-new .content marquee {
+                font-size: 0.65rem;
+            }
+            
+            .back-btn-new {
+                font-size: 0.75rem;
+                padding: 6px 14px;
+                min-height: 34px;
+            }
+            .page-title {
+                font-size: 1.1rem;
+                margin-bottom: 16px;
+            }
+            .btn {
+                font-size: 0.7rem;
+                padding: 6px 12px;
+                min-height: 34px;
+            }
+            .lesson-btn {
+                font-size: 0.6rem;
+                padding: 4px 10px;
+                min-height: 28px;
+            }
+            .add-lesson-btn-new {
+                font-size: 0.8rem;
+                min-height: 40px;
+                padding: 8px;
+            }
         }
 
-        /* ---------- تحميل ---------- */
-        .loading-spinner {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            border: 4px solid var(--bg-input);
-            border-top: 4px solid var(--primary);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+        @media (max-width: 480px) {
+            .container { padding: 10px 10px; }
+            .header-new { padding: 10px; }
+            .logo-icon-new { width: 36px; height: 36px; }
+            .logo-text-new h1 { font-size: 1rem; }
+            
+            .stage-btn-new {
+                font-size: 0.75rem;
+                padding: 8px 12px;
+                width: 100%;
+                justify-content: center;
+                min-height: 38px;
+            }
+            .stages-new { gap: 10px; margin: 16px 0 24px; }
+            
+            .sub-stage-card-new { width: 120px; padding: 12px; }
+            .sub-stage-card-new .emoji { font-size: 2rem; }
+            .sub-stage-card-new h3 { font-size: 1rem; }
+            
+            .year-card-new { width: 110px; padding: 12px; }
+            .year-card-new .emoji { font-size: 1.5rem; }
+            .year-card-new h3 { font-size: 0.8rem; }
+            
+            .subject-card-new { max-width: 180px; }
+            .subject-card-new .header { font-size: 0.85rem; padding: 12px 14px; }
+            
+            .lesson-type-card-new { max-width: 170px; padding: 16px; }
+            .lesson-type-card-new .emoji { font-size: 2.2rem; }
+            .lesson-type-card-new h3 { font-size: 1rem; }
+            
+            .countdown-new .box { min-width: 40px; padding: 3px 6px; }
+            .countdown-new .box .number { font-size: 0.9rem; }
+            .countdown-new .box .label { font-size: 0.45rem; }
+            .countdown-new .title { font-size: 0.95rem; }
+            
+            .news-ticker-new {
+                padding: 4px 8px;
+                min-height: 30px;
+                gap: 4px;
+            }
+            .news-ticker-new .label {
+                font-size: 0.4rem;
+                padding: 2px 6px;
+            }
+            .news-ticker-new .content marquee {
+                font-size: 0.55rem;
+            }
+            
+            .popup-card-new { padding: 14px 12px; max-width: 300px; }
+            .popup-card-new h3 { font-size: 0.95rem; }
+            .popup-card-new p { font-size: 0.8rem; }
+            
+            .admin-panel-new {
+                width: 98%;
+                max-width: 320px;
+                padding: 12px 10px;
+                max-height: 75vh;
+            }
+            .admin-panel-new h4 {
+                font-size: 0.85rem !important;
+                padding-left: 30px;
+            }
+            .admin-panel-new h5 {
+                font-size: 0.75rem !important;
+            }
+            .admin-close-btn {
+                width: 26px;
+                height: 26px;
+                font-size: 0.75rem;
+                top: 6px;
+                left: 6px;
+            }
+            .admin-panel-new .request-item {
+                font-size: 0.7rem;
+                padding: 4px 8px;
+            }
+            .admin-panel-new .request-email { font-size: 0.65rem; }
+            
+            .modal-content { padding: 14px; }
+            .modal-content h3 { font-size: 0.95rem; }
+            .modal-content .form-group input,
+            .modal-content .form-group select,
+            .modal-content .form-group textarea {
+                min-height: 36px;
+                font-size: 0.8rem;
+                padding: 6px 10px;
+            }
+            
+            .community-new { padding: 12px; }
+            .community-new .title { font-size: 1rem; }
+            .community-new .stage-btn { font-size: 0.7rem; padding: 6px 14px; min-height: 32px; }
+            .community-new .link-card { padding: 12px; max-width: 180px; }
+            .community-new .link-card .url { font-size: 0.6rem; }
+            
+            .visitor-popup-new .content { padding: 20px 16px; border-radius: 40px; }
+            .visitor-popup-new .content .emoji { font-size: 2.5rem; }
+            .visitor-popup-new .content h3 { font-size: 1rem; }
+            .visitor-popup-new .content p { font-size: 0.8rem; }
+            
+            .footer-new { font-size: 0.7rem; padding: 16px; margin-top: 32px; }
+            
+            .btn { font-size: 0.6rem; padding: 4px 10px; min-height: 30px; }
+            .lesson-btn { font-size: 0.55rem; padding: 3px 8px; min-height: 24px; }
+            .add-lesson-btn-new { font-size: 0.7rem; min-height: 36px; padding: 6px; }
+            .back-btn-new { font-size: 0.65rem; padding: 4px 12px; min-height: 30px; margin-bottom: 12px; }
+            .page-title { font-size: 0.95rem; margin-bottom: 12px; }
+            .page-btn-new { font-size: 0.65rem; padding: 4px 10px; min-height: 28px; min-width: 28px; }
+            .page-nav-new { font-size: 0.65rem; padding: 4px 10px; min-height: 28px; }
+            
+            .lessons-list-new { padding: 12px; }
+            .lesson-item-new { padding: 10px 12px; margin-bottom: 8px; }
+            .lesson-item-new .title { font-size: 0.8rem; gap: 6px; }
+            .rating-new .stars i { font-size: 0.7rem; }
+            .rating-new .avg { font-size: 0.65rem; }
+            .rating-new .count { font-size: 0.5rem; }
+            .badge { font-size: 0.5rem; padding: 2px 6px; }
+            
+            .subjects-new { gap: 12px; margin: 16px 0 24px; }
+            .years-new { gap: 12px; margin: 16px 0 24px; }
+            .sub-stages-new { gap: 14px; margin: 16px 0 24px; }
+            .lesson-types-new { gap: 16px; margin: 16px 0 24px; }
         }
-        @keyframes spin { 0% { transform: rotate(0); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
 <!-- ============================================================ -->
+<!-- خلفية لوحة التحكم (للإغلاق بالنقر خارجها) -->
+<!-- ============================================================ -->
+<div id="adminOverlay" class="admin-overlay" onclick="closeAdminPanel()"></div>
+
+<!-- ============================================================ -->
 <!-- الهيكل الرئيسي -->
 <!-- ============================================================ -->
-
 <div class="container">
 
     <!-- الهيدر -->
@@ -1577,11 +1895,11 @@
         </div>
     </header>
 
-    <!-- شريط الأخبار -->
+    <!-- شريط الأخبار - مُصلح للهاتف -->
     <div id="newsTicker" class="news-ticker-new">
         <span class="label"><i class="fas fa-bullhorn"></i> المستجدات</span>
         <div class="content" id="newsTickerContent">
-            <div style="color:#ffd966; padding:3px 0;">جاري التحميل...</div>
+            <div style="color:#ffd966; padding:2px 0;">جاري التحميل...</div>
         </div>
     </div>
 
@@ -1676,6 +1994,10 @@
     </div>
 </div>
 
+<!-- ============================================================ -->
+<!-- نوافذ الدروس -->
+<!-- ============================================================ -->
+
 <!-- نافذة إضافة درس -->
 <div id="addLessonModal" class="modal-overlay">
     <div class="modal-content">
@@ -1727,7 +2049,10 @@
     </div>
 </div>
 
+<!-- ============================================================ -->
 <!-- نوافذ المصادقة -->
+<!-- ============================================================ -->
+
 <div id="loginChoiceModal" class="modal-overlay">
     <div class="modal-content" style="text-align:center;">
         <div style="font-size:2.8rem;">🔐</div>
@@ -1842,13 +2167,18 @@
 </div>
 
 <!-- ============================================================ -->
-<!-- لوحة التحكم -->
+<!-- لوحة التحكم - مع زر الإغلاق -->
 <!-- ============================================================ -->
 <div class="admin-panel-new" id="adminPanel">
-    <h4 id="panelTitle" style="font-size:1.1rem;">🔐 لوحة التحكم <span class="admin-badge" id="panelBadge" style="background:#dc2626; color:white; padding:2px 10px; border-radius:20px; font-size:0.65rem; font-weight:700;">مدير</span></h4>
+    <!-- زر الإغلاق -->
+    <button class="admin-close-btn" onclick="closeAdminPanel()">
+        <i class="fas fa-times"></i>
+    </button>
+    
+    <h4 id="panelTitle">🔐 لوحة التحكم <span class="admin-badge" id="panelBadge">مدير</span></h4>
     
     <div id="lockSection">
-        <h5 style="font-size:1rem; color:var(--primary); margin:12px 0 8px;">⏸️ التحكم بتوقيف الدروس</h5>
+        <h5>⏸️ التحكم بتوقيف الدروس</h5>
         <div class="lock-section">
             <div class="lock-item">
                 <div><span class="lock-label summer">🏖️ الدروس الصيفية</span><span id="summerLockStatusBadge" class="lock-status locked">مقفلة</span></div>
@@ -1872,7 +2202,7 @@
     </div>
     
     <div id="newsSection">
-        <h5 style="font-size:1rem; color:var(--primary); margin:12px 0 8px;"><i class="fas fa-newspaper"></i> شريط الأخبار</h5>
+        <h5><i class="fas fa-newspaper"></i> شريط الأخبار</h5>
         <div class="invite-links-section">
             <div class="form-group"><input type="text" id="adminNewsText" placeholder="أدخل النص..."></div>
             <button id="saveNewsBtn" class="lock-action-btn start">💾 حفظ</button>
@@ -1880,7 +2210,7 @@
     </div>
     
     <div id="inviteLinksSection">
-        <h5 style="font-size:1rem; color:var(--primary); margin:12px 0 8px;"><i class="fas fa-link"></i> روابط المجتمع</h5>
+        <h5><i class="fas fa-link"></i> روابط المجتمع</h5>
         <div class="invite-links-section">
             <div class="stage-title">📚 ابتدائي</div>
             <div class="form-group"><input type="url" id="adminTelegramPrimary" placeholder="رابط Telegram" dir="ltr"></div>
@@ -1897,15 +2227,15 @@
     
     <div id="adminOnlySection">
         <div id="requestsSection">
-            <h5 style="font-size:1rem; color:var(--primary); margin:12px 0 8px;"><i class="fas fa-users"></i> طلبات التسجيل <span id="requestsCount">0</span></h5>
+            <h5><i class="fas fa-users"></i> طلبات التسجيل <span id="requestsCount">0</span></h5>
             <div id="joinRequestsList" class="requests-panel"><div class="empty-requests">جاري التحميل...</div></div>
-            <h5 style="font-size:1rem; color:var(--primary); margin:12px 0 8px;"><i class="fas fa-user-check"></i> الأعضاء المعتمدون</h5>
+            <h5><i class="fas fa-user-check"></i> الأعضاء المعتمدون</h5>
             <div id="approvedMembersList" class="requests-panel"><div class="empty-requests">جاري التحميل...</div></div>
         </div>
         
         <div id="teacherManagementSection">
             <hr style="margin:10px 0; border-color:var(--border-color);">
-            <h5 style="font-size:1rem; color:var(--primary); margin:12px 0 8px;"><i class="fas fa-chalkboard-teacher"></i> إدارة الأساتذة</h5>
+            <h5><i class="fas fa-chalkboard-teacher"></i> إدارة الأساتذة</h5>
             <div class="invite-links-section">
                 <div class="form-group"><input type="email" id="newTeacherEmail" placeholder="البريد الإلكتروني" dir="ltr"></div>
                 <button id="addTeacherBtn" class="lock-action-btn start">➕ إضافة أستاذ</button>
@@ -2013,6 +2343,17 @@ function formatDate(dateStr) {
     }
     return dateStr;
 }
+
+// ============================================================
+// دالة إغلاق لوحة التحكم
+// ============================================================
+function closeAdminPanel() {
+    const panel = document.getElementById('adminPanel');
+    const overlay = document.getElementById('adminOverlay');
+    panel.classList.remove('active');
+    overlay.classList.remove('active');
+}
+window.closeAdminPanel = closeAdminPanel;
 
 // ============================================================
 // التوست
@@ -3016,7 +3357,7 @@ function updateAdminPanel() {
         }
         if (adminOnlySection) adminOnlySection.style.display = 'block';
         if (panelTitle) {
-            panelTitle.innerHTML = '🔐 لوحة التحكم <span class="admin-badge" style="background:#dc2626; color:white; padding:2px 10px; border-radius:20px; font-size:0.65rem; font-weight:700;">👑 مدير</span>';
+            panelTitle.innerHTML = '🔐 لوحة التحكم <span class="admin-badge">👑 مدير</span>';
         }
     } else if (isTeacher) {
         if (panelBadge) {
@@ -3024,7 +3365,7 @@ function updateAdminPanel() {
         }
         if (adminOnlySection) adminOnlySection.style.display = 'none';
         if (panelTitle) {
-            panelTitle.innerHTML = '🔐 لوحة التحكم <span class="teacher-badge" style="background:#f59e0b; color:white; padding:2px 10px; border-radius:20px; font-size:0.65rem; font-weight:700;">👨‍🏫 أستاذ</span>';
+            panelTitle.innerHTML = '🔐 لوحة التحكم <span class="teacher-badge">👨‍🏫 أستاذ</span>';
         }
     }
 }
@@ -3070,7 +3411,7 @@ function renderNewsTicker() {
     if (newsText && newsText.trim() !== '') {
         container.innerHTML = `<marquee behavior="scroll" direction="right" scrollamount="2" truespeed="truespeed" onmouseover="this.stop()" onmouseout="this.start()">${sanitizeHtml(newsText)}</marquee>`;
     } else {
-        container.innerHTML = '<div style="color:#ffd966; padding:3px 0;">📢 لا توجد مستجدات حالياً</div>';
+        container.innerHTML = '<div style="color:#ffd966; padding:2px 0;">📢 لا توجد مستجدات حالياً</div>';
     }
 }
 
@@ -4330,6 +4671,61 @@ async function init() {
 // أحداث DOM
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
+    // ============================================================
+    // أيقونات التروس (مُصلحة لإظهار لوحة التحكم مع الخلفية)
+    // ============================================================
+    
+    // أيقونة الأستاذ
+    document.getElementById('teacherGearIcon')?.addEventListener('click', function() {
+        if (currentUser && isAdminMode && currentUser?.email !== MASTER_TEACHER_EMAIL) {
+            const panel = document.getElementById('adminPanel');
+            const overlay = document.getElementById('adminOverlay');
+            if (panel.classList.contains('active')) {
+                panel.classList.remove('active');
+                overlay.classList.remove('active');
+            } else {
+                panel.classList.add('active');
+                overlay.classList.add('active');
+                document.getElementById('adminOnlySection').style.display = 'none';
+                document.getElementById('panelBadge').textContent = '👨‍🏫 أستاذ';
+                updateAdminPanel();
+            }
+        } else if (currentUser && !isAdminMode) {
+            showToast('⚠️ هذه اللوحة للأستاذ فقط', 'warning');
+        } else {
+            showLoginChoice();
+        }
+    });
+    
+    // أيقونة المدير
+    document.getElementById('adminGearIcon')?.addEventListener('click', function() {
+        if (currentUser && isAdminMode && currentUser?.email === MASTER_TEACHER_EMAIL) {
+            const panel = document.getElementById('adminPanel');
+            const overlay = document.getElementById('adminOverlay');
+            if (panel.classList.contains('active')) {
+                panel.classList.remove('active');
+                overlay.classList.remove('active');
+            } else {
+                panel.classList.add('active');
+                overlay.classList.add('active');
+                document.getElementById('adminOnlySection').style.display = 'block';
+                document.getElementById('panelBadge').textContent = '👑 مدير';
+                loadJoinRequests();
+                loadApprovedMembers();
+                loadTeachersList();
+                updateAdminPanel();
+            }
+        } else if (currentUser && !isAdminMode) {
+            showToast('⚠️ هذه اللوحة للمدير فقط', 'warning');
+        } else {
+            showLoginChoice();
+        }
+    });
+    
+    // ============================================================
+    // باقي الأحداث
+    // ============================================================
+    
     // نافذة اختيار تسجيل الدخول
     document.getElementById('loginAdminBtn')?.addEventListener('click', () => {
         document.getElementById('loginChoiceModal').classList.remove('active');
@@ -4372,7 +4768,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('registerMemberSubmitBtn')?.addEventListener('click', handleRegisterMember);
     document.getElementById('closeRegisterMemberBtn')?.addEventListener('click', hideAllModals);
     
-    // لوحة التحكم
+    // لوحة التحكم - الأزرار
     document.getElementById('summerStopBtn')?.addEventListener('click', () => stopLessons('summer'));
     document.getElementById('summerStartBtn')?.addEventListener('click', () => startLessons('summer'));
     document.getElementById('curriculumStopBtn')?.addEventListener('click', () => stopLessons('curriculum'));
@@ -4454,46 +4850,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('revokeConfirmModal').classList.remove('active');
     });
     
-    // أيقونات التروس
-    document.getElementById('teacherGearIcon')?.addEventListener('click', function() {
-        if (currentUser && isAdminMode && currentUser?.email !== MASTER_TEACHER_EMAIL) {
-            const panel = document.getElementById('adminPanel');
-            if (panel.classList.contains('active')) {
-                panel.classList.remove('active');
-            } else {
-                panel.classList.add('active');
-                document.getElementById('adminOnlySection').style.display = 'none';
-                document.getElementById('panelBadge').textContent = '👨‍🏫 أستاذ';
-                updateAdminPanel();
-            }
-        } else if (currentUser && !isAdminMode) {
-            showToast('⚠️ هذه اللوحة للأستاذ فقط', 'warning');
-        } else {
-            showLoginChoice();
-        }
-    });
-    
-    document.getElementById('adminGearIcon')?.addEventListener('click', function() {
-        if (currentUser && isAdminMode && currentUser?.email === MASTER_TEACHER_EMAIL) {
-            const panel = document.getElementById('adminPanel');
-            if (panel.classList.contains('active')) {
-                panel.classList.remove('active');
-            } else {
-                panel.classList.add('active');
-                document.getElementById('adminOnlySection').style.display = 'block';
-                document.getElementById('panelBadge').textContent = '👑 مدير';
-                loadJoinRequests();
-                loadApprovedMembers();
-                loadTeachersList();
-                updateAdminPanel();
-            }
-        } else if (currentUser && !isAdminMode) {
-            showToast('⚠️ هذه اللوحة للمدير فقط', 'warning');
-        } else {
-            showLoginChoice();
-        }
-    });
-    
     // إغلاق النوافذ عند الضغط خارجها
     window.onclick = (e) => {
         if (e.target.classList.contains('modal-overlay')) {
@@ -4508,6 +4864,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!e.target.closest('.search-wrapper-new')) {
             document.getElementById('searchResults').classList.remove('active');
         }
+        // إغلاق لوحة التحكم عند الضغط على الخلفية (تم بالفعل عبر onclick في الـ HTML)
     };
     
     // مراقبة حالة المصادقة
@@ -4570,8 +4927,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 console.log('🎨 تم تحميل التصميم الجديد بنجاح!');
-console.log('📚 منصة الأستاذ محمد - النسخة النهائية المحسّنة');
-console.log('✅ جميع التحسينات تم تطبيقها: خطوط أكبر، تباين أفضل، تأثيرات بصرية، مسافات محسّنة');
+console.log('📚 منصة الأستاذ محمد - النسخة النهائية مع إصلاحات الهاتف');
+console.log('✅ تم إصلاح: لوحة التحكم + شريط الأخبار للهاتف');
 </script>
 </body>
 </html>
