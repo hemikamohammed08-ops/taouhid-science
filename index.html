@@ -10,13 +10,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/DOMPurify/3.0.6/purify.min.js"></script>
     
     <style>
         /* ==========================================================
-           التصميم المتكامل - النسخة النهائية
+           التصميم المتكامل - النسخة النهائية مع دعم رفع الملفات
            ========================================================== */
 
         :root {
@@ -257,6 +257,18 @@
         .btn-ghost:hover {
             background: rgba(255,255,255,0.15);
             transform: rotate(20deg);
+        }
+        .btn-upload {
+            background: var(--gradient-primary);
+            color: white;
+        }
+        .btn-upload:hover {
+            box-shadow: 0 4px 20px rgba(26,74,138,0.4);
+        }
+        .btn-upload:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
 
         @keyframes shake {
@@ -1135,7 +1147,7 @@
             padding: 32px 28px;
             border-radius: var(--radius-lg);
             width: 92%;
-            max-width: 440px;
+            max-width: 540px;
             max-height: 90vh;
             overflow-y: auto;
             animation: popIn 0.4s ease;
@@ -1194,8 +1206,95 @@
         }
         .modal-content .btn-group button:hover { transform: scale(1.01); }
 
+        /* ========== قسم رفع الملفات ========== */
+        .upload-section {
+            background: var(--bg-input);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin: 12px 0;
+            border: 2px dashed var(--border-color);
+            transition: var(--transition);
+        }
+        .upload-section.dragover {
+            border-color: var(--primary);
+            background: rgba(26,74,138,0.05);
+        }
+        .upload-section .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+        .upload-section .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        .upload-section .file-input-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px;
+            background: var(--bg-white);
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border-color);
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            min-height: 44px;
+        }
+        .upload-section .file-input-label:hover {
+            border-color: var(--primary);
+            background: var(--bg-card-hover);
+        }
+        .upload-section .file-name {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-top: 8px;
+        }
+        .upload-section .upload-progress {
+            display: none;
+            margin-top: 10px;
+        }
+        .upload-section .upload-progress .progress-bar {
+            height: 6px;
+            background: var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .upload-section .upload-progress .progress-bar .fill {
+            height: 100%;
+            width: 0%;
+            background: var(--gradient-primary);
+            transition: width 0.3s;
+        }
+        .upload-section .upload-progress .status {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            text-align: center;
+        }
+        .upload-section .upload-success {
+            display: none;
+            background: #d1fae5;
+            color: #065f46;
+            padding: 10px;
+            border-radius: var(--radius-md);
+            margin-top: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-align: center;
+            border-right: 4px solid var(--success);
+        }
+
         /* ==========================================================
-           لوحة التحكم - مُصلحة للهاتف
+           لوحة التحكم
            ========================================================== */
         
         .admin-overlay {
@@ -1676,6 +1775,7 @@
                 min-height: 40px;
                 padding: 8px;
             }
+            .upload-section { padding: 12px; }
         }
 
         @media (max-width: 480px) {
@@ -1965,7 +2065,12 @@
 <div id="addLessonModal" class="modal-overlay">
     <div class="modal-content">
         <h3 id="addLessonModalTitle">➕ إضافة درس جديد</h3>
-        <div class="form-group"><label>عنوان الدرس:</label><input type="text" id="newLessonTitle" placeholder="أدخل عنوان الدرس"></div>
+        
+        <div class="form-group">
+            <label>عنوان الدرس:</label>
+            <input type="text" id="newLessonTitle" placeholder="أدخل عنوان الدرس">
+        </div>
+        
         <div class="form-group">
             <label>نوع الدرس:</label>
             <select id="newLessonType" onchange="toggleLessonFields()">
@@ -1975,15 +2080,60 @@
                 <option value="facebook">📘 فيسبوك - رابط خارجي</option>
             </select>
         </div>
-        <div id="internalLessonFields">
-            <div class="form-group"><label>رابط العرض:</label><input type="url" id="newLessonInternalUrl" placeholder="https://drive.google.com/file/d/xxx/preview"></div>
-            <div class="form-group"><label>رابط التحميل:</label><input type="url" id="newLessonDownloadUrl" placeholder="https://drive.google.com/uc?export=download&id=xxx"></div>
+        
+        <!-- ===== قسم رفع الملفات ===== -->
+        <div id="fileUploadSection" style="display:none;">
+            <div class="upload-section" id="uploadSection">
+                <div class="file-input-wrapper">
+                    <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.gif" onchange="handleFileSelect(event)">
+                    <div class="file-input-label">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span id="fileInputLabel">اختر ملف PDF أو صورة</span>
+                    </div>
+                </div>
+                <div id="selectedFileName" class="file-name"></div>
+                
+                <div class="upload-progress" id="uploadProgress">
+                    <div class="progress-bar">
+                        <div class="fill" id="uploadProgressBar"></div>
+                    </div>
+                    <div class="status" id="uploadStatus">⏳ جاري الرفع...</div>
+                </div>
+                
+                <div class="upload-success" id="uploadSuccess">
+                    <i class="fas fa-check-circle"></i> تم رفع الملف بنجاح!
+                </div>
+                
+                <button id="uploadFileBtn" class="btn btn-upload" style="width:100%; margin-top:10px;" disabled>
+                    <i class="fas fa-upload"></i> رفع الملف إلى Drive
+                </button>
+            </div>
         </div>
-        <div id="externalLessonFields" style="display:none">
-            <div class="form-group"><label>الرابط:</label><input type="url" id="newLessonExternalUrl" placeholder="https://t.me/... أو https://facebook.com/..."></div>
+        
+        <!-- الحقول الداخلية (تظهر تلقائياً) -->
+        <div id="internalLessonFields" style="display:none;">
+            <div class="form-group">
+                <label>🔗 رابط العرض (يتولد تلقائياً):</label>
+                <input type="url" id="newLessonInternalUrl" placeholder="سيتولد تلقائياً بعد رفع الملف" readonly style="background:var(--bg-input); opacity:0.7;">
+            </div>
+            <div class="form-group">
+                <label>⬇️ رابط التحميل (يتولد تلقائياً):</label>
+                <input type="url" id="newLessonDownloadUrl" placeholder="سيتولد تلقائياً بعد رفع الملف" readonly style="background:var(--bg-input); opacity:0.7;">
+            </div>
         </div>
-        <button id="confirmAddLessonBtn" class="btn" style="width:100%; background:var(--primary); color:white;">✅ حفظ الدرس</button>
-        <button id="cancelAddLessonBtn" class="btn btn-danger" style="width:100%; margin-top:4px; background:#94a3b8; color:white;">إلغاء</button>
+        
+        <!-- الحقول الخارجية -->
+        <div id="externalLessonFields" style="display:none;">
+            <div class="form-group">
+                <label>🔗 الرابط:</label>
+                <input type="url" id="newLessonExternalUrl" placeholder="https://t.me/... أو https://facebook.com/...">
+            </div>
+        </div>
+        
+        <div class="btn-group" style="margin-top:16px;">
+            <button id="confirmAddLessonBtn" class="btn" style="flex:2; background:var(--primary); color:white;">✅ حفظ الدرس</button>
+            <button id="cancelAddLessonBtn" class="btn btn-danger" style="flex:1; background:#94a3b8; color:white;">إلغاء</button>
+        </div>
     </div>
 </div>
 
@@ -2043,19 +2193,16 @@
     </div>
 </div>
 
-<!-- ===== نافذة تسجيل الدخول كمسؤول (بدون عبارة البريد الإلكتروني) ===== -->
+<!-- نافذة تسجيل الدخول كمسؤول -->
 <div id="adminLoginModal" class="modal-overlay">
     <div class="modal-content">
         <div style="text-align:center; font-size:2rem;">👑</div>
         <h2>تسجيل الدخول كمسؤول</h2>
-        <!-- تم إزالة عبارة البريد الإلكتروني -->
         <div class="form-group">
-            <input type="email" id="adminEmail" placeholder="أدخل البريد الإلكتروني" dir="ltr" 
-                   autocomplete="off" value="">
+            <input type="email" id="adminEmail" placeholder="أدخل البريد الإلكتروني" dir="ltr" autocomplete="off" value="">
         </div>
         <div class="form-group">
-            <input type="password" id="adminPassword" placeholder="أدخل كلمة المرور" dir="ltr" 
-                   autocomplete="new-password">
+            <input type="password" id="adminPassword" placeholder="أدخل كلمة المرور" dir="ltr" autocomplete="new-password">
         </div>
         <div id="adminLoginError" style="color:var(--danger); margin-top:4px; font-size:0.8rem; min-height:20px;"></div>
         <button id="adminLoginBtn" class="btn btn-danger" style="width:100%;">تسجيل الدخول</button>
@@ -2237,11 +2384,20 @@ const firebaseConfig = {
     databaseURL: "https://taouhid-sci-default-rtdb.firebaseio.com/"
 };
 
-let database = null, auth = null;
+let firestore = null;
+let auth = null;
+
 try {
     firebase.initializeApp(firebaseConfig);
-    database = firebase.database();
+    firestore = firebase.firestore();
     auth = firebase.auth();
+    
+    firestore.settings({
+        cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED
+    });
+    firestore.enablePersistence().catch(err => {
+        console.warn('Firestore persistence error:', err);
+    });
 } catch(e) {
     console.error("Firebase error:", e);
     showToast('⚠️ خطأ في الاتصال بقاعدة البيانات', 'error');
@@ -2284,6 +2440,12 @@ let inviteLinks = {
     middle: { telegram: "", facebook: "" },
     high: { telegram: "", facebook: "" }
 };
+
+// متغيرات رفع الملفات
+let uploadedFileId = null;
+let uploadedFileName = null;
+let selectedFile = null;
+let isUploading = false;
 
 // ============================================================
 // دوال مساعدة
@@ -2971,25 +3133,25 @@ async function handleRegisterMember() {
 // إدارة المستخدمين
 // ============================================================
 async function checkTeacherPermissions(email) {
-    if (!database || !email) return false;
+    if (!firestore || !email) return false;
     if (email === MASTER_TEACHER_EMAIL) return true;
     try {
-        const snapshot = await database.ref('teachers/' + email.replace(/\./g, '_')).once('value');
-        return snapshot.exists();
+        const doc = await firestore.collection('teachers').doc(email.replace(/\./g, '_')).get();
+        return doc.exists;
     } catch(e) { return false; }
 }
 
 async function checkMemberApproval(email) {
-    if (!database || !email) return false;
+    if (!firestore || !email) return false;
     try {
-        const snapshot = await database.ref('members/approved/' + email.replace(/\./g, '_')).once('value');
-        return snapshot.exists();
+        const doc = await firestore.collection('members_approved').doc(email.replace(/\./g, '_')).get();
+        return doc.exists;
     } catch(e) { return false; }
 }
 
 async function addJoinRequest(email, userType) {
-    if (!database) return;
-    await database.ref('members/joinRequests/' + Date.now()).set({
+    if (!firestore) return;
+    await firestore.collection('join_requests').add({
         email,
         userType: userType,
         createdAt: Date.now()
@@ -2997,11 +3159,13 @@ async function addJoinRequest(email, userType) {
 }
 
 async function loadJoinRequests() {
-    if (!database || !isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) return;
+    if (!firestore || !isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) return;
     try {
-        const snapshot = await database.ref('members/joinRequests').once('value');
-        const requests = snapshot.val() || {};
-        joinRequests = Object.entries(requests).map(([id, data]) => ({ id, ...data }));
+        const snapshot = await firestore.collection('join_requests').orderBy('createdAt', 'desc').get();
+        joinRequests = [];
+        snapshot.forEach(doc => {
+            joinRequests.push({ id: doc.id, ...doc.data() });
+        });
         renderJoinRequestsList();
     } catch(e) { console.error('Error loading requests:', e); }
 }
@@ -3041,21 +3205,21 @@ function renderJoinRequestsList() {
             const email = btn.getAttribute('data-email');
             const userType = btn.getAttribute('data-type');
             
-            await database.ref('members/approved/' + email.replace(/\./g, '_')).set({
+            await firestore.collection('members_approved').doc(email.replace(/\./g, '_')).set({
                 email,
                 approvedAt: Date.now(),
                 userType: userType
             });
             
             if (userType === 'أستاذ') {
-                await database.ref('teachers/' + email.replace(/\./g, '_')).set({
+                await firestore.collection('teachers').doc(email.replace(/\./g, '_')).set({
                     email,
                     addedAt: Date.now(),
                     addedBy: currentUser.email
                 });
             }
             
-            await database.ref('members/joinRequests/' + id).remove();
+            await firestore.collection('join_requests').doc(id).delete();
             showToast(`✅ تم قبول طلب ${email} كـ ${userType}`, 'success');
             await loadJoinRequests();
             await loadApprovedMembers();
@@ -3066,7 +3230,7 @@ function renderJoinRequestsList() {
     document.querySelectorAll('.reject-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
             const id = btn.getAttribute('data-id');
-            await database.ref('members/joinRequests/' + id).remove();
+            await firestore.collection('join_requests').doc(id).delete();
             showToast('❌ تم رفض الطلب', 'error');
             await loadJoinRequests();
         });
@@ -3074,16 +3238,19 @@ function renderJoinRequestsList() {
 }
 
 async function loadApprovedMembers() {
-    if (!database || !isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) return;
+    if (!firestore || !isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) return;
     try {
-        const snapshot = await database.ref('members/approved').once('value');
-        const data = snapshot.val() || {};
-        approvedMembers = Object.entries(data).map(([key, value]) => ({
-            key: key,
-            email: value.email || key.replace(/_/g, '.'),
-            approvedAt: value.approvedAt || Date.now(),
-            userType: value.userType || 'عضو'
-        }));
+        const snapshot = await firestore.collection('members_approved').get();
+        approvedMembers = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            approvedMembers.push({
+                key: doc.id,
+                email: data.email || doc.id.replace(/_/g, '.'),
+                approvedAt: data.approvedAt || Date.now(),
+                userType: data.userType || 'عضو'
+            });
+        });
         renderApprovedMembersList();
     } catch(e) { console.error('Error loading approved members:', e); }
 }
@@ -3129,12 +3296,13 @@ async function deleteMember(email) {
     if (!confirm(`⚠️ هل أنت متأكد من إلغاء عضوية ${email}؟`)) return;
     
     try {
-        await database.ref('members/approved/' + email.replace(/\./g, '_')).remove();
-        const requestsSnapshot = await database.ref('members/joinRequests').once('value');
-        const requests = requestsSnapshot.val() || {};
-        for (let [key, data] of Object.entries(requests)) {
-            if (data.email === email) await database.ref('members/joinRequests/' + key).remove();
-        }
+        await firestore.collection('members_approved').doc(email.replace(/\./g, '_')).delete();
+        
+        const requestsSnapshot = await firestore.collection('join_requests').where('email', '==', email).get();
+        requestsSnapshot.forEach(doc => {
+            doc.ref.delete();
+        });
+        
         showToast(`✅ تم إلغاء عضوية ${email} بنجاح`, 'success');
         await loadApprovedMembers();
         await loadJoinRequests();
@@ -3162,12 +3330,13 @@ async function revokeOwnMembership() {
     
     try {
         const email = currentUser.email;
-        await database.ref('members/approved/' + email.replace(/\./g, '_')).remove();
-        const requestsSnapshot = await database.ref('members/joinRequests').once('value');
-        const requests = requestsSnapshot.val() || {};
-        for (let [key, data] of Object.entries(requests)) {
-            if (data.email === email) await database.ref('members/joinRequests/' + key).remove();
-        }
+        await firestore.collection('members_approved').doc(email.replace(/\./g, '_')).delete();
+        
+        const requestsSnapshot = await firestore.collection('join_requests').where('email', '==', email).get();
+        requestsSnapshot.forEach(doc => {
+            doc.ref.delete();
+        });
+        
         showToast('✅ تم إلغاء عضويتك بنجاح', 'success');
         await auth.signOut();
         clearNavigationState();
@@ -3185,14 +3354,14 @@ async function loadTeachersList() {
     }
     document.getElementById('teacherManagementSection').style.display = 'block';
     try {
-        const snapshot = await database.ref('teachers').once('value');
-        const teachers = snapshot.val() || {};
+        const snapshot = await firestore.collection('teachers').get();
         const container = document.getElementById('teachersList');
         let html = '<div style="font-weight:bold; margin-bottom:8px; font-size:0.9rem;">📋 قائمة الأساتذة المسجلين:</div>';
         let count = 0;
-        for (let [emailKey, data] of Object.entries(teachers)) {
-            const email = data.email || emailKey.replace(/_/g, '.');
-            if (email === MASTER_TEACHER_EMAIL) continue;
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const email = data.email || doc.id.replace(/_/g, '.');
+            if (email === MASTER_TEACHER_EMAIL) return;
             count++;
             html += `<div class="request-item" style="border-right-color:#dc2626;">
                 <div>
@@ -3203,7 +3372,7 @@ async function loadTeachersList() {
                     <button class="delete-btn" onclick='deleteTeacher("${sanitizeHtml(email)}")' style="background:#dc2626; color:white; border:none; padding:4px 10px; border-radius:var(--radius-full); cursor:pointer; font-size:0.65rem; font-weight:700; min-height:28px;"><i class="fas fa-user-minus"></i> حذف</button>
                 </div>
             </div>`;
-        }
+        });
         if (count === 0) html += '<div class="empty-requests">📭 لا يوجد أساتذة مسجلون</div>';
         container.innerHTML = html;
     } catch(e) { console.error('Error loading teachers:', e); }
@@ -3225,12 +3394,12 @@ async function addTeacher() {
         return;
     }
     try {
-        const check = await database.ref('teachers/' + email.replace(/\./g, '_')).once('value');
-        if (check.exists()) {
+        const check = await firestore.collection('teachers').doc(email.replace(/\./g, '_')).get();
+        if (check.exists) {
             showToast('⚠️ هذا البريد مسجل بالفعل كأستاذ', 'warning');
             return;
         }
-        await database.ref('teachers/' + email.replace(/\./g, '_')).set({
+        await firestore.collection('teachers').doc(email.replace(/\./g, '_')).set({
             email,
             addedAt: Date.now(),
             addedBy: currentUser.email
@@ -3254,7 +3423,7 @@ async function deleteTeacher(email) {
     }
     if (!confirm(`⚠️ هل أنت متأكد من حذف الأستاذ ${email}؟`)) return;
     try {
-        await database.ref('teachers/' + email.replace(/\./g, '_')).remove();
+        await firestore.collection('teachers').doc(email.replace(/\./g, '_')).delete();
         showToast(`✅ تم حذف الأستاذ ${email} بنجاح`, 'success');
         await loadTeachersList();
         if (currentUser && currentUser.email === email) {
@@ -3417,12 +3586,14 @@ function renderNewsTicker() {
 }
 
 async function loadNews() {
-    if (!database) return;
+    if (!firestore) return;
     try {
-        const snapshot = await database.ref('settings/news').once('value');
-        const saved = snapshot.val();
-        if (saved && saved.text) {
-            newsText = saved.text;
+        const doc = await firestore.collection('settings').doc('news').get();
+        if (doc.exists) {
+            const data = doc.data();
+            if (data && data.text) {
+                newsText = data.text;
+            }
         } else {
             newsText = '📢 مرحباً بكم في منصة الأستاذ محمد التعليمية';
         }
@@ -3437,14 +3608,14 @@ async function loadNews() {
 }
 
 async function saveNews() {
-    if (!database || !isAdminMode) return;
+    if (!firestore || !isAdminMode) return;
     const newText = document.getElementById('adminNewsText').value.trim();
     if (!newText) {
         showToast('⚠️ الرجاء إدخال نص للإعلان', 'warning');
         return;
     }
     newsText = newText;
-    await database.ref('settings/news').set({ text: newsText, updatedAt: Date.now() });
+    await firestore.collection('settings').doc('news').set({ text: newsText, updatedAt: Date.now() });
     renderNewsTicker();
     showToast('✅ تم حفظ شريط الأخبار بنجاح', 'success');
 }
@@ -3464,18 +3635,17 @@ function getDefaultLockSettings() {
 }
 
 async function loadLockSettings() {
-    if (!database) {
+    if (!firestore) {
         lockSettings = getDefaultLockSettings();
         updateLockUI();
         return lockSettings;
     }
     try {
-        const snapshot = await database.ref('settings/lockSettings').once('value');
-        const saved = snapshot.val();
-        if (saved) {
-            lockSettings = saved;
-            summerPopupChoice = saved.summerPopupChoice || 'holiday';
-            curriculumPopupChoice = saved.curriculumPopupChoice || 'holiday';
+        const doc = await firestore.collection('settings').doc('lockSettings').get();
+        if (doc.exists) {
+            lockSettings = doc.data();
+            summerPopupChoice = lockSettings.summerPopupChoice || 'holiday';
+            curriculumPopupChoice = lockSettings.curriculumPopupChoice || 'holiday';
         } else {
             lockSettings = getDefaultLockSettings();
         }
@@ -3531,10 +3701,10 @@ function updateLockUI() {
 }
 
 async function saveLockSettings() {
-    if (!database) return;
+    if (!firestore) return;
     lockSettings.summerPopupChoice = summerPopupChoice;
     lockSettings.curriculumPopupChoice = curriculumPopupChoice;
-    await database.ref('settings/lockSettings').set(lockSettings);
+    await firestore.collection('settings').doc('lockSettings').set(lockSettings);
     updateLockUI();
     refreshCurrentView();
     updateCountdown();
@@ -3582,7 +3752,7 @@ function setupDateChangeListeners() {
             if (lockSettings && this.value) {
                 lockSettings.summerUnlockDate = this.value;
                 updateCountdown();
-                if (database) database.ref('settings/lockSettings').set(lockSettings);
+                if (firestore) firestore.collection('settings').doc('lockSettings').set(lockSettings);
                 showToast('✅ تم تحديث تاريخ الدروس الصيفية', 'success', 2000);
             }
         });
@@ -3593,7 +3763,7 @@ function setupDateChangeListeners() {
             if (lockSettings && this.value) {
                 lockSettings.curriculumUnlockDate = this.value;
                 updateCountdown();
-                if (database) database.ref('settings/lockSettings').set(lockSettings);
+                if (firestore) firestore.collection('settings').doc('lockSettings').set(lockSettings);
                 showToast('✅ تم تحديث تاريخ الدروس المقررة', 'success', 2000);
             }
         });
@@ -3640,11 +3810,11 @@ function updateCountdown() {
 // روابط المجتمع
 // ============================================================
 async function loadInviteLinks() {
-    if (!database) return;
+    if (!firestore) return;
     try {
-        const snapshot = await database.ref('inviteLinks').once('value');
-        const data = snapshot.val();
-        if (data) {
+        const doc = await firestore.collection('settings').doc('inviteLinks').get();
+        if (doc.exists) {
+            const data = doc.data();
             if (data.primary) inviteLinks.primary = data.primary;
             if (data.middle) inviteLinks.middle = data.middle;
             if (data.high) inviteLinks.high = data.high;
@@ -3662,7 +3832,7 @@ async function loadInviteLinks() {
 }
 
 async function saveInviteLinksToDB() {
-    if (!database || !isAdminMode) return;
+    if (!firestore || !isAdminMode) return;
     const newLinks = {
         primary: {
             telegram: document.getElementById('adminTelegramPrimary').value.trim(),
@@ -3677,7 +3847,7 @@ async function saveInviteLinksToDB() {
             facebook: document.getElementById('adminFacebookHigh').value.trim()
         }
     };
-    await database.ref('inviteLinks').set(newLinks);
+    await firestore.collection('settings').doc('inviteLinks').set(newLinks);
     inviteLinks = newLinks;
     renderCommunityLinks();
     showToast('✅ تم حفظ روابط الدعوة للمجتمع بنجاح', 'success');
@@ -3927,78 +4097,79 @@ function getDefaultPlatformData() {
 }
 
 // ============================================================
-// تحميل البيانات
+// تحميل البيانات من Firestore
 // ============================================================
 async function loadDataFromFirebase() {
-    if (!database) {
+    if (!firestore) {
         platformData = getDefaultPlatformData();
         dataLoaded = true;
         return;
     }
     
-    return new Promise((resolve) => {
-        database.ref('lessons').once('value', (snapshot) => {
-            const lessons = snapshot.val() || {};
-            platformData = getDefaultPlatformData();
-            
-            Object.keys(lessons).forEach(lessonId => {
-                const lesson = lessons[lessonId];
-                if (lesson && lesson.stage && lesson.subject && lesson.lesson_type) {
-                    if (lesson.stage === 'primary' && lesson.substage &&
-                        platformData.primary[lesson.substage] &&
-                        platformData.primary[lesson.substage].subjects[lesson.subject]) {
-                        if (platformData.primary[lesson.substage].subjects[lesson.subject][lesson.lesson_type]) {
-                            platformData.primary[lesson.substage].subjects[lesson.subject][lesson.lesson_type].push({
-                                id: lessonId,
-                                title: lesson.title,
-                                platform: lesson.platform,
-                                external_url: lesson.external_url,
-                                internal_url: lesson.internal_url,
-                                download_url: lesson.download_url,
-                                content_type: lesson.content_type
-                            });
-                        }
-                    } else if (lesson.stage === 'middle' && lesson.year &&
-                        platformData.middle.subjectsByYear[lesson.year] &&
-                        platformData.middle.subjectsByYear[lesson.year][lesson.subject]) {
-                        if (platformData.middle.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type]) {
-                            platformData.middle.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type].push({
-                                id: lessonId,
-                                title: lesson.title,
-                                platform: lesson.platform,
-                                external_url: lesson.external_url,
-                                internal_url: lesson.internal_url,
-                                download_url: lesson.download_url,
-                                content_type: lesson.content_type
-                            });
-                        }
-                    } else if (lesson.stage === 'high' && lesson.year &&
-                        platformData.high.subjectsByYear[lesson.year] &&
-                        platformData.high.subjectsByYear[lesson.year][lesson.subject]) {
-                        if (platformData.high.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type]) {
-                            platformData.high.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type].push({
-                                id: lessonId,
-                                title: lesson.title,
-                                platform: lesson.platform,
-                                external_url: lesson.external_url,
-                                internal_url: lesson.internal_url,
-                                download_url: lesson.download_url,
-                                content_type: lesson.content_type
-                            });
-                        }
+    try {
+        const snapshot = await firestore.collection('lessons').get();
+        const lessons = {};
+        snapshot.forEach(doc => {
+            lessons[doc.id] = doc.data();
+        });
+        
+        platformData = getDefaultPlatformData();
+        
+        Object.keys(lessons).forEach(lessonId => {
+            const lesson = lessons[lessonId];
+            if (lesson && lesson.stage && lesson.subject && lesson.lesson_type) {
+                if (lesson.stage === 'primary' && lesson.substage &&
+                    platformData.primary[lesson.substage] &&
+                    platformData.primary[lesson.substage].subjects[lesson.subject]) {
+                    if (platformData.primary[lesson.substage].subjects[lesson.subject][lesson.lesson_type]) {
+                        platformData.primary[lesson.substage].subjects[lesson.subject][lesson.lesson_type].push({
+                            id: lessonId,
+                            title: lesson.title,
+                            platform: lesson.platform,
+                            external_url: lesson.external_url,
+                            internal_url: lesson.internal_url,
+                            download_url: lesson.download_url,
+                            content_type: lesson.content_type
+                        });
+                    }
+                } else if (lesson.stage === 'middle' && lesson.year &&
+                    platformData.middle.subjectsByYear[lesson.year] &&
+                    platformData.middle.subjectsByYear[lesson.year][lesson.subject]) {
+                    if (platformData.middle.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type]) {
+                        platformData.middle.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type].push({
+                            id: lessonId,
+                            title: lesson.title,
+                            platform: lesson.platform,
+                            external_url: lesson.external_url,
+                            internal_url: lesson.internal_url,
+                            download_url: lesson.download_url,
+                            content_type: lesson.content_type
+                        });
+                    }
+                } else if (lesson.stage === 'high' && lesson.year &&
+                    platformData.high.subjectsByYear[lesson.year] &&
+                    platformData.high.subjectsByYear[lesson.year][lesson.subject]) {
+                    if (platformData.high.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type]) {
+                        platformData.high.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type].push({
+                            id: lessonId,
+                            title: lesson.title,
+                            platform: lesson.platform,
+                            external_url: lesson.external_url,
+                            internal_url: lesson.internal_url,
+                            download_url: lesson.download_url,
+                            content_type: lesson.content_type
+                        });
                     }
                 }
-            });
-            
-            dataLoaded = true;
-            resolve();
-        }, (error) => {
-            console.error('Error loading lessons:', error);
-            platformData = getDefaultPlatformData();
-            dataLoaded = true;
-            resolve();
+            }
         });
-    });
+        
+        dataLoaded = true;
+    } catch (error) {
+        console.error('Error loading lessons:', error);
+        platformData = getDefaultPlatformData();
+        dataLoaded = true;
+    }
 }
 
 // ============================================================
@@ -4285,6 +4456,119 @@ function getLessonBadge(lesson) {
     return '';
 }
 
+// ============================================================
+// دوال رفع الملفات
+// ============================================================
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+        showToast('⚠️ يرجى اختيار ملف PDF أو صورة', 'warning');
+        event.target.value = '';
+        return;
+    }
+    
+    selectedFile = file;
+    const label = document.getElementById('fileInputLabel');
+    const fileName = document.getElementById('selectedFileName');
+    
+    label.innerHTML = `<i class="fas fa-file"></i> ${file.name}`;
+    fileName.textContent = `📎 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+    
+    document.getElementById('uploadFileBtn').disabled = false;
+    document.getElementById('uploadSuccess').style.display = 'none';
+    uploadedFileId = null;
+}
+window.handleFileSelect = handleFileSelect;
+
+async function uploadFileToDrive(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await fetch('/api/upload-to-drive', {
+        method: 'POST',
+        body: formData,
+    });
+    
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'فشل رفع الملف');
+    }
+    
+    const data = await response.json();
+    if (!data.success) {
+        throw new Error(data.error || 'فشل رفع الملف');
+    }
+    return data;
+}
+
+async function handleFileUpload() {
+    if (!selectedFile) {
+        showToast('⚠️ الرجاء اختيار ملف أولاً', 'warning');
+        return;
+    }
+    
+    if (isUploading) {
+        showToast('⏳ جاري رفع الملف... انتظر قليلاً', 'info');
+        return;
+    }
+    
+    isUploading = true;
+    const uploadBtn = document.getElementById('uploadFileBtn');
+    const progressDiv = document.getElementById('uploadProgress');
+    const progressBar = document.getElementById('uploadProgressBar');
+    const statusDiv = document.getElementById('uploadStatus');
+    const successDiv = document.getElementById('uploadSuccess');
+    
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الرفع...';
+    progressDiv.style.display = 'block';
+    successDiv.style.display = 'none';
+    progressBar.style.width = '30%';
+    statusDiv.textContent = '⏳ جاري رفع الملف إلى Google Drive...';
+    
+    try {
+        const result = await uploadFileToDrive(selectedFile);
+        
+        uploadedFileId = result.fileId;
+        uploadedFileName = result.name;
+        
+        // توليد الروابط تلقائياً
+        const internalUrl = `https://drive.google.com/file/d/${uploadedFileId}/preview`;
+        const downloadUrl = `https://drive.google.com/uc?export=download&id=${uploadedFileId}`;
+        
+        document.getElementById('newLessonInternalUrl').value = internalUrl;
+        document.getElementById('newLessonDownloadUrl').value = downloadUrl;
+        
+        progressBar.style.width = '100%';
+        statusDiv.textContent = '✅ تم رفع الملف بنجاح!';
+        successDiv.style.display = 'block';
+        successDiv.innerHTML = `<i class="fas fa-check-circle"></i> ✅ تم رفع الملف: <strong>${sanitizeHtml(uploadedFileName)}</strong> (ID: ${uploadedFileId})`;
+        
+        showToast('✅ تم رفع الملف بنجاح إلى Google Drive', 'success');
+        
+        document.getElementById('confirmAddLessonBtn').disabled = false;
+        
+    } catch (error) {
+        console.error('Upload error:', error);
+        statusDiv.textContent = `❌ فشل الرفع: ${error.message}`;
+        progressBar.style.width = '0%';
+        showToast('❌ فشل رفع الملف: ' + error.message, 'error');
+    } finally {
+        isUploading = false;
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = '<i class="fas fa-upload"></i> رفع الملف إلى Drive';
+        setTimeout(() => {
+            progressDiv.style.display = 'none';
+        }, 3000);
+    }
+}
+
+// ============================================================
+// عرض قائمة الدروس مع دعم الملفات المرفوعة
+// ============================================================
 function renderLessonsList() {
     hideMainStages();
     const lessons = getCurrentLessons();
@@ -4438,6 +4722,15 @@ function renderLessonsList() {
         document.getElementById('newLessonInternalUrl').value = '';
         document.getElementById('newLessonDownloadUrl').value = '';
         document.getElementById('newLessonExternalUrl').value = '';
+        document.getElementById('fileInput').value = '';
+        document.getElementById('fileInputLabel').innerHTML = '<i class="fas fa-cloud-upload-alt"></i> اختر ملف PDF أو صورة';
+        document.getElementById('selectedFileName').textContent = '';
+        document.getElementById('uploadSuccess').style.display = 'none';
+        document.getElementById('uploadProgress').style.display = 'none';
+        document.getElementById('uploadFileBtn').disabled = true;
+        uploadedFileId = null;
+        selectedFile = null;
+        document.getElementById('confirmAddLessonBtn').disabled = false;
         document.getElementById('addLessonModal').classList.add('active');
     });
     
@@ -4491,12 +4784,16 @@ function toggleLessonFields() {
     const lessonType = document.getElementById('newLessonType').value;
     const internalFields = document.getElementById('internalLessonFields');
     const externalFields = document.getElementById('externalLessonFields');
+    const fileUploadSection = document.getElementById('fileUploadSection');
+    
     if (lessonType === 'pdf' || lessonType === 'image') {
         internalFields.style.display = 'block';
         externalFields.style.display = 'none';
+        if (fileUploadSection) fileUploadSection.style.display = 'block';
     } else {
         internalFields.style.display = 'none';
         externalFields.style.display = 'block';
+        if (fileUploadSection) fileUploadSection.style.display = 'none';
     }
 }
 window.toggleLessonFields = toggleLessonFields;
@@ -4515,6 +4812,19 @@ async function addNewLesson() {
         return;
     }
     
+    // التحقق من رفع الملف للدروس الداخلية
+    if (lessonType === 'pdf' || lessonType === 'image') {
+        if (!uploadedFileId) {
+            showToast('⚠️ الرجاء رفع الملف إلى Google Drive أولاً', 'warning');
+            return;
+        }
+        const internalUrl = document.getElementById('newLessonInternalUrl').value.trim();
+        if (!internalUrl) {
+            showToast('⚠️ حدث خطأ في رفع الملف، حاول مرة أخرى', 'warning');
+            return;
+        }
+    }
+    
     let lessonData = {
         title,
         stage: currentStage,
@@ -4522,17 +4832,16 @@ async function addNewLesson() {
         lesson_type: currentLessonType,
         content_type: lessonType,
         created_at: new Date().toISOString(),
-        created_by: currentUser?.email || 'unknown'
+        created_by: currentUser?.email || 'unknown',
+        fileId: uploadedFileId || null
     };
     
     if (currentStage === 'primary') lessonData.substage = currentSubStage;
     else lessonData.year = currentYear;
     
     if (lessonType === 'pdf' || lessonType === 'image') {
-        const internalUrl = document.getElementById('newLessonInternalUrl').value.trim();
-        if (!internalUrl) { showToast('⚠️ الرجاء إدخال رابط العرض', 'warning'); return; }
-        lessonData.internal_url = internalUrl;
-        lessonData.download_url = document.getElementById('newLessonDownloadUrl').value.trim() || internalUrl;
+        lessonData.internal_url = document.getElementById('newLessonInternalUrl').value.trim();
+        lessonData.download_url = document.getElementById('newLessonDownloadUrl').value.trim() || lessonData.internal_url;
     } else {
         const externalUrl = document.getElementById('newLessonExternalUrl').value.trim();
         if (!externalUrl) { showToast('⚠️ الرجاء إدخال الرابط', 'warning'); return; }
@@ -4540,16 +4849,29 @@ async function addNewLesson() {
         lessonData.platform = lessonType;
     }
     
-    const lessonId = getLessonId();
-    await database.ref('lessons/' + lessonId).set(lessonData);
-    showToast('✅ تم إضافة الدرس بنجاح', 'success');
-    document.getElementById('addLessonModal').classList.remove('active');
-    document.getElementById('newLessonTitle').value = '';
-    document.getElementById('newLessonInternalUrl').value = '';
-    document.getElementById('newLessonDownloadUrl').value = '';
-    document.getElementById('newLessonExternalUrl').value = '';
-    await loadDataFromFirebase();
-    refreshCurrentView();
+    try {
+        await firestore.collection('lessons').add(lessonData);
+        showToast('✅ تم إضافة الدرس بنجاح', 'success');
+        
+        document.getElementById('addLessonModal').classList.remove('active');
+        document.getElementById('newLessonTitle').value = '';
+        document.getElementById('newLessonInternalUrl').value = '';
+        document.getElementById('newLessonDownloadUrl').value = '';
+        document.getElementById('newLessonExternalUrl').value = '';
+        document.getElementById('fileInput').value = '';
+        document.getElementById('fileInputLabel').innerHTML = '<i class="fas fa-cloud-upload-alt"></i> اختر ملف PDF أو صورة';
+        document.getElementById('selectedFileName').textContent = '';
+        document.getElementById('uploadSuccess').style.display = 'none';
+        uploadedFileId = null;
+        selectedFile = null;
+        document.getElementById('uploadFileBtn').disabled = true;
+        
+        await loadDataFromFirebase();
+        refreshCurrentView();
+    } catch (error) {
+        console.error('Error adding lesson:', error);
+        showToast('❌ حدث خطأ أثناء إضافة الدرس', 'error');
+    }
 }
 
 async function deleteLesson(id) {
@@ -4557,8 +4879,29 @@ async function deleteLesson(id) {
         showToast('⚠️ غير مصرح لك - هذه الصلاحية للأستاذ فقط', 'error');
         return;
     }
+    
+    try {
+        const doc = await firestore.collection('lessons').doc(id).get();
+        if (doc.exists) {
+            const data = doc.data();
+            if (data.fileId) {
+                try {
+                    await fetch('/api/delete-drive-file', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ fileId: data.fileId })
+                    });
+                } catch(e) {
+                    console.warn('Could not delete file from Drive:', e);
+                }
+            }
+        }
+    } catch(e) {
+        console.warn('Error checking lesson data:', e);
+    }
+    
     if (confirm('هل أنت متأكد من حذف هذا الدرس؟')) {
-        await database.ref('lessons/' + id).remove();
+        await firestore.collection('lessons').doc(id).delete();
         showToast('✅ تم حذف الدرس بنجاح', 'success');
         await loadDataFromFirebase();
         refreshCurrentView();
@@ -4618,7 +4961,7 @@ function stageClickHandler(e) {
 // التهيئة الرئيسية
 // ============================================================
 async function init() {
-    if (!database) {
+    if (!firestore) {
         document.getElementById('dynamicArea').innerHTML = `
             <div style="text-align:center; padding:35px; background:#fef2f2; border-radius:var(--radius-lg);">
                 <i class="fas fa-database" style="font-size:2.5rem; color:#dc2626;"></i>
@@ -4645,6 +4988,9 @@ async function init() {
     setupDateChangeListeners();
     updateAuthButtons();
     
+    // ربط زر رفع الملف
+    document.getElementById('uploadFileBtn')?.addEventListener('click', handleFileUpload);
+    
     const restored = restoreNavigationState();
     isRestoringState = true;
     if (restored) {
@@ -4663,10 +5009,12 @@ async function init() {
         isRestoringState = false;
     }
     
-    if (database) {
-        database.ref('lessons').on('value', async () => {
-            await loadDataFromFirebase();
-            if (!isRestoringState) refreshCurrentView();
+    if (firestore) {
+        firestore.collection('lessons').onSnapshot(() => {
+            if (!isRestoringState) {
+                loadDataFromFirebase();
+                refreshCurrentView();
+            }
         });
     }
 }
@@ -4849,7 +5197,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         if (editingLessonId) {
-            await database.ref('lessons/' + editingLessonId).update({
+            await firestore.collection('lessons').doc(editingLessonId).update({
                 title: document.getElementById('editLessonTitle').value,
                 platform: document.getElementById('editLessonPlatform').value,
                 external_url: document.getElementById('editLessonUrl').value,
@@ -4872,7 +5220,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         if (editingInternalLessonId) {
-            await database.ref('lessons/' + editingInternalLessonId).update({
+            await firestore.collection('lessons').doc(editingInternalLessonId).update({
                 title: document.getElementById('editInternalTitle').value,
                 content_type: document.getElementById('editInternalType').value,
                 internal_url: document.getElementById('editInternalUrl').value,
@@ -4977,7 +5325,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 console.log('🎨 تم تحميل المنصة بنجاح!');
-console.log('📚 منصة الأستاذ محمد - النسخة النهائية');
+console.log('📚 منصة الأستاذ محمد - النسخة النهائية مع رفع الملفات إلى Google Drive');
 console.log('✅ جميع الإصلاحات تم تطبيقها');
 </script>
 </body>
