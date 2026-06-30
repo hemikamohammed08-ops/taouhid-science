@@ -3956,13 +3956,20 @@ function saveNavigationState() {
         viewingLesson: currentViewingLesson
     };
     try {
+        // حفظ في sessionStorage و localStorage معاً للحفاظ على الحالة
         sessionStorage.setItem('platform_nav_state', JSON.stringify(state));
+        localStorage.setItem('platform_nav_state_backup', JSON.stringify(state));
     } catch(e) {}
 }
 
 function restoreNavigationState() {
     try {
-        const saved = sessionStorage.getItem('platform_nav_state');
+        // حاول استعادة من sessionStorage أولاً
+        let saved = sessionStorage.getItem('platform_nav_state');
+        if (!saved) {
+            // إذا لم يكن موجود، حاول من localStorage
+            saved = localStorage.getItem('platform_nav_state_backup');
+        }
         if (!saved) return false;
         const state = JSON.parse(saved);
         if (!state.stage || !['primary','middle','high'].includes(state.stage)) return false;
@@ -3985,6 +3992,7 @@ function restoreNavigationState() {
 
 function clearNavigationState() {
     sessionStorage.removeItem('platform_nav_state');
+    localStorage.removeItem('platform_nav_state_backup');
 }
 
 // ============================================================
@@ -4457,7 +4465,7 @@ function getLessonBadge(lesson) {
 }
 
 // ============================================================
-// دوال رفع الملفات
+// دوال رفع الملفات - النسخة المعدلة
 // ============================================================
 function handleFileSelect(event) {
     const file = event.target.files[0];
@@ -4466,6 +4474,13 @@ function handleFileSelect(event) {
     const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif'];
     if (!allowedTypes.includes(file.type)) {
         showToast('⚠️ يرجى اختيار ملف PDF أو صورة', 'warning');
+        event.target.value = '';
+        return;
+    }
+    
+    // التحقق من حجم الملف (حد أقصى 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+        showToast('⚠️ حجم الملف كبير جداً. الحد الأقصى 50MB', 'warning');
         event.target.value = '';
         return;
     }
@@ -4487,21 +4502,30 @@ async function uploadFileToDrive(file) {
     const formData = new FormData();
     formData.append('file', file);
     
-    const response = await fetch('/api/upload-to-drive', {
-        method: 'POST',
-        body: formData,
-    });
+    // استخدام الرابط المباشر للمشروع
+    const apiUrl = 'https://taouhid-science.vercel.app/api/upload-to-drive';
     
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'فشل رفع الملف');
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            body: formData,
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Upload error response:', errorText);
+            throw new Error(`فشل الرفع: ${response.status} - ${errorText}`);
+        }
+        
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.error || 'فشل رفع الملف');
+        }
+        return data;
+    } catch (error) {
+        console.error('Upload error:', error);
+        throw error;
     }
-    
-    const data = await response.json();
-    if (!data.success) {
-        throw new Error(data.error || 'فشل رفع الملف');
-    }
-    return data;
 }
 
 async function handleFileUpload() {
@@ -4886,7 +4910,7 @@ async function deleteLesson(id) {
             const data = doc.data();
             if (data.fileId) {
                 try {
-                    await fetch('/api/delete-drive-file', {
+                    await fetch('https://taouhid-science.vercel.app/api/delete-drive-file', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ fileId: data.fileId })
@@ -4991,6 +5015,7 @@ async function init() {
     // ربط زر رفع الملف
     document.getElementById('uploadFileBtn')?.addEventListener('click', handleFileUpload);
     
+    // استعادة الحالة من localStorage إذا كانت موجودة
     const restored = restoreNavigationState();
     isRestoringState = true;
     if (restored) {
