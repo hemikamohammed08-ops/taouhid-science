@@ -9,14 +9,21 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- DOMPurify -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/DOMPurify/3.0.6/purify.min.js"></script>
     
     <style>
         /* ==========================================================
-           التصميم المتكامل - النسخة النهائية
+           التصميم المتكامل - النسخة النهائية مع دعم Supabase
            ========================================================== */
 
         :root {
@@ -93,9 +100,10 @@
         [data-theme="dark"] .subject-card-new .header { color: #1a4a8a; }
         [data-theme="dark"] .admin-panel-new { background: #1a2638; }
 
-        input[type="email"], input[type="password"] {
+        input[type="email"], input[type="password"], input[type="text"], input[type="url"], input[type="file"] {
             background-image: none !important;
             background-color: var(--bg-input) !important;
+            color: var(--text-primary) !important;
         }
         input:-webkit-autofill {
             -webkit-box-shadow: 0 0 0 30px var(--bg-input) inset !important;
@@ -257,6 +265,16 @@
         .btn-ghost:hover {
             background: rgba(255,255,255,0.15);
             transform: rotate(20deg);
+        }
+        .btn-locked {
+            background: #94a3b8;
+            color: white;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .btn-locked:hover {
+            transform: none !important;
+            box-shadow: none !important;
         }
 
         @keyframes shake {
@@ -692,6 +710,7 @@
         .badge-image { background: #3b82f6; color: white; }
         .badge-telegram { background: #0088cc; color: white; }
         .badge-facebook { background: #1877f2; color: white; }
+        .badge-locked { background: #94a3b8; color: white; }
 
         .rating-new {
             display: flex;
@@ -746,6 +765,55 @@
         .lesson-btn.edit:hover { background: #d97706; }
         .lesson-btn.delete { background: var(--danger); color: white; }
         .lesson-btn.delete:hover { background: #dc2626; }
+        .lesson-btn.locked {
+            background: #94a3b8;
+            color: white;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .lesson-btn.locked:hover {
+            transform: none !important;
+        }
+
+        /* ---------- زر رفع الملف ---------- */
+        .file-upload-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+        .file-upload-wrapper input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        .file-upload-btn {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.8rem;
+            transition: var(--transition);
+            min-height: 40px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .file-upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(26,74,138,0.3);
+        }
+        .file-name-display {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-right: 8px;
+        }
 
         .add-lesson-btn-new {
             background: var(--gradient-primary);
@@ -880,6 +948,16 @@
             margin: 0 auto;
         }
         .viewer-new .footer { text-align: center; padding-top: 12px; border-top: 1px solid var(--border-color); }
+        .viewer-new .login-required {
+            text-align: center;
+            padding: 40px 20px;
+            background: #fef3c7;
+            border-radius: var(--radius-md);
+            border: 2px solid #f59e0b;
+        }
+        .viewer-new .login-required .emoji { font-size: 3rem; display: block; margin-bottom: 12px; }
+        .viewer-new .login-required h3 { color: #92400e; margin-bottom: 8px; }
+        .viewer-new .login-required p { color: #78350f; }
 
         .welcome-new {
             text-align: center;
@@ -1554,6 +1632,19 @@
             text-align: right;
         }
 
+        .login-required-badge {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 4px 12px;
+            border-radius: var(--radius-full);
+            font-size: 0.7rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            border: 1px solid #f59e0b;
+        }
+
         /* ==========================================================
            إصلاحات الهاتف
            ========================================================== */
@@ -1935,13 +2026,28 @@
     </div>
 </div>
 
-<!-- نافذة الزائر -->
+<!-- نافذة الزائر - تم تحديثها -->
 <div id="visitorDeniedPopup" class="visitor-popup-new">
     <div class="content">
-        <span class="emoji">🚫👋</span>
-        <h3>🙏 عذراً عزيزي الزائر</h3>
-        <p>⚠️ أنت لست فرداً من مجتمعنا<br><br>❌ الوصول إلى الدروس مقيد بأعضاء المنصة فقط<br><br>🔐 يمكنك التسجيل كعضو والانتظار حتى قبول طلبك</p>
+        <span class="emoji">🔒👋</span>
+        <h3>⚠️ محتوى مقيد للأعضاء فقط</h3>
+        <p>📚 هذه الدروس متاحة فقط للأعضاء المسجلين والمعتمدين في المنصة<br><br>
+        🔐 لعرض المحتوى والاستفادة من الدروس، يرجى <strong>تسجيل الدخول</strong> إلى حسابك<br><br>
+        👤 إذا لم يكن لديك حساب، يمكنك <strong>تقديم طلب تسجيل</strong> وسيتم مراجعته من قبل المسؤول</p>
         <button onclick="closeVisitorDeniedPopup()">📖 فهمت</button>
+    </div>
+</div>
+
+<!-- نافذة تسجيل الدخول المطلوبة -->
+<div id="loginRequiredPopup" class="visitor-popup-new">
+    <div class="content">
+        <span class="emoji">🔐</span>
+        <h3>⚠️ يرجى تسجيل الدخول</h3>
+        <p>📍 لمشاهدة هذا الدرس، يجب أن تكون <strong>مسجلاً دخولاً</strong> كأحد أعضاء المنصة<br><br>
+        ✅ إذا كنت تملك حساباً، فضلاً <strong>تسجيل الدخول</strong> من الزر الموجود في الأعلى<br><br>
+        📝 إذا لم تكن مسجلاً بعد، يمكنك <strong>تقديم طلب تسجيل</strong> مجاناً</p>
+        <button onclick="closeLoginRequiredPopup(); showLoginChoice();">🔑 تسجيل الدخول</button>
+        <button onclick="closeLoginRequiredPopup(); showRegisterChoice();" style="background:var(--success); margin-top:8px;">📝 طلب تسجيل</button>
     </div>
 </div>
 
@@ -1978,6 +2084,15 @@
         <div id="internalLessonFields">
             <div class="form-group"><label>رابط العرض:</label><input type="url" id="newLessonInternalUrl" placeholder="https://drive.google.com/file/d/xxx/preview"></div>
             <div class="form-group"><label>رابط التحميل:</label><input type="url" id="newLessonDownloadUrl" placeholder="https://drive.google.com/uc?export=download&id=xxx"></div>
+            <!-- حقل رفع الملف مع Supabase -->
+            <div class="form-group">
+                <label>رفع ملف (اختياري - يحل محل الروابط أعلاه):</label>
+                <div class="file-upload-wrapper">
+                    <button class="file-upload-btn"><i class="fas fa-cloud-upload-alt"></i> اختر ملف</button>
+                    <input type="file" id="newLessonFile" accept="image/*,application/pdf" onchange="handleFileSelect(event, 'newLessonFile')">
+                </div>
+                <span id="newLessonFileDisplay" class="file-name-display">لم يتم اختيار ملف</span>
+            </div>
         </div>
         <div id="externalLessonFields" style="display:none">
             <div class="form-group"><label>الرابط:</label><input type="url" id="newLessonExternalUrl" placeholder="https://t.me/... أو https://facebook.com/..."></div>
@@ -2007,6 +2122,15 @@
         <div class="form-group"><label>عنوان الدرس:</label><input type="text" id="editInternalTitle" placeholder="عنوان الدرس"></div>
         <div class="form-group"><label>رابط العرض:</label><input type="url" id="editInternalUrl" placeholder="https://drive.google.com/file/d/xxx/preview"></div>
         <div class="form-group"><label>رابط التحميل:</label><input type="url" id="editInternalDownload" placeholder="https://drive.google.com/uc?export=download&id=xxx"></div>
+        <!-- حقل رفع الملف للتعديل -->
+        <div class="form-group">
+            <label>رفع ملف جديد (اختياري - يحل محل الروابط أعلاه):</label>
+            <div class="file-upload-wrapper">
+                <button class="file-upload-btn"><i class="fas fa-cloud-upload-alt"></i> اختر ملف</button>
+                <input type="file" id="editLessonFile" accept="image/*,application/pdf" onchange="handleFileSelect(event, 'editLessonFile')">
+            </div>
+            <span id="editLessonFileDisplay" class="file-name-display">لم يتم اختيار ملف</span>
+        </div>
         <button id="confirmEditInternalBtn" class="btn" style="width:100%; background:var(--primary); color:white;">✅ حفظ التعديلات</button>
         <button id="cancelEditInternalBtn" class="btn btn-danger" style="width:100%; margin-top:4px; background:#94a3b8; color:white;">إلغاء</button>
     </div>
@@ -2043,12 +2167,11 @@
     </div>
 </div>
 
-<!-- ===== نافذة تسجيل الدخول كمسؤول (بدون عبارة البريد الإلكتروني) ===== -->
+<!-- ===== نافذة تسجيل الدخول كمسؤول ===== -->
 <div id="adminLoginModal" class="modal-overlay">
     <div class="modal-content">
         <div style="text-align:center; font-size:2rem;">👑</div>
         <h2>تسجيل الدخول كمسؤول</h2>
-        <!-- تم إزالة عبارة البريد الإلكتروني -->
         <div class="form-group">
             <input type="email" id="adminEmail" placeholder="أدخل البريد الإلكتروني" dir="ltr" 
                    autocomplete="off" value="">
@@ -2248,6 +2371,21 @@ try {
 }
 
 // ============================================================
+// إعدادات Supabase
+// ============================================================
+const SUPABASE_URL = 'https://azabjgvtvcvexcydsdar.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF6YWJqZ3Z0dmN2ZXhjeWRzZGFyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMzgzMzUsImV4cCI6MjA5NjkxNDMzNX0.AE9jE64yb3BYw7vmxqE3mG0A-Pmt00Ugph8JDwBLxC8';
+const SUPABASE_BUCKET = 'uploads';
+
+let supabaseClient = null;
+try {
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+} catch(e) {
+    console.error("Supabase error:", e);
+    showToast('⚠️ خطأ في الاتصال بـ Supabase', 'error');
+}
+
+// ============================================================
 // المتغيرات العامة
 // ============================================================
 const MASTER_TEACHER_EMAIL = "hemikamohammed08@gmail.com";
@@ -2286,6 +2424,14 @@ let inviteLinks = {
 };
 
 // ============================================================
+// متغيرات رفع الملفات
+// ============================================================
+let uploadedFile = null;
+let uploadedFileInfo = null;
+let uploadedFileForEdit = null;
+let uploadedFileInfoForEdit = null;
+
+// ============================================================
 // دوال مساعدة
 // ============================================================
 function escapeHtml(str) {
@@ -2320,6 +2466,122 @@ function formatDate(dateStr) {
     return dateStr;
 }
 
+function getFileExtension(filename) {
+    return filename.split('.').pop().toLowerCase();
+}
+
+function getContentTypeFromFile(file) {
+    return file.type.startsWith('image/') ? 'image' : 'pdf';
+}
+
+// ============================================================
+// دوال رفع الملفات باستخدام Supabase Storage
+// ============================================================
+
+/**
+ * رفع ملف إلى Supabase Storage
+ * @param {File} file - الملف المراد رفعه
+ * @param {string} path - المسار في الـ bucket (مثل: user_id/lesson_id)
+ * @returns {Promise<{url: string, path: string, name: string, size: number, type: string}>}
+ */
+async function uploadFileToSupabase(file, path) {
+    if (!supabaseClient) {
+        throw new Error('Supabase client not initialized');
+    }
+    
+    if (!file) {
+        throw new Error('No file provided');
+    }
+    
+    // التحقق من نوع الملف
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+    if (!allowedTypes.includes(file.type)) {
+        throw new Error('نوع الملف غير مدعوم. يرجى رفع صورة (JPG, PNG, GIF, WEBP) أو ملف PDF');
+    }
+    
+    // التحقق من حجم الملف (حد أقصى 10 ميجابايت)
+    if (file.size > 10 * 1024 * 1024) {
+        throw new Error('حجم الملف كبير جداً. الحد الأقصى هو 10 ميجابايت');
+    }
+    
+    // إنشاء اسم فريد للملف
+    const fileExt = getFileExtension(file.name);
+    const fileName = `${path}.${fileExt}`;
+    
+    // رفع الملف
+    const { data, error } = await supabaseClient.storage
+        .from(SUPABASE_BUCKET)
+        .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: true
+        });
+    
+    if (error) {
+        console.error('Supabase upload error:', error);
+        throw new Error('فشل رفع الملف: ' + error.message);
+    }
+    
+    // الحصول على الرابط العام
+    const { data: urlData } = supabaseClient.storage
+        .from(SUPABASE_BUCKET)
+        .getPublicUrl(fileName);
+    
+    return {
+        url: urlData.publicUrl,
+        path: fileName,
+        name: file.name,
+        size: file.size,
+        type: file.type
+    };
+}
+
+/**
+ * حذف ملف من Supabase Storage
+ * @param {string} filePath - مسار الملف في الـ bucket
+ * @returns {Promise<void>}
+ */
+async function deleteFileFromSupabase(filePath) {
+    if (!supabaseClient) {
+        throw new Error('Supabase client not initialized');
+    }
+    
+    if (!filePath) {
+        return;
+    }
+    
+    const { error } = await supabaseClient.storage
+        .from(SUPABASE_BUCKET)
+        .remove([filePath]);
+    
+    if (error) {
+        console.error('Supabase delete error:', error);
+        throw new Error('فشل حذف الملف: ' + error.message);
+    }
+}
+
+/**
+ * معالجة اختيار الملف وعرض اسمه
+ */
+function handleFileSelect(event, inputId) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const displayId = inputId + 'Display';
+    const displayEl = document.getElementById(displayId);
+    if (displayEl) {
+        displayEl.textContent = `📎 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+    }
+    
+    // تخزين الملف للاستخدام لاحقاً
+    if (inputId === 'newLessonFile') {
+        uploadedFile = file;
+        uploadedFileInfo = null;
+    } else if (inputId === 'editLessonFile') {
+        uploadedFileForEdit = file;
+        uploadedFileInfoForEdit = null;
+    }
+}
+
 // ============================================================
 // دوال مسح الحقول
 // ============================================================
@@ -2346,6 +2608,21 @@ function clearAuthFields() {
 }
 window.clearAuthFields = clearAuthFields;
 
+function clearFileUploadFields() {
+    uploadedFile = null;
+    uploadedFileInfo = null;
+    uploadedFileForEdit = null;
+    uploadedFileInfoForEdit = null;
+    const display1 = document.getElementById('newLessonFileDisplay');
+    if (display1) display1.textContent = 'لم يتم اختيار ملف';
+    const display2 = document.getElementById('editLessonFileDisplay');
+    if (display2) display2.textContent = 'لم يتم اختيار ملف';
+    const input1 = document.getElementById('newLessonFile');
+    if (input1) input1.value = '';
+    const input2 = document.getElementById('editLessonFile');
+    if (input2) input2.value = '';
+}
+
 // ============================================================
 // دوال الإغلاق
 // ============================================================
@@ -2362,6 +2639,7 @@ function hideAllModals() {
         el.classList.remove('active');
     });
     clearAuthFields();
+    clearFileUploadFields();
     closeAdminPanel();
 }
 window.hideAllModals = hideAllModals;
@@ -2716,7 +2994,7 @@ function sendContactMessage() {
 window.sendContactMessage = sendContactMessage;
 
 // ============================================================
-// نوافذ المصادقة
+// نوافذ المصادقة - تحديث دوال العرض
 // ============================================================
 function showLoginChoice() {
     document.getElementById('loginChoiceModal').classList.add('active');
@@ -2745,6 +3023,11 @@ function closeVisitorDeniedPopup() {
 }
 window.closeVisitorDeniedPopup = closeVisitorDeniedPopup;
 
+function closeLoginRequiredPopup() {
+    document.getElementById('loginRequiredPopup').classList.remove('active');
+}
+window.closeLoginRequiredPopup = closeLoginRequiredPopup;
+
 function closeUnifiedPopup() {
     document.getElementById('unifiedPopup').classList.remove('active');
 }
@@ -2754,9 +3037,13 @@ function showUnifiedPopup() {
     document.getElementById('unifiedPopup').classList.add('active');
 }
 
+function showLoginRequiredPopup() {
+    document.getElementById('loginRequiredPopup').classList.add('active');
+}
+
 function showAppropriatePopup(type) {
     if (!currentUser) {
-        document.getElementById('visitorDeniedPopup').classList.add('active');
+        showLoginRequiredPopup();
         return;
     }
     showUnifiedPopup();
@@ -3601,17 +3888,24 @@ function setupDateChangeListeners() {
 }
 
 function isLessonAccessible(type) {
+    // المسؤول والأستاذ يمكنهم دائماً مشاهدة الدروس
     if (isAdminMode) return true;
-    if (!currentUser || !currentUserIsApproved) return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (type === 'summer') {
-        if (!lockSettings.summerLocked) return true;
-        return today >= new Date(lockSettings.summerUnlockDate);
-    } else {
-        if (!lockSettings.curriculumLocked) return true;
-        return today >= new Date(lockSettings.curriculumUnlockDate);
+    
+    // الأعضاء المعتمدون يمكنهم المشاهدة إذا كانت الدروس مفتوحة
+    if (currentUser && currentUserIsApproved) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (type === 'summer') {
+            if (!lockSettings.summerLocked) return true;
+            return today >= new Date(lockSettings.summerUnlockDate);
+        } else {
+            if (!lockSettings.curriculumLocked) return true;
+            return today >= new Date(lockSettings.curriculumUnlockDate);
+        }
     }
+    
+    // الزوار والأعضاء غير المعتمدين لا يمكنهم المشاهدة
+    return false;
 }
 
 function updateCountdown() {
@@ -3944,47 +4238,35 @@ async function loadDataFromFirebase() {
             Object.keys(lessons).forEach(lessonId => {
                 const lesson = lessons[lessonId];
                 if (lesson && lesson.stage && lesson.subject && lesson.lesson_type) {
+                    // تحويل البيانات القديمة إلى الهيكل الجديد مع دعم file_info
+                    const lessonData = {
+                        id: lessonId,
+                        title: lesson.title,
+                        platform: lesson.platform,
+                        external_url: lesson.external_url,
+                        internal_url: lesson.internal_url || lesson.file_info?.url || '',
+                        download_url: lesson.download_url || lesson.file_info?.url || '',
+                        content_type: lesson.content_type,
+                        file_info: lesson.file_info || null
+                    };
+                    
                     if (lesson.stage === 'primary' && lesson.substage &&
                         platformData.primary[lesson.substage] &&
                         platformData.primary[lesson.substage].subjects[lesson.subject]) {
                         if (platformData.primary[lesson.substage].subjects[lesson.subject][lesson.lesson_type]) {
-                            platformData.primary[lesson.substage].subjects[lesson.subject][lesson.lesson_type].push({
-                                id: lessonId,
-                                title: lesson.title,
-                                platform: lesson.platform,
-                                external_url: lesson.external_url,
-                                internal_url: lesson.internal_url,
-                                download_url: lesson.download_url,
-                                content_type: lesson.content_type
-                            });
+                            platformData.primary[lesson.substage].subjects[lesson.subject][lesson.lesson_type].push(lessonData);
                         }
                     } else if (lesson.stage === 'middle' && lesson.year &&
                         platformData.middle.subjectsByYear[lesson.year] &&
                         platformData.middle.subjectsByYear[lesson.year][lesson.subject]) {
                         if (platformData.middle.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type]) {
-                            platformData.middle.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type].push({
-                                id: lessonId,
-                                title: lesson.title,
-                                platform: lesson.platform,
-                                external_url: lesson.external_url,
-                                internal_url: lesson.internal_url,
-                                download_url: lesson.download_url,
-                                content_type: lesson.content_type
-                            });
+                            platformData.middle.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type].push(lessonData);
                         }
                     } else if (lesson.stage === 'high' && lesson.year &&
                         platformData.high.subjectsByYear[lesson.year] &&
                         platformData.high.subjectsByYear[lesson.year][lesson.subject]) {
                         if (platformData.high.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type]) {
-                            platformData.high.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type].push({
-                                id: lessonId,
-                                title: lesson.title,
-                                platform: lesson.platform,
-                                external_url: lesson.external_url,
-                                internal_url: lesson.internal_url,
-                                download_url: lesson.download_url,
-                                content_type: lesson.content_type
-                            });
+                            platformData.high.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type].push(lessonData);
                         }
                     }
                 }
@@ -4285,6 +4567,11 @@ function getLessonBadge(lesson) {
     return '';
 }
 
+// دالة للتحقق مما إذا كان المستخدم يمكنه مشاهدة المحتوى
+function canUserViewContent() {
+    return currentUser && currentUserIsApproved && isLessonAccessible(currentLessonType);
+}
+
 function renderLessonsList() {
     hideMainStages();
     const lessons = getCurrentLessons();
@@ -4310,6 +4597,7 @@ function renderLessonsList() {
         paginated.forEach(lesson => {
             const isLocked = !isLessonAccessible(currentLessonType);
             const isMemberPending = currentUser && !currentUserIsApproved && !isAdminMode;
+            const canView = isAdminMode || (currentUser && currentUserIsApproved && !isLocked);
             const badge = getLessonBadge(lesson);
             const ratingData = getLessonRating(lesson.id);
             
@@ -4331,7 +4619,10 @@ function renderLessonsList() {
                     </div>
             `;
             
-            if (isLocked && !isAdminMode) {
+            // عرض حالة الدرس
+            if (!currentUser) {
+                html += `<span class="login-required-badge"><i class="fas fa-lock"></i> للمسجلين فقط</span>`;
+            } else if (isLocked && !isAdminMode) {
                 html += `<span style="background:#f0f0f0; color:#999; font-size:0.65rem; margin-right:5px; padding:2px 8px; border-radius:20px;">🔒 غير متاح</span>`;
             } else if (isMemberPending) {
                 html += `<span style="background:#fef3c7; color:#92400e; font-size:0.65rem; margin-right:5px; padding:2px 8px; border-radius:20px;">⏳ قيد المراجعة</span>`;
@@ -4339,23 +4630,27 @@ function renderLessonsList() {
             
             html += `</div><div class="actions">`;
             
+            // عرض أزرار المشاهدة حسب صلاحية المستخدم
             if (lesson.content_type === 'pdf' || lesson.content_type === 'image') {
-                if (!isLocked && !isMemberPending) {
-                    html += `<button class="lesson-btn view" data-lesson-id="${lesson.id}" data-lesson-title="${sanitizeHtml(lesson.title)}" data-internal-url="${sanitizeHtml(lesson.internal_url)}" data-download-url="${sanitizeHtml(lesson.download_url || '')}" data-content-type="${lesson.content_type}"><i class="fas fa-eye"></i> عرض</button>`;
+                if (canView) {
+                    const fileUrl = lesson.file_info?.url || lesson.internal_url || '';
+                    const downloadUrl = lesson.file_info?.url || lesson.download_url || '';
+                    html += `<button class="lesson-btn view" data-lesson-id="${lesson.id}" data-lesson-title="${sanitizeHtml(lesson.title)}" data-internal-url="${sanitizeHtml(fileUrl)}" data-download-url="${sanitizeHtml(downloadUrl)}" data-content-type="${lesson.content_type}"><i class="fas fa-eye"></i> عرض</button>`;
                 } else {
-                    html += `<button class="lesson-btn watch" onclick='showAppropriatePopup("${currentLessonType}")'><i class="fas fa-eye"></i> مشاهدة</button>`;
+                    html += `<button class="lesson-btn locked" onclick='showLoginRequiredPopup()'><i class="fas fa-lock"></i> للمسجلين</button>`;
                 }
             } else {
-                if (!isLocked && !isMemberPending) {
+                if (canView) {
                     html += `<button class="lesson-btn watch" data-url="${sanitizeHtml(lesson.external_url)}" data-type="${currentLessonType}"><i class="fas fa-external-link-alt"></i> مشاهدة</button>`;
                 } else {
-                    html += `<button class="lesson-btn watch" onclick='showAppropriatePopup("${currentLessonType}")'><i class="fas fa-eye"></i> مشاهدة</button>`;
+                    html += `<button class="lesson-btn locked" onclick='showLoginRequiredPopup()'><i class="fas fa-lock"></i> للمسجلين</button>`;
                 }
             }
             
+            // أزرار الإدارة (تظهر فقط للمسؤول والأستاذ)
             if (isAdminMode) {
                 if (lesson.content_type === 'pdf' || lesson.content_type === 'image') {
-                    html += `<button class="lesson-btn edit" onclick='openEditInternalModal("${lesson.id}", "${sanitizeHtml(lesson.title)}", "${sanitizeHtml(lesson.internal_url)}", "${sanitizeHtml(lesson.download_url || '')}", "${lesson.content_type}")'><i class="fas fa-edit"></i> تعديل</button>`;
+                    html += `<button class="lesson-btn edit" onclick='openEditInternalModal("${lesson.id}", "${sanitizeHtml(lesson.title)}", "${sanitizeHtml(lesson.file_info?.url || lesson.internal_url || '')}", "${sanitizeHtml(lesson.file_info?.url || lesson.download_url || '')}", "${lesson.content_type}")'><i class="fas fa-edit"></i> تعديل</button>`;
                 } else {
                     html += `<button class="lesson-btn edit" onclick='openEditModal("${lesson.id}", "${sanitizeHtml(lesson.title)}", "${sanitizeHtml(lesson.external_url)}", "${lesson.platform}")'><i class="fas fa-edit"></i> تعديل</button>`;
                 }
@@ -4413,7 +4708,7 @@ function renderLessonsList() {
             if (url && isLessonAccessible(type)) {
                 window.open(url, '_blank');
             } else {
-                showAppropriatePopup(type);
+                showLoginRequiredPopup();
             }
         });
     });
@@ -4438,6 +4733,7 @@ function renderLessonsList() {
         document.getElementById('newLessonInternalUrl').value = '';
         document.getElementById('newLessonDownloadUrl').value = '';
         document.getElementById('newLessonExternalUrl').value = '';
+        clearFileUploadFields();
         document.getElementById('addLessonModal').classList.add('active');
     });
     
@@ -4448,6 +4744,16 @@ function showLessonContent(lessonId, lesson) {
     const container = document.getElementById('lessonsContainer');
     const backBtn = document.getElementById('backBtn');
     if (backBtn) backBtn.style.display = 'none';
+    
+    // التحقق من صلاحية المستخدم لعرض المحتوى
+    const canView = isAdminMode || (currentUser && currentUserIsApproved && isLessonAccessible(currentLessonType));
+    
+    if (!canView) {
+        if (backBtn) backBtn.style.display = 'inline-flex';
+        showLoginRequiredPopup();
+        renderLessonsList();
+        return;
+    }
     
     currentViewingFile = lessonId;
     currentViewingLesson = lesson;
@@ -4528,11 +4834,33 @@ async function addNewLesson() {
     if (currentStage === 'primary') lessonData.substage = currentSubStage;
     else lessonData.year = currentYear;
     
+    // معالجة رفع الملف إذا تم اختيار ملف
     if (lessonType === 'pdf' || lessonType === 'image') {
-        const internalUrl = document.getElementById('newLessonInternalUrl').value.trim();
-        if (!internalUrl) { showToast('⚠️ الرجاء إدخال رابط العرض', 'warning'); return; }
-        lessonData.internal_url = internalUrl;
-        lessonData.download_url = document.getElementById('newLessonDownloadUrl').value.trim() || internalUrl;
+        if (uploadedFile) {
+            try {
+                // إنشاء مسار فريد للملف
+                const userId = currentUser?.uid || 'unknown';
+                const lessonId = getLessonId();
+                const filePath = `${userId}/${lessonId}`;
+                
+                // رفع الملف إلى Supabase
+                const fileInfo = await uploadFileToSupabase(uploadedFile, filePath);
+                lessonData.file_info = fileInfo;
+                lessonData.internal_url = fileInfo.url;
+                lessonData.download_url = fileInfo.url;
+                
+                showToast('✅ تم رفع الملف بنجاح', 'success', 2000);
+            } catch(error) {
+                showToast('⚠️ فشل رفع الملف: ' + error.message, 'error');
+                return;
+            }
+        } else {
+            // استخدام الروابط المباشرة إذا لم يتم رفع ملف
+            const internalUrl = document.getElementById('newLessonInternalUrl').value.trim();
+            if (!internalUrl) { showToast('⚠️ الرجاء إدخال رابط العرض أو رفع ملف', 'warning'); return; }
+            lessonData.internal_url = internalUrl;
+            lessonData.download_url = document.getElementById('newLessonDownloadUrl').value.trim() || internalUrl;
+        }
     } else {
         const externalUrl = document.getElementById('newLessonExternalUrl').value.trim();
         if (!externalUrl) { showToast('⚠️ الرجاء إدخال الرابط', 'warning'); return; }
@@ -4548,6 +4876,7 @@ async function addNewLesson() {
     document.getElementById('newLessonInternalUrl').value = '';
     document.getElementById('newLessonDownloadUrl').value = '';
     document.getElementById('newLessonExternalUrl').value = '';
+    clearFileUploadFields();
     await loadDataFromFirebase();
     refreshCurrentView();
 }
@@ -4557,11 +4886,32 @@ async function deleteLesson(id) {
         showToast('⚠️ غير مصرح لك - هذه الصلاحية للأستاذ فقط', 'error');
         return;
     }
-    if (confirm('هل أنت متأكد من حذف هذا الدرس؟')) {
+    if (!confirm('هل أنت متأكد من حذف هذا الدرس؟')) return;
+    
+    try {
+        // جلب بيانات الدرس للحصول على مسار الملف
+        const snapshot = await database.ref('lessons/' + id).once('value');
+        const lesson = snapshot.val();
+        
+        // حذف الملف من Supabase إذا كان موجوداً
+        if (lesson && lesson.file_info && lesson.file_info.path) {
+            try {
+                await deleteFileFromSupabase(lesson.file_info.path);
+                showToast('🗑️ تم حذف الملف من التخزين', 'success', 1500);
+            } catch(error) {
+                console.error('Error deleting file from Supabase:', error);
+                showToast('⚠️ فشل حذف الملف: ' + error.message, 'warning');
+                // نستمر في حذف الدرس حتى لو فشل حذف الملف
+            }
+        }
+        
         await database.ref('lessons/' + id).remove();
         showToast('✅ تم حذف الدرس بنجاح', 'success');
         await loadDataFromFirebase();
         refreshCurrentView();
+    } catch(error) {
+        showToast('⚠️ حدث خطأ أثناء حذف الدرس', 'error');
+        console.error('Delete lesson error:', error);
     }
 }
 window.deleteLesson = deleteLesson;
@@ -4581,6 +4931,7 @@ function openEditInternalModal(id, title, url, download, contentType) {
     document.getElementById('editInternalUrl').value = url;
     document.getElementById('editInternalDownload').value = download || '';
     if (contentType) document.getElementById('editInternalType').value = contentType;
+    clearFileUploadFields();
     document.getElementById('editInternalLessonModal').classList.add('active');
 }
 window.openEditInternalModal = openEditInternalModal;
@@ -4841,6 +5192,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('confirmAddLessonBtn')?.addEventListener('click', addNewLesson);
     document.getElementById('cancelAddLessonBtn')?.addEventListener('click', () => {
         document.getElementById('addLessonModal').classList.remove('active');
+        clearFileUploadFields();
     });
     
     document.getElementById('confirmEditLessonBtn')?.addEventListener('click', async () => {
@@ -4872,22 +5224,65 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         if (editingInternalLessonId) {
-            await database.ref('lessons/' + editingInternalLessonId).update({
+            // جلب بيانات الدرس الحالية
+            const snapshot = await database.ref('lessons/' + editingInternalLessonId).once('value');
+            const currentLesson = snapshot.val() || {};
+            
+            let updateData = {
                 title: document.getElementById('editInternalTitle').value,
                 content_type: document.getElementById('editInternalType').value,
-                internal_url: document.getElementById('editInternalUrl').value,
-                download_url: document.getElementById('editInternalDownload').value,
                 updated_at: new Date().toISOString(),
                 updated_by: currentUser?.email || 'unknown'
-            });
+            };
+            
+            // معالجة رفع ملف جديد إذا تم اختياره
+            if (uploadedFileForEdit) {
+                try {
+                    // حذف الملف القديم إذا كان موجوداً
+                    if (currentLesson.file_info && currentLesson.file_info.path) {
+                        try {
+                            await deleteFileFromSupabase(currentLesson.file_info.path);
+                        } catch(e) {
+                            console.warn('Could not delete old file:', e);
+                        }
+                    }
+                    
+                    // رفع الملف الجديد
+                    const userId = currentUser?.uid || 'unknown';
+                    const lessonId = editingInternalLessonId;
+                    const filePath = `${userId}/${lessonId}`;
+                    const fileInfo = await uploadFileToSupabase(uploadedFileForEdit, filePath);
+                    updateData.file_info = fileInfo;
+                    updateData.internal_url = fileInfo.url;
+                    updateData.download_url = fileInfo.url;
+                    
+                    showToast('✅ تم رفع الملف الجديد بنجاح', 'success', 2000);
+                } catch(error) {
+                    showToast('⚠️ فشل رفع الملف: ' + error.message, 'error');
+                    return;
+                }
+            } else {
+                // استخدام الروابط المباشرة إذا لم يتم رفع ملف جديد
+                const internalUrl = document.getElementById('editInternalUrl').value.trim();
+                const downloadUrl = document.getElementById('editInternalDownload').value.trim();
+                if (internalUrl) {
+                    updateData.internal_url = internalUrl;
+                    updateData.download_url = downloadUrl || internalUrl;
+                }
+                // إذا لم يكن هناك رابط ولا ملف، نترك البيانات القديمة
+            }
+            
+            await database.ref('lessons/' + editingInternalLessonId).update(updateData);
             showToast('✅ تم تعديل الدرس', 'success');
         }
         document.getElementById('editInternalLessonModal').classList.remove('active');
+        clearFileUploadFields();
         await loadDataFromFirebase();
         refreshCurrentView();
     });
     document.getElementById('cancelEditInternalBtn')?.addEventListener('click', () => {
         document.getElementById('editInternalLessonModal').classList.remove('active');
+        clearFileUploadFields();
     });
     
     // تسجيل الخروج وإلغاء العضوية
@@ -4977,8 +5372,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 console.log('🎨 تم تحميل المنصة بنجاح!');
-console.log('📚 منصة الأستاذ محمد - النسخة النهائية');
-console.log('✅ جميع الإصلاحات تم تطبيقها');
+console.log('📚 منصة الأستاذ محمد - النسخة النهائية مع دعم Supabase Storage');
+console.log('🔒 المحتوى مقيد للأعضاء المسجلين فقط');
+console.log('📁 Bucket: uploads');
 </script>
 </body>
 </html>
