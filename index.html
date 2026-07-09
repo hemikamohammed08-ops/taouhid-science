@@ -34,7 +34,6 @@
             --border-color: #2a3a50;
         }
         
-        /* ===== شاشة التحميل ===== */
         #app-loading {
             position: fixed;
             top: 0;
@@ -61,16 +60,13 @@
         }
         @keyframes spin { 0% { transform: rotate(0); } 100% { transform: rotate(360deg); } }
         
-        /* ===== مؤشرات التحميل ===== */
         .btn-loading {
             opacity: 0.7;
             pointer-events: none;
             cursor: not-allowed;
             position: relative;
         }
-        .btn-loading .btn-text {
-            visibility: hidden;
-        }
+        .btn-loading .btn-text { visibility: hidden; }
         .btn-loading .btn-loader {
             display: inline-block !important;
             position: absolute;
@@ -78,14 +74,9 @@
             left: 50%;
             transform: translate(-50%, -50%);
         }
-        .btn-loader {
-            display: none;
-        }
-        .btn-loader i {
-            font-size: 1rem;
-        }
+        .btn-loader { display: none; }
+        .btn-loader i { font-size: 1rem; }
         
-        /* ===== فلتر الدروس ===== */
         .filter-buttons {
             display: flex;
             flex-wrap: wrap;
@@ -105,17 +96,9 @@
             font-size: 0.75rem;
             transition: var(--transition);
         }
-        .filter-btn:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-        .filter-btn.active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
+        .filter-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
         
-        /* ===== إحصائيات ===== */
         .stats-container {
             display: flex;
             flex-wrap: wrap;
@@ -127,30 +110,14 @@
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-md);
         }
-        .stat-item {
-            text-align: center;
-            padding: 8px 20px;
-            min-width: 100px;
-        }
-        .stat-item .number {
-            font-size: 1.5rem;
-            font-weight: 900;
-            color: var(--primary);
-            display: block;
-        }
-        .stat-item .label {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-        }
+        .stat-item { text-align: center; padding: 8px 20px; min-width: 100px; }
+        .stat-item .number { font-size: 1.5rem; font-weight: 900; color: var(--primary); display: block; }
+        .stat-item .label { font-size: 0.7rem; color: var(--text-muted); }
         
-        /* ===== نافذة تأكيد الحذف ===== */
         .confirm-dialog-overlay {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.85);
             backdrop-filter: blur(8px);
             z-index: 10000;
@@ -167,26 +134,10 @@
             text-align: center;
             animation: popIn 0.3s ease;
         }
-        .confirm-dialog .icon {
-            font-size: 3rem;
-            display: block;
-            margin-bottom: 8px;
-        }
-        .confirm-dialog h3 {
-            font-size: 1.2rem;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-        }
-        .confirm-dialog p {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            margin-bottom: 16px;
-        }
-        .confirm-dialog .btn-group {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
+        .confirm-dialog .icon { font-size: 3rem; display: block; margin-bottom: 8px; }
+        .confirm-dialog h3 { font-size: 1.2rem; color: var(--text-primary); margin-bottom: 8px; }
+        .confirm-dialog p { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 16px; }
+        .confirm-dialog .btn-group { display: flex; gap: 10px; justify-content: center; }
         .confirm-dialog .btn-group button {
             padding: 8px 24px;
             border-radius: var(--radius-full);
@@ -201,7 +152,6 @@
         .confirm-dialog .btn-confirm { background: #dc2626; color: white; }
         .confirm-dialog .btn-cancel { background: #94a3b8; color: white; }
         
-        /* ===== تذكرني ===== */
         .remember-me {
             display: flex;
             align-items: center;
@@ -217,7 +167,47 @@
             cursor: pointer;
         }
         
-        /* ===== باقي الأنماط ===== */
+        .news-ticker-new {
+            background: var(--bg-white);
+            border-radius: 12px;
+            padding: 8px 12px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-right: 4px solid var(--secondary);
+            min-height: 44px;
+            overflow: hidden;
+            width: 100%;
+            max-width: 100%;
+        }
+        .news-ticker-new .label {
+            background: var(--secondary);
+            color: #1a4a8a;
+            padding: 3px 10px;
+            border-radius: var(--radius-full);
+            font-weight: 800;
+            font-size: 0.6rem;
+            white-space: nowrap;
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .news-ticker-new .label i { animation: blink 1.5s ease-in-out infinite; }
+        .news-ticker-new .content { flex: 1; overflow: hidden; min-width: 0; position: relative; }
+        .news-ticker-new .content marquee {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            direction: rtl;
+            display: block;
+            white-space: nowrap;
+            padding: 2px 0;
+            width: 100%;
+            overflow: hidden;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Tajawal', sans-serif;
@@ -287,28 +277,6 @@
         }
         .file-upload-btn:hover:not(.btn-loading) { transform: translateY(-2px); }
         .file-name-display { font-size: 0.8rem; color: var(--text-secondary); margin-right: 8px; }
-
-        .news-ticker-new {
-            background: var(--bg-white);
-            border-radius: 12px;
-            padding: 8px 12px;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border-right: 4px solid var(--secondary);
-            min-height: 44px;
-        }
-        .news-ticker-new .label {
-            background: var(--secondary);
-            color: #1a4a8a;
-            padding: 3px 10px;
-            border-radius: var(--radius-full);
-            font-weight: 800;
-            font-size: 0.6rem;
-            flex-shrink: 0;
-        }
-        .news-ticker-new .content marquee { font-size: 0.8rem; color: var(--text-secondary); direction: rtl; }
 
         .countdown-new {
             background: var(--bg-white);
@@ -556,11 +524,48 @@
             .stats-container { gap: 8px; }
             .stat-item { min-width: 60px; padding: 4px 12px; }
             .stat-item .number { font-size: 1.1rem; }
+            .news-ticker-new { padding: 6px 10px; min-height: 36px; gap: 6px; border-right-width: 3px; }
+            .news-ticker-new .label { font-size: 0.5rem; padding: 2px 8px; }
+            .news-ticker-new .content marquee { font-size: 0.65rem; scrollamount: 1.5; }
         }
-        @keyframes popIn {
-            0% { transform: scale(0.9); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
+
+        @media (max-width: 480px) {
+            .container { padding: 8px; }
+            .header-new { padding: 10px; }
+            .logo-text-new h1 { font-size: 0.95rem; }
+            .stage-btn-new { font-size: 0.7rem; padding: 8px 12px; min-height: 34px; }
+            .sub-stage-card-new, .year-card-new { width: 100px; padding: 10px; }
+            .sub-stage-card-new .emoji { font-size: 1.5rem; }
+            .year-card-new .emoji { font-size: 1.2rem; }
+            .subject-card-new { max-width: 150px; }
+            .subject-card-new .header { font-size: 0.75rem; padding: 10px; }
+            .countdown-new .box { min-width: 35px; padding: 2px 6px; }
+            .countdown-new .box .number { font-size: 0.75rem; }
+            .countdown-new .box .label { font-size: 0.4rem; }
+            .countdown-new .title { font-size: 0.85rem; }
+            .news-ticker-new { padding: 4px 8px; min-height: 30px; gap: 4px; border-right-width: 3px; }
+            .news-ticker-new .label { font-size: 0.4rem; padding: 2px 6px; }
+            .news-ticker-new .content marquee { font-size: 0.5rem; scrollamount: 1; }
+            .modal-content { padding: 14px; }
+            .modal-content h3 { font-size: 0.95rem; }
+            .btn { font-size: 0.6rem; padding: 4px 10px; min-height: 30px; }
+            .lesson-btn { font-size: 0.5rem; padding: 3px 8px; min-height: 24px; }
+            .back-btn-new { font-size: 0.6rem; padding: 4px 12px; min-height: 28px; }
+            .page-title { font-size: 0.9rem; margin-bottom: 12px; }
+            .admin-panel-new { padding: 12px 10px; }
+            .admin-panel-new h4 { font-size: 0.85rem; padding-left: 30px; }
+            .admin-close-btn { width: 26px; height: 26px; font-size: 0.75rem; }
+            .visitor-popup-new .content { padding: 16px; border-radius: 30px; }
+            .visitor-popup-new .content .emoji { font-size: 2rem; }
+            .visitor-popup-new .content h3 { font-size: 0.95rem; }
+            .filter-btn { font-size: 0.6rem; padding: 4px 10px; }
+            .stats-container { gap: 4px; padding: 8px; }
+            .stat-item { min-width: 40px; padding: 2px 8px; }
+            .stat-item .number { font-size: 0.9rem; }
+            .stat-item .label { font-size: 0.5rem; }
+            .footer-new { font-size: 0.6rem; padding: 12px; }
         }
+        @keyframes popIn { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body>
@@ -610,7 +615,11 @@
     <!-- شريط الأخبار -->
     <div id="newsTicker" class="news-ticker-new">
         <span class="label"><i class="fas fa-bullhorn"></i> المستجدات</span>
-        <div class="content" id="newsTickerContent"><marquee>📢 مرحباً بكم في منصة الأستاذ محمد التعليمية</marquee></div>
+        <div class="content" id="newsTickerContent">
+            <marquee behavior="scroll" direction="right" scrollamount="2" truespeed="truespeed" onmouseover="this.stop()" onmouseout="this.start()" style="width:100%; display:block; white-space:nowrap;">
+                📢 مرحباً بكم في منصة الأستاذ محمد التعليمية
+            </marquee>
+        </div>
     </div>
 
     <!-- بنر العضوية -->
@@ -1011,8 +1020,6 @@ let approvedMembers = [];
 let selectedCommunityStage = 'primary';
 let isInCommunity = false;
 let currentFilter = 'all';
-let pendingDeleteId = null;
-let pendingDeleteType = null;
 
 let uploadedFile = null;
 let uploadedFileForEdit = null;
@@ -1029,7 +1036,7 @@ let inviteLinks = {
 };
 
 // ============================================================
-// دوال مساعدة محسّنة مع رسائل أفضل
+// دوال مساعدة
 // ============================================================
 function escapeHtml(str) {
     if (!str) return '';
@@ -1063,7 +1070,6 @@ function getFileExtension(filename) {
     return filename.split('.').pop().toLowerCase();
 }
 
-// دوال تحسين الرسائل
 function showSuccess(message) {
     showToast('✅ ' + message, 'success', 3000);
 }
@@ -1111,7 +1117,6 @@ function showConfirmDialog(message, onConfirm) {
     msg.textContent = message;
     dialog.classList.add('active');
     
-    // إزالة المستمع القديم وإضافة الجديد
     const newConfirmBtn = confirmBtn.cloneNode(true);
     confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
     
@@ -1888,12 +1893,23 @@ async function deleteTeacher(email) {
 window.deleteTeacher = deleteTeacher;
 
 // ============================================================
-// دوال الأخبار والإعدادات
+// دوال شريط الأخبار والإعدادات
 // ============================================================
 function renderNewsTicker() {
     const container = document.getElementById('newsTickerContent');
     if (!container) return;
-    container.innerHTML = `<marquee behavior="scroll" direction="right" scrollamount="2" onmouseover="this.stop()" onmouseout="this.start()">${sanitizeHtml(newsText)}</marquee>`;
+    
+    const text = newsText || '📢 مرحباً بكم في منصة الأستاذ محمد التعليمية';
+    container.innerHTML = `
+        <marquee behavior="scroll" direction="right" 
+                 scrollamount="2" 
+                 truespeed="truespeed" 
+                 onmouseover="this.stop()" 
+                 onmouseout="this.start()"
+                 style="width:100%; display:block; white-space:nowrap;">
+            ${sanitizeHtml(text)}
+        </marquee>
+    `;
 }
 
 async function loadNews() {
@@ -2010,10 +2026,8 @@ function updateStats() {
     const container = document.getElementById('statsContainer');
     if (!container) return;
     
-    // حساب عدد الدروس
     let totalLessons = 0;
     if (platformData) {
-        // ابتدائي
         if (platformData.primary) {
             Object.keys(platformData.primary).forEach(subStage => {
                 const subjects = platformData.primary[subStage].subjects;
@@ -2023,7 +2037,6 @@ function updateStats() {
                 });
             });
         }
-        // متوسط
         if (platformData.middle && platformData.middle.subjectsByYear) {
             Object.keys(platformData.middle.subjectsByYear).forEach(year => {
                 const subjects = platformData.middle.subjectsByYear[year];
@@ -2033,7 +2046,6 @@ function updateStats() {
                 });
             });
         }
-        // ثانوي
         if (platformData.high && platformData.high.subjectsByYear) {
             Object.keys(platformData.high.subjectsByYear).forEach(year => {
                 const subjects = platformData.high.subjectsByYear[year];
@@ -2048,7 +2060,6 @@ function updateStats() {
     document.getElementById('statsLessons').textContent = totalLessons;
     document.getElementById('statsUsers').textContent = approvedMembers.length || 0;
     
-    // حساب عدد الأساتذة
     let teachersCount = 0;
     if (database && isAdminMode) {
         database.ref('teachers').once('value', snapshot => {
@@ -2068,7 +2079,6 @@ function updateStats() {
 // ============================================================
 function filterLessons(type) {
     currentFilter = type;
-    // تحديث أزرار الفلتر
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.filter === type);
     });
@@ -2543,7 +2553,6 @@ function getCurrentLessons() {
         else if (currentStage === 'middle') lessons = platformData.middle.subjectsByYear[currentYear][currentSubject][currentLessonType];
         else lessons = platformData.high.subjectsByYear[currentYear][currentSubject][currentLessonType];
         
-        // تطبيق الفلتر
         if (currentFilter === 'summer') {
             lessons = lessons.filter(l => l.content_type === 'pdf' || l.content_type === 'image');
         } else if (currentFilter === 'external') {
@@ -2698,7 +2707,7 @@ function closeFileViewer() {
 window.closeFileViewer = closeFileViewer;
 
 // ============================================================
-// إدارة الدروس (معدلة مع تأكيد الحذف)
+// إدارة الدروس
 // ============================================================
 function toggleLessonFields() {
     const type = document.getElementById('newLessonType').value;
@@ -3004,22 +3013,32 @@ async function revokeOwnMembership() {
 window.revokeOwnMembership = revokeOwnMembership;
 
 // ============================================================
-// التهيئة النهائية
+// التهيئة النهائية (مع إصلاح شاشة التحميل)
 // ============================================================
 async function init() {
     try {
+        // التحقق من وجود قاعدة البيانات
         if (!database) {
-            document.getElementById('dynamicArea').innerHTML = `<div style="text-align:center; padding:40px;"><i class="fas fa-database" style="font-size:2.5rem; color:#dc2626;"></i><h3 style="color:#dc2626;">⚠️ خطأ في الاتصال بقاعدة البيانات</h3><button onclick="location.reload()" style="background:var(--primary); color:white; border:none; padding:10px 28px; border-radius:20px; margin-top:10px; cursor:pointer;">🔄 إعادة تحميل</button></div>`;
+            document.getElementById('dynamicArea').innerHTML = `
+                <div style="text-align:center; padding:40px;">
+                    <i class="fas fa-database" style="font-size:2.5rem; color:#dc2626;"></i>
+                    <h3 style="color:#dc2626;">⚠️ خطأ في الاتصال بقاعدة البيانات</h3>
+                    <button onclick="location.reload()" style="background:var(--primary); color:white; border:none; padding:10px 28px; border-radius:20px; margin-top:10px; cursor:pointer;">🔄 إعادة تحميل</button>
+                </div>
+            `;
             const loading = document.getElementById('app-loading');
             if (loading) loading.classList.add('hidden');
             return;
         }
         
+        // تحميل البيانات
         await Promise.all([loadDataFromFirebase(), loadLockSettings(), loadInviteLinks(), loadNews()]);
         
+        // ربط الأزرار وتحديث الواجهة
         bindMainStageButtons();
         updateAuthButtons();
         
+        // الاستماع لتغييرات الدروس
         if (database) {
             database.ref('lessons').on('value', async () => { 
                 await loadDataFromFirebase(); 
@@ -3028,8 +3047,13 @@ async function init() {
             });
         }
         
+        // تحديث العرض
         refreshCurrentView();
-        document.getElementById('contactModal')?.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
+        
+        // إغلاق نافذة الاتصال عند الضغط خارجها
+        document.getElementById('contactModal')?.addEventListener('click', function(e) { 
+            if (e.target === this) this.classList.remove('active'); 
+        });
         
         // مهلة قصوى لإخفاء شاشة التحميل (3 ثواني)
         setTimeout(() => {
@@ -3049,6 +3073,12 @@ async function init() {
                     input.value = rememberedEmail;
                 }
             });
+        }
+        
+        // إخفاء شاشة التحميل فوراً إذا كانت البيانات محملة
+        if (dataLoaded) {
+            const loading = document.getElementById('app-loading');
+            if (loading) loading.classList.add('hidden');
         }
         
     } catch(error) {
@@ -3385,6 +3415,7 @@ console.log('🔍 إضافة فلتر للدروس');
 console.log('🔒 إضافة نافذة تأكيد للحذف');
 console.log('💾 إضافة خيار تذكرني');
 console.log('⏱️ إضافة مهلة قصوى لإخفاء شاشة التحميل');
+console.log('📱 تم تحسين شريط الأخبار للهواتف');
 </script>
 </body>
 </html>
