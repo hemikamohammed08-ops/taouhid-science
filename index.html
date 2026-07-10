@@ -408,6 +408,7 @@
             .stat-item { min-width: 60px; padding: 4px 12px; }
             .stat-item .number { font-size: 1.1rem; }
             
+            /* تحسين شريط الأخبار للهواتف */
             .news-ticker-new { 
                 padding: 6px 10px; 
                 min-height: 36px; 
@@ -625,7 +626,7 @@
     </div>
 </div>
 
-<!-- نافذة الاتصال بنا -->
+<!-- ===== نافذة الاتصال بنا (معدلة) ===== -->
 <div id="contactModal" class="modal-overlay" onclick="if(event.target===this) closeContactModal()">
     <div class="modal-content">
         <h3>📧 راسلنا</h3>
@@ -1070,6 +1071,29 @@ async function getTelegramFilePath(file_id) {
     return result.result.file_path;
 }
 
+// دالة استخراج معرف Google Drive
+function extractGoogleDriveFileId(url) {
+    if (!url) return null;
+    
+    const patterns = [
+        /\/file\/d\/([^\/]+)\//,
+        /id=([^&]+)/,
+        /\/uc\?export=download&id=([^&]+)/,
+        /\/open\?id=([^&]+)/
+    ];
+    
+    for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match) return match[1];
+    }
+    
+    if (url.match(/^[a-zA-Z0-9_-]{33,}$/)) {
+        return url;
+    }
+    
+    return null;
+}
+
 // ============================================================
 // المتغيرات العامة
 // ============================================================
@@ -1182,7 +1206,7 @@ window.showWarning = showWarning;
 window.showInfo = showInfo;
 
 // ============================================================
-// دوال الاتصال بنا
+// دوال الاتصال بنا (معدلة)
 // ============================================================
 
 function openContactModal() {
@@ -1236,6 +1260,12 @@ function sendContactMessage() {
     
     closeContactModal();
     showSuccess('✅ تم فتح البريد الإلكتروني لإرسال الرسالة');
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(MASTER_TEACHER_EMAIL).then(() => {
+            showInfo('📧 تم نسخ البريد الإلكتروني للحافظة');
+        }).catch(() => {});
+    }
 }
 window.sendContactMessage = sendContactMessage;
 
@@ -2421,7 +2451,7 @@ async function loadDataFromFirebase() {
 }
 
 // ============================================================
-// دوال عرض الصفحات (مع إصلاح عرض PDF من Telegram)
+// دوال عرض الصفحات مع عرض PDF
 // ============================================================
 function showMainStages() {
     document.getElementById('mainStagesContainer').classList.remove('hidden');
@@ -2766,7 +2796,7 @@ function renderLessonsList() {
 }
 
 // ============================================================
-// ✅ دالة عرض المحتوى (معدلة لعرض ملفات Telegram)
+// دالة عرض المحتوى (معدلة لعرض PDF والصور)
 // ============================================================
 function showLessonContent(id, title, url, download, type) {
     const container = document.getElementById('lessonsContainer');
@@ -2785,20 +2815,23 @@ function showLessonContent(id, title, url, download, type) {
     currentViewingLesson = { id, title, url, download, type };
     
     const isTelegramFile = url && url.includes('api.telegram.org/file/bot');
+    const isGoogleDrive = url && url.includes('drive.google.com');
     const isPDF = type === 'pdf';
     const isImage = type === 'image';
     
     let contentHtml = '';
     
-    // ===== معالجة PDF من Telegram =====
+    // معالجة PDF
     if (isPDF) {
         let displayUrl = url;
         let downloadUrl = download || url;
         
-        // ✅ استخدام Google Docs Viewer لعرض ملفات Telegram
-        if (isTelegramFile) {
-            const encodedUrl = encodeURIComponent(url);
-            displayUrl = `https://docs.google.com/viewer?url=${encodedUrl}&embedded=true`;
+        if (isGoogleDrive) {
+            const fileId = extractGoogleDriveFileId(url);
+            if (fileId) {
+                displayUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+                downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+            }
         }
         
         contentHtml = `
@@ -2816,25 +2849,39 @@ function showLessonContent(id, title, url, download, type) {
                 </div>
                 <div style="min-height:250px; background:#f5f5f5; border-radius:12px; overflow:hidden;">
                     <iframe src="${sanitizeHtml(displayUrl)}" 
-                            style="width:100%; height:65vh; border:none; border-radius:12px; min-height:350px;" 
+                            class="pdf-viewer"
                             allowfullscreen>
                     </iframe>
                 </div>
                 <div style="text-align:center; margin-top:12px; padding-top:12px; border-top:1px solid var(--border-color); font-size:0.7rem; color:var(--text-muted);">
-                    <i class="fas fa-info-circle"></i> 📁 تم رفع الملف عبر Telegram
+                    <i class="fas fa-info-circle"></i> 
+                    ${isTelegramFile ? '📁 تم رفع الملف عبر Telegram' : ''}
+                    ${isGoogleDrive ? '📁 تم رفع الملف عبر Google Drive' : ''}
+                    ${(!isTelegramFile && !isGoogleDrive) ? '📄 ملف PDF' : ''}
                 </div>
             </div>
         `;
     }
     
-    // ===== معالجة الصور من Telegram =====
+    // معالجة الصور
     else if (isImage) {
+        let displayUrl = url;
+        let downloadUrl = download || url;
+        
+        if (isGoogleDrive) {
+            const fileId = extractGoogleDriveFileId(url);
+            if (fileId) {
+                displayUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
+                downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+            }
+        }
+        
         contentHtml = `
             <div style="background:var(--bg-white); border-radius:20px; padding:20px; margin:10px 0; box-shadow:var(--shadow-md);">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:2px solid var(--secondary); padding-bottom:10px; flex-wrap:wrap;">
                     <h3><i class="fas fa-image"></i> ${sanitizeHtml(title)}</h3>
                     <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                        <button class="btn btn-success" onclick="window.open('${sanitizeHtml(download || url)}', '_blank')" style="padding:4px 16px; font-size:0.8rem;">
+                        <button class="btn btn-success" onclick="window.open('${sanitizeHtml(downloadUrl)}', '_blank')" style="padding:4px 16px; font-size:0.8rem;">
                             <i class="fas fa-download"></i> تحميل
                         </button>
                         <button class="btn btn-danger" onclick="closeFileViewer()" style="padding:4px 16px; font-size:0.8rem;">
@@ -2843,16 +2890,16 @@ function showLessonContent(id, title, url, download, type) {
                     </div>
                 </div>
                 <div style="min-height:250px; text-align:center; background:#f5f5f5; border-radius:12px; padding:20px;">
-                    <img src="${sanitizeHtml(url)}" 
+                    <img src="${sanitizeHtml(displayUrl)}" 
                          style="max-width:100%; max-height:65vh; border-radius:12px; display:inline-block; margin:0 auto;" 
                          alt="${sanitizeHtml(title)}"
-                         onerror="this.parentElement.innerHTML='<div style=\\'padding:40px; color:#999;\\'><i class=\\'fas fa-image\\' style=\\'font-size:3rem; display:block; margin-bottom:10px;\\'></i><p>⚠️ تعذر تحميل الصورة</p><button class=\\'btn btn-primary\\' onclick=\\'window.open(\\'${sanitizeHtml(download || url)}\\', \\'_blank\\')\\' style=\\'margin-top:10px;\\'>📥 تحميل الصورة</button></div>'">
+                         onerror="this.parentElement.innerHTML='<div style=\\'padding:40px; color:#999;\\'><i class=\\'fas fa-image\\' style=\\'font-size:3rem; display:block; margin-bottom:10px;\\'></i><p>⚠️ تعذر تحميل الصورة</p><button class=\\'btn btn-primary\\' onclick=\\'window.open(\\'${sanitizeHtml(downloadUrl)}\\', \\'_blank\\')\\' style=\\'margin-top:10px;\\'>📥 تحميل الصورة</button></div>'">
                 </div>
             </div>
         `;
     }
     
-    // ===== الروابط الخارجية =====
+    // الروابط الخارجية
     else {
         contentHtml = `
             <div style="background:var(--bg-white); border-radius:20px; padding:20px; margin:10px 0; box-shadow:var(--shadow-md);">
@@ -3534,7 +3581,7 @@ console.log('🔒 المحتوى مقيد حسب مرحلة كل مستخدم');
 console.log('📝 إضافة خيار اختيار المرحلة عند طلب التسجيل (للأعضاء فقط)');
 console.log('🔗 روابط المجتمع مقيدة حسب مرحلة المستخدم');
 console.log('📱 تم تحسين شريط الأخبار للهواتف');
-console.log('📄 تم إصلاح عرض ملفات PDF من Telegram عبر Google Docs Viewer');
+console.log('📄 تم إصلاح عرض ملفات PDF والصور');
 console.log('📧 تم إصلاح أيقونة راسلنا');
 </script>
 </body>
