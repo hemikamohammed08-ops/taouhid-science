@@ -110,7 +110,6 @@
         .remember-me { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 0.85rem; color: var(--text-secondary); }
         .remember-me input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
         
-        /* ===== شريط الأخبار (معدل للهواتف) ===== */
         .news-ticker-new {
             background: var(--bg-white);
             border-radius: 12px;
@@ -391,7 +390,27 @@
             background: #f5f5f5;
         }
 
+        /* ===== أنيميشن fadeIn للصورة المكبرة ===== */
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: scale(0.95); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        /* ===== تحسين عرض الصورة في الهواتف ===== */
         @media (max-width: 768px) {
+            #imageZoomOverlay {
+                padding: 10px !important;
+            }
+            #imageZoomOverlay .zoom-close-btn {
+                top: 10px !important;
+                right: 10px !important;
+                width: 40px !important;
+                height: 40px !important;
+                font-size: 1rem !important;
+            }
+            #imageZoomOverlay img {
+                max-height: 75vh !important;
+            }
             .container { padding: 12px; }
             .header-new { flex-direction: column; align-items: stretch; padding: 14px; }
             .logo-new { justify-content: center; }
@@ -407,8 +426,6 @@
             .stats-container { gap: 8px; }
             .stat-item { min-width: 60px; padding: 4px 12px; }
             .stat-item .number { font-size: 1.1rem; }
-            
-            /* تحسين شريط الأخبار للهواتف */
             .news-ticker-new { 
                 padding: 6px 10px; 
                 min-height: 36px; 
@@ -432,7 +449,6 @@
                 overflow: hidden;
                 display: block;
             }
-            
             .pdf-viewer {
                 height: 45vh;
                 min-height: 250px;
@@ -440,6 +456,19 @@
         }
 
         @media (max-width: 480px) {
+            #imageZoomOverlay {
+                padding: 5px !important;
+            }
+            #imageZoomOverlay .zoom-close-btn {
+                top: 5px !important;
+                right: 5px !important;
+                width: 34px !important;
+                height: 34px !important;
+                font-size: 0.8rem !important;
+            }
+            #imageZoomOverlay img {
+                max-height: 70vh !important;
+            }
             .container { padding: 8px; }
             .header-new { padding: 10px; }
             .logo-text-new h1 { font-size: 0.95rem; }
@@ -453,7 +482,6 @@
             .countdown-new .box .number { font-size: 0.75rem; }
             .countdown-new .box .label { font-size: 0.4rem; }
             .countdown-new .title { font-size: 0.85rem; }
-            
             .news-ticker-new { 
                 padding: 4px 8px; 
                 min-height: 30px; 
@@ -469,12 +497,10 @@
                 font-size: 0.5rem; 
                 scrollamount: 1;
             }
-            
             .pdf-viewer {
                 height: 35vh;
                 min-height: 200px;
             }
-            
             .modal-content { padding: 14px; }
             .modal-content h3 { font-size: 0.95rem; }
             .btn { font-size: 0.6rem; padding: 4px 10px; min-height: 30px; }
@@ -626,7 +652,7 @@
     </div>
 </div>
 
-<!-- ===== نافذة الاتصال بنا (معدلة) ===== -->
+<!-- ===== نافذة الاتصال بنا ===== -->
 <div id="contactModal" class="modal-overlay" onclick="if(event.target===this) closeContactModal()">
     <div class="modal-content">
         <h3>📧 راسلنا</h3>
@@ -1206,7 +1232,7 @@ window.showWarning = showWarning;
 window.showInfo = showInfo;
 
 // ============================================================
-// دوال الاتصال بنا (معدلة)
+// دوال الاتصال بنا
 // ============================================================
 
 function openContactModal() {
@@ -2796,7 +2822,7 @@ function renderLessonsList() {
 }
 
 // ============================================================
-// دالة عرض المحتوى (معدلة لعرض PDF والصور)
+// دالة عرض المحتوى (معدلة لعرض PDF والصور مع ميزة التكبير)
 // ============================================================
 function showLessonContent(id, title, url, download, type) {
     const container = document.getElementById('lessonsContainer');
@@ -2863,7 +2889,7 @@ function showLessonContent(id, title, url, download, type) {
         `;
     }
     
-    // معالجة الصور
+    // ===== معالجة الصور مع ميزة التكبير =====
     else if (isImage) {
         let displayUrl = url;
         let downloadUrl = download || url;
@@ -2891,9 +2917,15 @@ function showLessonContent(id, title, url, download, type) {
                 </div>
                 <div style="min-height:250px; text-align:center; background:#f5f5f5; border-radius:12px; padding:20px;">
                     <img src="${sanitizeHtml(displayUrl)}" 
-                         style="max-width:100%; max-height:65vh; border-radius:12px; display:inline-block; margin:0 auto;" 
+                         style="max-width:100%; max-height:55vh; border-radius:12px; display:inline-block; margin:0 auto; cursor:pointer; transition:transform 0.2s ease, box-shadow 0.2s ease;"
                          alt="${sanitizeHtml(title)}"
+                         onclick="openImageZoom('${sanitizeHtml(displayUrl)}', '${sanitizeHtml(title)}')"
+                         onmouseover="this.style.boxShadow='0 4px 20px rgba(0,0,0,0.2)'; this.style.transform='scale(1.02)';"
+                         onmouseout="this.style.boxShadow='none'; this.style.transform='scale(1)';"
                          onerror="this.parentElement.innerHTML='<div style=\\'padding:40px; color:#999;\\'><i class=\\'fas fa-image\\' style=\\'font-size:3rem; display:block; margin-bottom:10px;\\'></i><p>⚠️ تعذر تحميل الصورة</p><button class=\\'btn btn-primary\\' onclick=\\'window.open(\\'${sanitizeHtml(downloadUrl)}\\', \\'_blank\\')\\' style=\\'margin-top:10px;\\'>📥 تحميل الصورة</button></div>'">
+                    <div style="text-align:center; margin-top:8px; font-size:0.7rem; color:var(--text-muted);">
+                        <i class="fas fa-search-plus"></i> اضغط على الصورة لتكبيرها
+                    </div>
                 </div>
             </div>
         `;
@@ -2929,6 +2961,252 @@ function showLessonContent(id, title, url, download, type) {
     saveNavigationState();
 }
 window.showLessonContent = showLessonContent;
+
+// ============================================================
+// دالة تكبير الصورة (Zoom) - ميزة جديدة
+// ============================================================
+function openImageZoom(imageUrl, title) {
+    // إزالة أي نافذة تكبير سابقة
+    const existingZoom = document.getElementById('imageZoomOverlay');
+    if (existingZoom) {
+        existingZoom.remove();
+    }
+    
+    // إنشاء overlay للتكبير
+    const overlay = document.createElement('div');
+    overlay.id = 'imageZoomOverlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.92);
+        backdrop-filter: blur(8px);
+        z-index: 100000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        padding: 20px;
+        animation: fadeIn 0.3s ease;
+        cursor: pointer;
+    `;
+    
+    // إضافة زر الإغلاق
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+    closeBtn.className = 'zoom-close-btn';
+    closeBtn.style.cssText = `
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(255,255,255,0.15);
+        border: 2px solid rgba(255,255,255,0.3);
+        color: white;
+        border-radius: 50%;
+        width: 48px;
+        height: 48px;
+        font-size: 1.3rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 100001;
+        font-family: 'Tajawal', sans-serif;
+    `;
+    closeBtn.onmouseover = () => {
+        closeBtn.style.background = 'rgba(255,255,255,0.25)';
+        closeBtn.style.transform = 'scale(1.1)';
+    };
+    closeBtn.onmouseout = () => {
+        closeBtn.style.background = 'rgba(255,255,255,0.15)';
+        closeBtn.style.transform = 'scale(1)';
+    };
+    closeBtn.onclick = (e) => {
+        e.stopPropagation();
+        closeImageZoom();
+    };
+    
+    // إضافة عنوان الصورة
+    const titleEl = document.createElement('div');
+    titleEl.style.cssText = `
+        color: white;
+        font-size: 1rem;
+        font-weight: 700;
+        margin-bottom: 16px;
+        text-align: center;
+        font-family: 'Tajawal', sans-serif;
+        opacity: 0.9;
+        max-width: 90%;
+    `;
+    titleEl.textContent = title || 'صورة مكبرة';
+    
+    // إضافة الصورة المكبرة
+    const imgContainer = document.createElement('div');
+    imgContainer.style.cssText = `
+        max-width: 95%;
+        max-height: 85vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+    `;
+    
+    const img = document.createElement('img');
+    img.src = imageUrl;
+    img.alt = title || 'صورة مكبرة';
+    img.style.cssText = `
+        max-width: 100%;
+        max-height: 85vh;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        object-fit: contain;
+        transition: transform 0.3s ease;
+        user-select: none;
+        -webkit-user-select: none;
+    `;
+    
+    // دعم التكبير/التصغير بالتمرير (scroll zoom)
+    let scale = 1;
+    let isDragging = false;
+    let startX, startY, translateX = 0, translateY = 0;
+    
+    img.onwheel = (e) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        scale = Math.max(0.5, Math.min(3, scale + delta));
+        img.style.transform = `scale(${scale}) translate(${translateX}px, ${translateY}px)`;
+        img.style.cursor = scale > 1 ? 'grab' : 'default';
+    };
+    
+    // دعم السحب (drag) عند التكبير
+    img.onmousedown = (e) => {
+        if (scale <= 1) return;
+        isDragging = true;
+        startX = e.clientX - translateX;
+        startY = e.clientY - translateY;
+        img.style.cursor = 'grabbing';
+        e.preventDefault();
+    };
+    
+    document.onmousemove = (e) => {
+        if (!isDragging) return;
+        translateX = e.clientX - startX;
+        translateY = e.clientY - startY;
+        img.style.transform = `scale(${scale}) translate(${translateX}px, ${translateY}px)`;
+    };
+    
+    document.onmouseup = () => {
+        if (isDragging) {
+            isDragging = false;
+            img.style.cursor = scale > 1 ? 'grab' : 'default';
+        }
+    };
+    
+    // دعم اللمس (mobile)
+    let touchStartX, touchStartY, touchDist;
+    let initialScale = 1;
+    let initialTranslateX = 0;
+    let initialTranslateY = 0;
+    let isTouching = false;
+    let touchCount = 0;
+    
+    img.ontouchstart = (e) => {
+        const touches = e.touches;
+        touchCount = touches.length;
+        
+        if (touchCount === 1) {
+            isTouching = true;
+            touchStartX = touches[0].clientX - translateX;
+            touchStartY = touches[0].clientY - translateY;
+            initialTranslateX = translateX;
+            initialTranslateY = translateY;
+        } else if (touchCount === 2) {
+            // pinch to zoom
+            const dx = touches[0].clientX - touches[1].clientX;
+            const dy = touches[0].clientY - touches[1].clientY;
+            touchDist = Math.sqrt(dx * dx + dy * dy);
+            initialScale = scale;
+            isTouching = true;
+        }
+        e.preventDefault();
+    };
+    
+    img.ontouchmove = (e) => {
+        const touches = e.touches;
+        e.preventDefault();
+        
+        if (touchCount === 1 && touches.length === 1) {
+            translateX = touches[0].clientX - touchStartX;
+            translateY = touches[0].clientY - touchStartY;
+            img.style.transform = `scale(${scale}) translate(${translateX}px, ${translateY}px)`;
+        } else if (touchCount === 2 && touches.length === 2) {
+            const dx = touches[0].clientX - touches[1].clientX;
+            const dy = touches[0].clientY - touches[1].clientY;
+            const newDist = Math.sqrt(dx * dx + dy * dy);
+            const delta = (newDist - touchDist) / 200;
+            scale = Math.max(0.5, Math.min(3, initialScale + delta));
+            img.style.transform = `scale(${scale}) translate(${translateX}px, ${translateY}px)`;
+            img.style.cursor = scale > 1 ? 'grab' : 'default';
+        }
+    };
+    
+    img.ontouchend = () => {
+        isTouching = false;
+    };
+    
+    // إعادة ضبط التكبير عند النقر المزدوج
+    img.ondblclick = (e) => {
+        e.stopPropagation();
+        scale = 1;
+        translateX = 0;
+        translateY = 0;
+        img.style.transform = `scale(1) translate(0px, 0px)`;
+        img.style.cursor = 'default';
+    };
+    
+    // إغلاق عند النقر على الخلفية
+    overlay.onclick = (e) => {
+        if (e.target === overlay || e.target === imgContainer) {
+            closeImageZoom();
+        }
+    };
+    
+    // إغلاق بالضغط على Esc
+    const escHandler = (e) => {
+        if (e.key === 'Escape' && document.getElementById('imageZoomOverlay')) {
+            closeImageZoom();
+        }
+    };
+    document.addEventListener('keydown', escHandler);
+    
+    // تجميع العناصر
+    imgContainer.appendChild(img);
+    overlay.appendChild(closeBtn);
+    overlay.appendChild(titleEl);
+    overlay.appendChild(imgContainer);
+    document.body.appendChild(overlay);
+    
+    // منع التمرير في الخلفية
+    document.body.style.overflow = 'hidden';
+}
+
+function closeImageZoom() {
+    const overlay = document.getElementById('imageZoomOverlay');
+    if (overlay) {
+        overlay.style.opacity = '0';
+        overlay.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => {
+            overlay.remove();
+            document.body.style.overflow = '';
+        }, 300);
+    }
+    document.removeEventListener('keydown', closeImageZoom._escHandler);
+}
+window.openImageZoom = openImageZoom;
+window.closeImageZoom = closeImageZoom;
 
 function closeFileViewer() {
     const backBtn = document.getElementById('backBtn');
@@ -3576,7 +3854,8 @@ console.log('✅ تم تحميل منصة الأستاذ محمد بنجاح!');
 console.log('📁 Telegram Storage جاهز للعمل!');
 console.log('🤖 Bot Token:', TELEGRAM_BOT_TOKEN);
 console.log('📢 Chat ID:', TELEGRAM_CHAT_ID);
-console.log('🏛️ تم استبدال أيقونة المسؤول بعبارة "الإدارة"');
+console.log('🖼️ تم إضافة ميزة تكبير الصور مع دعم السحب والتمرير');
+console.log('📱 ميزة تكبير الصور تعمل على الهواتف والأجهزة اللوحية');
 console.log('🔒 المحتوى مقيد حسب مرحلة كل مستخدم');
 console.log('📝 إضافة خيار اختيار المرحلة عند طلب التسجيل (للأعضاء فقط)');
 console.log('🔗 روابط المجتمع مقيدة حسب مرحلة المستخدم');
