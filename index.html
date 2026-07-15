@@ -2910,6 +2910,8 @@ async function showLessonContent(id, title, url, download, type) {
     var isDriveFile = false;
     var fileId = null;
     var isUpdated = false;
+    var retryCount = 0;
+    var maxRetries = 2;
 
     // 1. استخراج معرف Google Drive إن وجد
     if (isGoogleDrive) {
@@ -2921,20 +2923,26 @@ async function showLessonContent(id, title, url, download, type) {
         }
     }
 
-    // 2. إذا كان الملف من Telegram، حاول تجديد الرابط
+    // 2. إذا كان الملف من Telegram، حاول تجديد الرابط مع إعادة المحاولة
     if (isTelegramFile) {
         try {
             var lessonData = await getLessonFromDatabase(id);
             if (lessonData && lessonData.file_info && lessonData.file_info.file_id) {
-                var freshUrl = await getFreshTelegramUrl(lessonData.file_info.file_id);
-                if (freshUrl && freshUrl !== displayUrl) {
-                    displayUrl = freshUrl;
-                    downloadUrl = freshUrl;
-                    await database.ref('lessons/' + id + '/file_info/url').set(freshUrl);
-                    await database.ref('lessons/' + id + '/internal_url').set(freshUrl);
-                    await database.ref('lessons/' + id + '/download_url').set(freshUrl);
-                    isUpdated = true;
-                    console.log('✅ تم تحديث رابط الملف في قاعدة البيانات');
+                while (retryCount < maxRetries) {
+                    var freshUrl = await getFreshTelegramUrl(lessonData.file_info.file_id);
+                    if (freshUrl && freshUrl !== displayUrl && freshUrl !== '') {
+                        displayUrl = freshUrl;
+                        downloadUrl = freshUrl;
+                        await database.ref('lessons/' + id + '/file_info/url').set(freshUrl);
+                        await database.ref('lessons/' + id + '/internal_url').set(freshUrl);
+                        await database.ref('lessons/' + id + '/download_url').set(freshUrl);
+                        isUpdated = true;
+                        console.log('✅ تم تحديث رابط الملف في قاعدة البيانات');
+                        break;
+                    }
+                    retryCount++;
+                    console.log('🔄 محاولة رقم ' + retryCount + ' لتحديث الرابط');
+                    await new Promise(resolve => setTimeout(resolve, 500));
                 }
             }
         } catch(e) {
@@ -2962,10 +2970,7 @@ async function showLessonContent(id, title, url, download, type) {
             viewerUrl = 'https://drive.google.com/file/d/' + fileId + '/preview';
         }
         
-        if (!displayUrl || displayUrl === '' || displayUrl === '#' || displayUrl === 'undefined') {
-            displayUrl = '#';
-            viewerUrl = '#';
-        }
+        var isLinkValid = viewerUrl && viewerUrl !== '' && viewerUrl !== '#' && viewerUrl !== 'undefined';
         
         contentHtml = '<div style="background:var(--bg-white); border-radius:20px; padding:20px; margin:10px 0; box-shadow:var(--shadow-md);">' +
             '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:2px solid var(--secondary); padding-bottom:10px; flex-wrap:wrap;">' +
@@ -2976,35 +2981,23 @@ async function showLessonContent(id, title, url, download, type) {
             '</div></div>' +
             '<div style="min-height:350px; background:#f5f5f5; border-radius:12px; overflow:hidden; position:relative;">';
         
-        if (viewerUrl && viewerUrl !== '#' && viewerUrl !== 'undefined') {
+        if (isLinkValid) {
             contentHtml += '<iframe src="' + sanitizeHtml(viewerUrl) + '" class="pdf-viewer" style="width:100%; height:65vh; border:none; border-radius:12px; min-height:350px;" allowfullscreen loading="lazy"></iframe>';
         } else {
             contentHtml += '<div style="display:flex; justify-content:center; align-items:center; min-height:350px; flex-direction:column; padding:20px; text-align:center;">' +
                 '<i class="fas fa-file-pdf" style="font-size:4rem; color:#dc2626; margin-bottom:16px;"></i>' +
-                '<p style="color:var(--text-secondary); font-size:1rem;">⚠️ لا يمكن عرض الملف مباشرة</p>' +
-                '<p style="color:var(--text-muted); font-size:0.8rem; margin-top:8px;">' +
-                (isTelegramFile ? '📁 الملف من Telegram، قد يكون الرابط منتهي الصلاحية' : '') +
-                (isDriveFile ? '📁 الملف من Google Drive' : '') +
-                (!isTelegramFile && !isDriveFile ? '📄 ملف PDF' : '') +
-                '</p>' +
-                '<div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; justify-content:center;">' +
+                '<p style="color:var(--text-secondary); font-size:1rem; font-weight:700;">⚠️ تعذر تحميل الملف</p>' +
+                '<p style="color:var(--text-muted); font-size:0.9rem; margin-top:8px; max-width:400px;">قد يكون الرابط منتهي الصلاحية</p>' +
+                '<div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; justify-content:center;">' +
                 '<button class="btn btn-success" onclick="window.open(\'' + sanitizeHtml(downloadUrl) + '\', \'_blank\')" style="padding:8px 20px;"><i class="fas fa-download"></i> تحميل الملف</button>' +
                 '<button class="btn btn-primary" onclick="location.reload()" style="padding:8px 20px; background:#3b82f6; color:white;"><i class="fas fa-sync"></i> إعادة المحاولة</button>' +
-                '</div></div>';
+                '<button class="btn btn-primary" onclick="showLessonContent(\'' + id + '\', \'' + sanitizeHtml(title) + '\', \'' + sanitizeHtml(url) + '\', \'' + sanitizeHtml(download) + '\', \'' + type + '\')" style="padding:8px 20px; background:#f59e0b; color:white;"><i class="fas fa-redo"></i> تحديث الرابط</button>' +
+                '</div>' +
+                '<p style="color:var(--text-muted); font-size:0.7rem; margin-top:12px;">💡 استخدم زر <strong>"تحديث الرابط"</strong> لإعادة المحاولة</p>' +
+                '</div>';
         }
         
-        contentHtml += '</div>' +
-            '<div style="text-align:center; margin-top:12px; padding-top:12px; border-top:1px solid var(--border-color); font-size:0.7rem; color:var(--text-muted); display:flex; flex-wrap:wrap; justify-content:center; gap:8px;">' +
-            '<span><i class="fas fa-info-circle"></i> ' +
-            (isTelegramFile ? '📁 تم رفع الملف عبر Telegram' : '') +
-            (isDriveFile ? '📁 تم رفع الملف عبر Google Drive' : '') +
-            ((!isTelegramFile && !isDriveFile) ? '📄 ملف PDF' : '') +
-            (isUpdated ? ' 🔄 تم تحديث الرابط' : '') +
-            '</span>' +
-            (isDriveFile ? '<span><i class="fas fa-google-drive" style="color:#4285f4;"></i> Google Drive</span>' : '') +
-            (isTelegramFile ? '<span><i class="fab fa-telegram" style="color:#0088cc;"></i> Telegram</span>' : '') +
-            (!isDriveFile && !isTelegramFile ? '<span><i class="fas fa-google" style="color:#4285f4;"></i> Google Docs Viewer</span>' : '') +
-            '</div></div>';
+        contentHtml += '</div></div>';
     }
     
     // ===== معالجة الصور مع ميزة التكبير =====
@@ -3021,19 +3014,22 @@ async function showLessonContent(id, title, url, download, type) {
             '<div style="min-height:250px; text-align:center; background:#f5f5f5; border-radius:12px; padding:20px;">';
         
         if (isValidImageUrl) {
-            contentHtml += '<img src="' + sanitizeHtml(displayUrl) + '" style="max-width:100%; max-height:55vh; border-radius:12px; display:inline-block; margin:0 auto; cursor:pointer; transition:transform 0.2s ease, box-shadow 0.2s ease;" alt="' + sanitizeHtml(title) + '" onclick="openImageZoom(\'' + sanitizeHtml(displayUrl) + '\', \'' + sanitizeHtml(title) + '\')" onmouseover="this.style.boxShadow=\'0 4px 20px rgba(0,0,0,0.2)\'; this.style.transform=\'scale(1.02)\';" onmouseout="this.style.boxShadow=\'none\'; this.style.transform=\'scale(1)\';" onerror="this.parentElement.innerHTML=\'<div style=\\\'padding:40px; color:#999;\\\'><i class=\\\'fas fa-image\\\' style=\\\'font-size:3rem; display:block; margin-bottom:10px;\\\'></i><p>⚠️ تعذر تحميل الصورة</p><p style=\\\'font-size:0.8rem; color:#999;\\\'>' + (isTelegramFile ? '📁 قد يكون رابط Telegram منتهي الصلاحية، حاول مرة أخرى' : '') + '</p><button class=\\\'btn btn-success\\\' onclick=\\\'window.open(\\\'' + sanitizeHtml(downloadUrl) + '\\\', \\\'_blank\\\')\\\' style=\\\'margin-top:10px;\\\'>📥 تحميل الصورة</button><button class=\\\'btn btn-primary\\\' onclick=\\\'location.reload()\\\' style=\\\'margin-top:10px; background:#3b82f6; color:white;\\\'><i class=\\\'fas fa-sync\\\'></i> إعادة المحاولة</button></div>\'">';
+            contentHtml += '<img src="' + sanitizeHtml(displayUrl) + '" style="max-width:100%; max-height:55vh; border-radius:12px; display:inline-block; margin:0 auto; cursor:pointer; transition:transform 0.2s ease, box-shadow 0.2s ease;" alt="' + sanitizeHtml(title) + '" onclick="openImageZoom(\'' + sanitizeHtml(displayUrl) + '\', \'' + sanitizeHtml(title) + '\')" onmouseover="this.style.boxShadow=\'0 4px 20px rgba(0,0,0,0.2)\'; this.style.transform=\'scale(1.02)\';" onmouseout="this.style.boxShadow=\'none\'; this.style.transform=\'scale(1)\';" onerror="this.parentElement.innerHTML=\'<div style=\\\'padding:40px; color:#999;\\\'><i class=\\\'fas fa-image\\\' style=\\\'font-size:3rem; display:block; margin-bottom:10px;\\\'></i><p style=\\\'color:var(--text-secondary); font-weight:700;\\\'>⚠️ تعذر تحميل الصورة</p><p style=\\\'color:var(--text-muted); font-size:0.8rem;\\\'>قد يكون الرابط منتهي الصلاحية</p><button class=\\\'btn btn-success\\\' onclick=\\\'window.open(\\\'' + sanitizeHtml(downloadUrl) + '\\\', \\\'_blank\\\')\\\' style=\\\'margin-top:10px;\\\'><i class=\\\'fas fa-download\\\'></i> تحميل</button><button class=\\\'btn btn-primary\\\' onclick=\\\'location.reload()\\\' style=\\\'margin-top:10px; background:#3b82f6; color:white;\\\'><i class=\\\'fas fa-sync\\\'></i> إعادة المحاولة</button><button class=\\\'btn btn-primary\\\' onclick=\\\'showLessonContent(\\\'' + id + '\\\', \\\'' + sanitizeHtml(title) + '\\\', \\\'' + sanitizeHtml(url) + '\\\', \\\'' + sanitizeHtml(download) + '\\\', \\\'' + type + '\\\')\\\' style=\\\'margin-top:10px; background:#f59e0b; color:white;\\\'><i class=\\\'fas fa-redo\\\'></i> تحديث الرابط</button></div>\'">';
         } else {
             contentHtml += '<div style="display:flex; justify-content:center; align-items:center; min-height:250px; flex-direction:column; padding:20px; text-align:center;">' +
                 '<i class="fas fa-image" style="font-size:3rem; color:#dc2626; margin-bottom:16px;"></i>' +
-                '<p style="color:var(--text-secondary); font-size:1rem;">⚠️ لا يمكن عرض الصورة</p>' +
-                '<p style="color:var(--text-muted); font-size:0.8rem; margin-top:8px;">' + (isTelegramFile ? '📁 قد يكون رابط Telegram منتهي الصلاحية' : '📄 رابط الصورة غير صالح') + '</p>' +
-                '<button class="btn btn-success" onclick="window.open(\'' + sanitizeHtml(downloadUrl) + '\', \'_blank\')" style="margin-top:10px; padding:8px 20px;"><i class="fas fa-download"></i> تحميل الصورة</button>' +
-                '<button class="btn btn-primary" onclick="location.reload()" style="margin-top:10px; padding:8px 20px; background:#3b82f6; color:white;"><i class="fas fa-sync"></i> إعادة المحاولة</button>' +
+                '<p style="color:var(--text-secondary); font-size:1rem; font-weight:700;">⚠️ تعذر تحميل الصورة</p>' +
+                '<p style="color:var(--text-muted); font-size:0.9rem; margin-top:8px; max-width:400px;">قد يكون الرابط منتهي الصلاحية</p>' +
+                '<div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; justify-content:center;">' +
+                '<button class="btn btn-success" onclick="window.open(\'' + sanitizeHtml(downloadUrl) + '\', \'_blank\')" style="padding:8px 20px;"><i class="fas fa-download"></i> تحميل الصورة</button>' +
+                '<button class="btn btn-primary" onclick="location.reload()" style="padding:8px 20px; background:#3b82f6; color:white;"><i class="fas fa-sync"></i> إعادة المحاولة</button>' +
+                '<button class="btn btn-primary" onclick="showLessonContent(\'' + id + '\', \'' + sanitizeHtml(title) + '\', \'' + sanitizeHtml(url) + '\', \'' + sanitizeHtml(download) + '\', \'' + type + '\')" style="padding:8px 20px; background:#f59e0b; color:white;"><i class="fas fa-redo"></i> تحديث الرابط</button>' +
+                '</div>' +
+                '<p style="color:var(--text-muted); font-size:0.7rem; margin-top:12px;">💡 استخدم زر <strong>"تحديث الرابط"</strong> لإعادة المحاولة</p>' +
                 '</div>';
         }
         
-        contentHtml += (isUpdated ? '<div style="text-align:center; margin-top:4px; font-size:0.6rem; color:#10b981;">✅ تم تحديث الرابط</div>' : '') +
-            '</div></div>';
+        contentHtml += '</div></div>';
     }
     
     // الروابط الخارجية
