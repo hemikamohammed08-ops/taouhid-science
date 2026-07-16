@@ -2884,7 +2884,7 @@ async function showLessonContent(id, title, url, download, type) {
     currentViewingFile = id;
     currentViewingLesson = { id: id, title: title, url: url, download: download, type: type };
     
-    // ===== عرض مؤشر التحميل =====
+    // ===== عرض مؤشر التحميل (تم تعديل النص) =====
     container.innerHTML = `
         <div style="display:flex; justify-content:center; align-items:center; min-height:300px; flex-direction:column; gap:16px;">
             <div style="width:50px; height:50px; border:5px solid var(--bg-body); border-top:5px solid var(--primary); border-radius:50%; animation: spin 0.8s linear infinite;"></div>
@@ -2892,7 +2892,7 @@ async function showLessonContent(id, title, url, download, type) {
                 ⏳ جاري تحميل الملف...
             </p>
             <p style="color:var(--text-muted); font-size:0.8rem;">
-                ${url && url.includes('api.telegram.org/file/bot') ? '📁 جاري تجديد الرابط من Telegram' : '📄 جاري تجهيز الملف'}
+                📁 جاري تجهيز الملف للعرض
             </p>
         </div>
     `;
@@ -2911,7 +2911,7 @@ async function showLessonContent(id, title, url, download, type) {
     var fileId = null;
     var isUpdated = false;
     var retryCount = 0;
-    var maxRetries = 2;
+    var maxRetries = 3; // زيادة عدد محاولات التحديث التلقائي
 
     // 1. استخراج معرف Google Drive إن وجد
     if (isGoogleDrive) {
@@ -2923,7 +2923,7 @@ async function showLessonContent(id, title, url, download, type) {
         }
     }
 
-    // 2. إذا كان الملف من Telegram، حاول تجديد الرابط مع إعادة المحاولة
+    // 2. إذا كان الملف من Telegram، حاول تجديد الرابط تلقائياً
     if (isTelegramFile) {
         try {
             var lessonData = await getLessonFromDatabase(id);
@@ -2933,6 +2933,7 @@ async function showLessonContent(id, title, url, download, type) {
                     if (freshUrl && freshUrl !== displayUrl && freshUrl !== '') {
                         displayUrl = freshUrl;
                         downloadUrl = freshUrl;
+                        // تحديث قاعدة البيانات بالرابط الجديد
                         await database.ref('lessons/' + id + '/file_info/url').set(freshUrl);
                         await database.ref('lessons/' + id + '/internal_url').set(freshUrl);
                         await database.ref('lessons/' + id + '/download_url').set(freshUrl);
@@ -2958,7 +2959,7 @@ async function showLessonContent(id, title, url, download, type) {
 
     var contentHtml = '';
     
-    // ===== معالجة PDF (عبر Google Docs Viewer) =====
+    // ===== معالجة PDF =====
     if (isPDF) {
         var viewerUrl = displayUrl;
         
@@ -2984,23 +2985,41 @@ async function showLessonContent(id, title, url, download, type) {
         if (isLinkValid) {
             contentHtml += '<iframe src="' + sanitizeHtml(viewerUrl) + '" class="pdf-viewer" style="width:100%; height:65vh; border:none; border-radius:12px; min-height:350px;" allowfullscreen loading="lazy"></iframe>';
         } else {
+            // في حالة فشل التحميل، نعرض رسالة وأزرار إعادة المحاولة مع محاولة تجديد الرابط تلقائياً
             contentHtml += '<div style="display:flex; justify-content:center; align-items:center; min-height:350px; flex-direction:column; padding:20px; text-align:center;">' +
                 '<i class="fas fa-file-pdf" style="font-size:4rem; color:#dc2626; margin-bottom:16px;"></i>' +
                 '<p style="color:var(--text-secondary); font-size:1rem; font-weight:700;">⚠️ تعذر تحميل الملف</p>' +
-                '<p style="color:var(--text-muted); font-size:0.9rem; margin-top:8px; max-width:400px;">قد يكون الرابط منتهي الصلاحية</p>' +
+                '<p style="color:var(--text-muted); font-size:0.9rem; margin-top:8px; max-width:400px;">جاري محاولة تحديث الرابط تلقائياً...</p>' +
                 '<div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; justify-content:center;">' +
                 '<button class="btn btn-success" onclick="window.open(\'' + sanitizeHtml(downloadUrl) + '\', \'_blank\')" style="padding:8px 20px;"><i class="fas fa-download"></i> تحميل الملف</button>' +
                 '<button class="btn btn-primary" onclick="location.reload()" style="padding:8px 20px; background:#3b82f6; color:white;"><i class="fas fa-sync"></i> إعادة المحاولة</button>' +
-                '<button class="btn btn-primary" onclick="showLessonContent(\'' + id + '\', \'' + sanitizeHtml(title) + '\', \'' + sanitizeHtml(url) + '\', \'' + sanitizeHtml(download) + '\', \'' + type + '\')" style="padding:8px 20px; background:#f59e0b; color:white;"><i class="fas fa-redo"></i> تحديث الرابط</button>' +
                 '</div>' +
-                '<p style="color:var(--text-muted); font-size:0.7rem; margin-top:12px;">💡 استخدم زر <strong>"تحديث الرابط"</strong> لإعادة المحاولة</p>' +
+                '<p style="color:var(--text-muted); font-size:0.7rem; margin-top:12px;">💡 سيتم تحديث الرابط تلقائياً عند إعادة المحاولة</p>' +
                 '</div>';
+                
+            // محاولة تجديد الرابط تلقائياً مرة أخرى بعد عرض الرسالة
+            if (isTelegramFile) {
+                setTimeout(async function() {
+                    try {
+                        var lessonData = await getLessonFromDatabase(id);
+                        if (lessonData && lessonData.file_info && lessonData.file_info.file_id) {
+                            var freshUrl = await getFreshTelegramUrl(lessonData.file_info.file_id);
+                            if (freshUrl && freshUrl !== '') {
+                                await database.ref('lessons/' + id + '/file_info/url').set(freshUrl);
+                                await database.ref('lessons/' + id + '/internal_url').set(freshUrl);
+                                await database.ref('lessons/' + id + '/download_url').set(freshUrl);
+                                showSuccess('✅ تم تحديث الرابط تلقائياً، قم بإعادة المحاولة');
+                            }
+                        }
+                    } catch(e) { /* تجاهل */ }
+                }, 1000);
+            }
         }
         
         contentHtml += '</div></div>';
     }
     
-    // ===== معالجة الصور مع ميزة التكبير =====
+    // ===== معالجة الصور =====
     else if (isImage) {
         var isValidImageUrl = displayUrl && displayUrl !== '' && displayUrl !== '#' && displayUrl !== 'undefined';
         
@@ -3014,19 +3033,53 @@ async function showLessonContent(id, title, url, download, type) {
             '<div style="min-height:250px; text-align:center; background:#f5f5f5; border-radius:12px; padding:20px;">';
         
         if (isValidImageUrl) {
-            contentHtml += '<img src="' + sanitizeHtml(displayUrl) + '" style="max-width:100%; max-height:55vh; border-radius:12px; display:inline-block; margin:0 auto; cursor:pointer; transition:transform 0.2s ease, box-shadow 0.2s ease;" alt="' + sanitizeHtml(title) + '" onclick="openImageZoom(\'' + sanitizeHtml(displayUrl) + '\', \'' + sanitizeHtml(title) + '\')" onmouseover="this.style.boxShadow=\'0 4px 20px rgba(0,0,0,0.2)\'; this.style.transform=\'scale(1.02)\';" onmouseout="this.style.boxShadow=\'none\'; this.style.transform=\'scale(1)\';" onerror="this.parentElement.innerHTML=\'<div style=\\\'padding:40px; color:#999;\\\'><i class=\\\'fas fa-image\\\' style=\\\'font-size:3rem; display:block; margin-bottom:10px;\\\'></i><p style=\\\'color:var(--text-secondary); font-weight:700;\\\'>⚠️ تعذر تحميل الصورة</p><p style=\\\'color:var(--text-muted); font-size:0.8rem;\\\'>قد يكون الرابط منتهي الصلاحية</p><button class=\\\'btn btn-success\\\' onclick=\\\'window.open(\\\'' + sanitizeHtml(downloadUrl) + '\\\', \\\'_blank\\\')\\\' style=\\\'margin-top:10px;\\\'><i class=\\\'fas fa-download\\\'></i> تحميل</button><button class=\\\'btn btn-primary\\\' onclick=\\\'location.reload()\\\' style=\\\'margin-top:10px; background:#3b82f6; color:white;\\\'><i class=\\\'fas fa-sync\\\'></i> إعادة المحاولة</button><button class=\\\'btn btn-primary\\\' onclick=\\\'showLessonContent(\\\'' + id + '\\\', \\\'' + sanitizeHtml(title) + '\\\', \\\'' + sanitizeHtml(url) + '\\\', \\\'' + sanitizeHtml(download) + '\\\', \\\'' + type + '\\\')\\\' style=\\\'margin-top:10px; background:#f59e0b; color:white;\\\'><i class=\\\'fas fa-redo\\\'></i> تحديث الرابط</button></div>\'">';
+            contentHtml += '<img src="' + sanitizeHtml(displayUrl) + '" style="max-width:100%; max-height:55vh; border-radius:12px; display:inline-block; margin:0 auto; cursor:pointer; transition:transform 0.2s ease, box-shadow 0.2s ease;" alt="' + sanitizeHtml(title) + '" onclick="openImageZoom(\'' + sanitizeHtml(displayUrl) + '\', \'' + sanitizeHtml(title) + '\')" onmouseover="this.style.boxShadow=\'0 4px 20px rgba(0,0,0,0.2)\'; this.style.transform=\'scale(1.02)\';" onmouseout="this.style.boxShadow=\'none\'; this.style.transform=\'scale(1)\';" onerror="this.parentElement.innerHTML=\'<div style=\\\'padding:40px; color:#999;\\\'><i class=\\\'fas fa-image\\\' style=\\\'font-size:3rem; display:block; margin-bottom:10px;\\\'></i><p style=\\\'color:var(--text-secondary); font-weight:700;\\\'>⚠️ تعذر تحميل الصورة</p><p style=\\\'color:var(--text-muted); font-size:0.8rem;\\\'>جاري محاولة تحديث الرابط تلقائياً...</p><button class=\\\'btn btn-success\\\' onclick=\\\'window.open(\\\'' + sanitizeHtml(downloadUrl) + '\\\', \\\'_blank\\\')\\\' style=\\\'margin-top:10px;\\\'><i class=\\\'fas fa-download\\\'></i> تحميل</button><button class=\\\'btn btn-primary\\\' onclick=\\\'location.reload()\\\' style=\\\'margin-top:10px; background:#3b82f6; color:white;\\\'><i class=\\\'fas fa-sync\\\'></i> إعادة المحاولة</button></div>\'">';
+                
+            // محاولة تجديد الرابط تلقائياً للصور
+            if (isTelegramFile) {
+                setTimeout(async function() {
+                    try {
+                        var lessonData = await getLessonFromDatabase(id);
+                        if (lessonData && lessonData.file_info && lessonData.file_info.file_id) {
+                            var freshUrl = await getFreshTelegramUrl(lessonData.file_info.file_id);
+                            if (freshUrl && freshUrl !== '') {
+                                await database.ref('lessons/' + id + '/file_info/url').set(freshUrl);
+                                await database.ref('lessons/' + id + '/internal_url').set(freshUrl);
+                                await database.ref('lessons/' + id + '/download_url').set(freshUrl);
+                                showSuccess('✅ تم تحديث الرابط تلقائياً، قم بإعادة المحاولة');
+                            }
+                        }
+                    } catch(e) { /* تجاهل */ }
+                }, 1000);
+            }
         } else {
             contentHtml += '<div style="display:flex; justify-content:center; align-items:center; min-height:250px; flex-direction:column; padding:20px; text-align:center;">' +
                 '<i class="fas fa-image" style="font-size:3rem; color:#dc2626; margin-bottom:16px;"></i>' +
                 '<p style="color:var(--text-secondary); font-size:1rem; font-weight:700;">⚠️ تعذر تحميل الصورة</p>' +
-                '<p style="color:var(--text-muted); font-size:0.9rem; margin-top:8px; max-width:400px;">قد يكون الرابط منتهي الصلاحية</p>' +
+                '<p style="color:var(--text-muted); font-size:0.9rem; margin-top:8px; max-width:400px;">جاري محاولة تحديث الرابط تلقائياً...</p>' +
                 '<div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; justify-content:center;">' +
                 '<button class="btn btn-success" onclick="window.open(\'' + sanitizeHtml(downloadUrl) + '\', \'_blank\')" style="padding:8px 20px;"><i class="fas fa-download"></i> تحميل الصورة</button>' +
                 '<button class="btn btn-primary" onclick="location.reload()" style="padding:8px 20px; background:#3b82f6; color:white;"><i class="fas fa-sync"></i> إعادة المحاولة</button>' +
-                '<button class="btn btn-primary" onclick="showLessonContent(\'' + id + '\', \'' + sanitizeHtml(title) + '\', \'' + sanitizeHtml(url) + '\', \'' + sanitizeHtml(download) + '\', \'' + type + '\')" style="padding:8px 20px; background:#f59e0b; color:white;"><i class="fas fa-redo"></i> تحديث الرابط</button>' +
                 '</div>' +
-                '<p style="color:var(--text-muted); font-size:0.7rem; margin-top:12px;">💡 استخدم زر <strong>"تحديث الرابط"</strong> لإعادة المحاولة</p>' +
+                '<p style="color:var(--text-muted); font-size:0.7rem; margin-top:12px;">💡 سيتم تحديث الرابط تلقائياً عند إعادة المحاولة</p>' +
                 '</div>';
+                
+            if (isTelegramFile) {
+                setTimeout(async function() {
+                    try {
+                        var lessonData = await getLessonFromDatabase(id);
+                        if (lessonData && lessonData.file_info && lessonData.file_info.file_id) {
+                            var freshUrl = await getFreshTelegramUrl(lessonData.file_info.file_id);
+                            if (freshUrl && freshUrl !== '') {
+                                await database.ref('lessons/' + id + '/file_info/url').set(freshUrl);
+                                await database.ref('lessons/' + id + '/internal_url').set(freshUrl);
+                                await database.ref('lessons/' + id + '/download_url').set(freshUrl);
+                                showSuccess('✅ تم تحديث الرابط تلقائياً، قم بإعادة المحاولة');
+                            }
+                        }
+                    } catch(e) { /* تجاهل */ }
+                }, 1000);
+            }
         }
         
         contentHtml += '</div></div>';
