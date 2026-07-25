@@ -2866,7 +2866,7 @@ function renderLessonsList() {
 }
 
 // ============================================================
-// دالة عرض المحتوى (مع مؤشر تحميل وتحديث روابط Telegram)
+// دالة عرض المحتوى (مع زر تكبير للصور)
 // ============================================================
 async function showLessonContent(id, title, url, download, type) {
     var container = document.getElementById('lessonsContainer');
@@ -2884,7 +2884,7 @@ async function showLessonContent(id, title, url, download, type) {
     currentViewingFile = id;
     currentViewingLesson = { id: id, title: title, url: url, download: download, type: type };
     
-    // ===== عرض مؤشر التحميل (تم تعديل النص) =====
+    // ===== عرض مؤشر التحميل =====
     container.innerHTML = `
         <div style="display:flex; justify-content:center; align-items:center; min-height:300px; flex-direction:column; gap:16px;">
             <div style="width:50px; height:50px; border:5px solid var(--bg-body); border-top:5px solid var(--primary); border-radius:50%; animation: spin 0.8s linear infinite;"></div>
@@ -2897,7 +2897,6 @@ async function showLessonContent(id, title, url, download, type) {
         </div>
     `;
     
-    // تأخير لضمان ظهور مؤشر التحميل
     await new Promise(resolve => setTimeout(resolve, 500));
     
     var isTelegramFile = url && url.includes('api.telegram.org/file/bot');
@@ -2911,9 +2910,8 @@ async function showLessonContent(id, title, url, download, type) {
     var fileId = null;
     var isUpdated = false;
     var retryCount = 0;
-    var maxRetries = 3; // زيادة عدد محاولات التحديث التلقائي
+    var maxRetries = 3;
 
-    // 1. استخراج معرف Google Drive إن وجد
     if (isGoogleDrive) {
         fileId = extractGoogleDriveFileId(url);
         if (fileId) {
@@ -2923,7 +2921,6 @@ async function showLessonContent(id, title, url, download, type) {
         }
     }
 
-    // 2. إذا كان الملف من Telegram، حاول تجديد الرابط تلقائياً
     if (isTelegramFile) {
         try {
             var lessonData = await getLessonFromDatabase(id);
@@ -2933,7 +2930,6 @@ async function showLessonContent(id, title, url, download, type) {
                     if (freshUrl && freshUrl !== displayUrl && freshUrl !== '') {
                         displayUrl = freshUrl;
                         downloadUrl = freshUrl;
-                        // تحديث قاعدة البيانات بالرابط الجديد
                         await database.ref('lessons/' + id + '/file_info/url').set(freshUrl);
                         await database.ref('lessons/' + id + '/internal_url').set(freshUrl);
                         await database.ref('lessons/' + id + '/download_url').set(freshUrl);
@@ -2951,7 +2947,6 @@ async function showLessonContent(id, title, url, download, type) {
         }
     }
 
-    // التحقق من صحة الرابط
     if (!displayUrl || displayUrl === '' || displayUrl === 'undefined' || displayUrl === 'null') {
         displayUrl = '#';
         downloadUrl = '#';
@@ -2985,7 +2980,6 @@ async function showLessonContent(id, title, url, download, type) {
         if (isLinkValid) {
             contentHtml += '<iframe src="' + sanitizeHtml(viewerUrl) + '" class="pdf-viewer" style="width:100%; height:65vh; border:none; border-radius:12px; min-height:350px;" allowfullscreen loading="lazy"></iframe>';
         } else {
-            // في حالة فشل التحميل، نعرض رسالة وأزرار إعادة المحاولة مع محاولة تجديد الرابط تلقائياً
             contentHtml += '<div style="display:flex; justify-content:center; align-items:center; min-height:350px; flex-direction:column; padding:20px; text-align:center;">' +
                 '<i class="fas fa-file-pdf" style="font-size:4rem; color:#dc2626; margin-bottom:16px;"></i>' +
                 '<p style="color:var(--text-secondary); font-size:1rem; font-weight:700;">⚠️ تعذر تحميل الملف</p>' +
@@ -2997,7 +2991,6 @@ async function showLessonContent(id, title, url, download, type) {
                 '<p style="color:var(--text-muted); font-size:0.7rem; margin-top:12px;">💡 سيتم تحديث الرابط تلقائياً عند إعادة المحاولة</p>' +
                 '</div>';
                 
-            // محاولة تجديد الرابط تلقائياً مرة أخرى بعد عرض الرسالة
             if (isTelegramFile) {
                 setTimeout(async function() {
                     try {
@@ -3019,7 +3012,7 @@ async function showLessonContent(id, title, url, download, type) {
         contentHtml += '</div></div>';
     }
     
-    // ===== معالجة الصور =====
+    // ===== معالجة الصور مع زر تكبير =====
     else if (isImage) {
         var isValidImageUrl = displayUrl && displayUrl !== '' && displayUrl !== '#' && displayUrl !== 'undefined';
         
@@ -3027,6 +3020,7 @@ async function showLessonContent(id, title, url, download, type) {
             '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:2px solid var(--secondary); padding-bottom:10px; flex-wrap:wrap;">' +
             '<h3><i class="fas fa-image"></i> ' + sanitizeHtml(title) + '</h3>' +
             '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
+            (isValidImageUrl ? '<button class="btn btn-primary" onclick="openImageZoom(\'' + sanitizeHtml(displayUrl) + '\', \'' + sanitizeHtml(title) + '\')" style="padding:4px 16px; font-size:0.8rem; background:#8b5cf6; color:white;"><i class="fas fa-search-plus"></i> تكبير</button>' : '') +
             '<button class="btn btn-success" onclick="window.open(\'' + sanitizeHtml(downloadUrl) + '\', \'_blank\')" style="padding:4px 16px; font-size:0.8rem;"><i class="fas fa-download"></i> تحميل</button>' +
             '<button class="btn btn-danger" onclick="closeFileViewer()" style="padding:4px 16px; font-size:0.8rem;"><i class="fas fa-times"></i> إغلاق</button>' +
             '</div></div>' +
@@ -3035,7 +3029,6 @@ async function showLessonContent(id, title, url, download, type) {
         if (isValidImageUrl) {
             contentHtml += '<img src="' + sanitizeHtml(displayUrl) + '" style="max-width:100%; max-height:55vh; border-radius:12px; display:inline-block; margin:0 auto; cursor:pointer; transition:transform 0.2s ease, box-shadow 0.2s ease;" alt="' + sanitizeHtml(title) + '" onclick="openImageZoom(\'' + sanitizeHtml(displayUrl) + '\', \'' + sanitizeHtml(title) + '\')" onmouseover="this.style.boxShadow=\'0 4px 20px rgba(0,0,0,0.2)\'; this.style.transform=\'scale(1.02)\';" onmouseout="this.style.boxShadow=\'none\'; this.style.transform=\'scale(1)\';" onerror="this.parentElement.innerHTML=\'<div style=\\\'padding:40px; color:#999;\\\'><i class=\\\'fas fa-image\\\' style=\\\'font-size:3rem; display:block; margin-bottom:10px;\\\'></i><p style=\\\'color:var(--text-secondary); font-weight:700;\\\'>⚠️ تعذر تحميل الصورة</p><p style=\\\'color:var(--text-muted); font-size:0.8rem;\\\'>جاري محاولة تحديث الرابط تلقائياً...</p><button class=\\\'btn btn-success\\\' onclick=\\\'window.open(\\\'' + sanitizeHtml(downloadUrl) + '\\\', \\\'_blank\\\')\\\' style=\\\'margin-top:10px;\\\'><i class=\\\'fas fa-download\\\'></i> تحميل</button><button class=\\\'btn btn-primary\\\' onclick=\\\'location.reload()\\\' style=\\\'margin-top:10px; background:#3b82f6; color:white;\\\'><i class=\\\'fas fa-sync\\\'></i> إعادة المحاولة</button></div>\'">';
                 
-            // محاولة تجديد الرابط تلقائياً للصور
             if (isTelegramFile) {
                 setTimeout(async function() {
                     try {
@@ -3085,7 +3078,7 @@ async function showLessonContent(id, title, url, download, type) {
         contentHtml += '</div></div>';
     }
     
-    // الروابط الخارجية
+    // ===== الروابط الخارجية =====
     else {
         contentHtml = '<div style="background:var(--bg-white); border-radius:20px; padding:20px; margin:10px 0; box-shadow:var(--shadow-md);">' +
             '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:2px solid var(--secondary); padding-bottom:10px; flex-wrap:wrap;">' +
@@ -3107,7 +3100,7 @@ async function showLessonContent(id, title, url, download, type) {
 window.showLessonContent = showLessonContent;
 
 // ============================================================
-// دالة تكبير الصورة (Zoom)
+// دالة تكبير الصورة (Zoom) مع أزرار + و -
 // ============================================================
 function openImageZoom(imageUrl, title) {
     var existingZoom = document.getElementById('imageZoomOverlay');
@@ -3119,6 +3112,7 @@ function openImageZoom(imageUrl, title) {
     overlay.id = 'imageZoomOverlay';
     overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.92);backdrop-filter:blur(8px);z-index:100000;display:flex;justify-content:center;align-items:center;flex-direction:column;padding:20px;animation:fadeIn 0.3s ease;cursor:pointer;';
     
+    // زر الإغلاق
     var closeBtn = document.createElement('button');
     closeBtn.innerHTML = '<i class="fas fa-times"></i>';
     closeBtn.className = 'zoom-close-btn';
@@ -3148,6 +3142,69 @@ function openImageZoom(imageUrl, title) {
     img.alt = title || 'صورة مكبرة';
     img.style.cssText = 'max-width:100%;max-height:85vh;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.5);object-fit:contain;transition:transform 0.3s ease;user-select:none;-webkit-user-select:none;';
     
+    // ===== أزرار التحكم في التكبير والتصغير =====
+    var controlsContainer = document.createElement('div');
+    controlsContainer.style.cssText = 'position:absolute;bottom:30px;left:50%;transform:translateX(-50%);display:flex;gap:16px;z-index:100002;background:rgba(0,0,0,0.6);backdrop-filter:blur(10px);padding:10px 20px;border-radius:50px;border:1px solid rgba(255,255,255,0.15);';
+    
+    // زر تصغير (-)
+    var zoomOutBtn = document.createElement('button');
+    zoomOutBtn.innerHTML = '<i class="fas fa-minus"></i>';
+    zoomOutBtn.style.cssText = 'background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);color:white;border-radius:50%;width:40px;height:40px;font-size:1.2rem;cursor:pointer;transition:all 0.3s ease;display:flex;justify-content:center;align-items:center;font-weight:700;';
+    zoomOutBtn.onmouseover = function() { this.style.background = 'rgba(255,255,255,0.3)'; this.style.transform = 'scale(1.1)'; };
+    zoomOutBtn.onmouseout = function() { this.style.background = 'rgba(255,255,255,0.15)'; this.style.transform = 'scale(1)'; };
+    zoomOutBtn.onclick = function(e) {
+        e.stopPropagation();
+        scale = Math.max(0.5, scale - 0.2);
+        img.style.transform = 'scale(' + scale + ') translate(' + translateX + 'px, ' + translateY + 'px)';
+        img.style.cursor = scale > 1 ? 'grab' : 'default';
+        updateZoomInfo();
+    };
+    
+    // عرض نسبة التكبير
+    var zoomInfo = document.createElement('span');
+    zoomInfo.style.cssText = 'color:white;font-size:0.9rem;font-weight:700;min-width:50px;text-align:center;font-family:\'Tajawal\',sans-serif;';
+    zoomInfo.textContent = '100%';
+    
+    // زر تكبير (+)
+    var zoomInBtn = document.createElement('button');
+    zoomInBtn.innerHTML = '<i class="fas fa-plus"></i>';
+    zoomInBtn.style.cssText = 'background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);color:white;border-radius:50%;width:40px;height:40px;font-size:1.2rem;cursor:pointer;transition:all 0.3s ease;display:flex;justify-content:center;align-items:center;font-weight:700;';
+    zoomInBtn.onmouseover = function() { this.style.background = 'rgba(255,255,255,0.3)'; this.style.transform = 'scale(1.1)'; };
+    zoomInBtn.onmouseout = function() { this.style.background = 'rgba(255,255,255,0.15)'; this.style.transform = 'scale(1)'; };
+    zoomInBtn.onclick = function(e) {
+        e.stopPropagation();
+        scale = Math.min(3, scale + 0.2);
+        img.style.transform = 'scale(' + scale + ') translate(' + translateX + 'px, ' + translateY + 'px)';
+        img.style.cursor = scale > 1 ? 'grab' : 'default';
+        updateZoomInfo();
+    };
+    
+    // زر إعادة ضبط (100%)
+    var resetBtn = document.createElement('button');
+    resetBtn.innerHTML = '<i class="fas fa-undo"></i>';
+    resetBtn.style.cssText = 'background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);color:white;border-radius:50%;width:40px;height:40px;font-size:1rem;cursor:pointer;transition:all 0.3s ease;display:flex;justify-content:center;align-items:center;';
+    resetBtn.onmouseover = function() { this.style.background = 'rgba(255,255,255,0.3)'; this.style.transform = 'scale(1.1)'; };
+    resetBtn.onmouseout = function() { this.style.background = 'rgba(255,255,255,0.15)'; this.style.transform = 'scale(1)'; };
+    resetBtn.title = 'إعادة ضبط';
+    resetBtn.onclick = function(e) {
+        e.stopPropagation();
+        scale = 1;
+        translateX = 0;
+        translateY = 0;
+        img.style.transform = 'scale(1) translate(0px, 0px)';
+        img.style.cursor = 'default';
+        updateZoomInfo();
+    };
+    
+    controlsContainer.appendChild(zoomOutBtn);
+    controlsContainer.appendChild(zoomInfo);
+    controlsContainer.appendChild(zoomInBtn);
+    controlsContainer.appendChild(resetBtn);
+    
+    function updateZoomInfo() {
+        zoomInfo.textContent = Math.round(scale * 100) + '%';
+    }
+    
     var scale = 1;
     var isDragging = false;
     var startX, startY, translateX = 0, translateY = 0;
@@ -3158,6 +3215,7 @@ function openImageZoom(imageUrl, title) {
         scale = Math.max(0.5, Math.min(3, scale + delta));
         img.style.transform = 'scale(' + scale + ') translate(' + translateX + 'px, ' + translateY + 'px)';
         img.style.cursor = scale > 1 ? 'grab' : 'default';
+        updateZoomInfo();
     };
     
     img.onmousedown = function(e) {
@@ -3219,6 +3277,7 @@ function openImageZoom(imageUrl, title) {
             scale = Math.max(0.5, Math.min(3, initialScale + delta));
             img.style.transform = 'scale(' + scale + ') translate(' + translateX + 'px, ' + translateY + 'px)';
             img.style.cursor = scale > 1 ? 'grab' : 'default';
+            updateZoomInfo();
         }
     };
     
@@ -3233,6 +3292,7 @@ function openImageZoom(imageUrl, title) {
         translateY = 0;
         img.style.transform = 'scale(1) translate(0px, 0px)';
         img.style.cursor = 'default';
+        updateZoomInfo();
     };
     
     overlay.onclick = function(e) {
@@ -3248,7 +3308,15 @@ function openImageZoom(imageUrl, title) {
     };
     document.addEventListener('keydown', escHandler);
     
+    // منع تمرير الصفحة عند التكبير
+    overlay.addEventListener('touchmove', function(e) {
+        if (e.target === overlay || e.target === imgContainer) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+    
     imgContainer.appendChild(img);
+    imgContainer.appendChild(controlsContainer);
     overlay.appendChild(closeBtn);
     overlay.appendChild(titleEl);
     overlay.appendChild(imgContainer);
