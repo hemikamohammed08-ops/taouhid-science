@@ -923,20 +923,42 @@
         </div>
     </div>
 
+    <!-- قسم Telegram مع إمكانية التحديث -->
     <div id="telegramSection" style="margin-top:12px;">
         <h5><i class="fab fa-telegram-plane"></i> إعدادات Telegram</h5>
         <div style="background:var(--bg-body); border-radius:12px; padding:10px;">
             <div class="form-group">
                 <label>توكن البوت (Bot Token):</label>
-                <input type="text" id="telegramBotToken" value="8868951987:AAFYxGJOUxHN6ql-3GsJ3Our01I-7mkMAIk" dir="ltr" readonly style="background:#e8f5e9; color:#1a4a8a; font-weight:700;">
+                <input type="text" id="telegramBotTokenDisplay" dir="ltr" readonly style="background:#e8f5e9; color:#1a4a8a; font-weight:700; width:100%; padding:8px 12px; border-radius:20px; border:1px solid var(--border-color);">
+                <small style="color:var(--text-muted); font-size:0.65rem;">🔒 يتم جلب التوكن تلقائياً من قاعدة البيانات</small>
             </div>
             <div class="form-group">
                 <label>معرف القناة (Chat ID):</label>
-                <input type="text" id="telegramChatId" value="-1004403757521" dir="ltr" readonly style="background:#e8f5e9; color:#1a4a8a; font-weight:700;">
+                <input type="text" id="telegramChatIdDisplay" dir="ltr" readonly style="background:#e8f5e9; color:#1a4a8a; font-weight:700; width:100%; padding:8px 12px; border-radius:20px; border:1px solid var(--border-color);">
             </div>
             <div style="font-size:0.7rem; color:var(--text-muted);">
                 ✅ Telegram Storage جاهز للعمل<br>
                 📁 جميع الملفات ترفع إلى قناة: <strong>الاستاذ محمد للتعليم</strong>
+            </div>
+            
+            <!-- قسم تحديث التوكن (للمسؤول فقط) -->
+            <hr style="margin:12px 0; border-color:var(--border-color);">
+            <div id="telegramUpdateSection" style="display:none;">
+                <h6 style="font-weight:700; color:var(--primary);">🔄 تحديث إعدادات Telegram</h6>
+                <div style="background:var(--bg-white); border-radius:10px; padding:12px; margin-top:8px;">
+                    <div class="form-group">
+                        <label>توكن جديد (Bot Token):</label>
+                        <input type="text" id="telegramBotTokenInput" dir="ltr" placeholder="أدخل التوكن الجديد" style="width:100%; padding:8px 12px; border-radius:20px; border:1px solid var(--border-color); background:var(--bg-body);">
+                    </div>
+                    <div class="form-group">
+                        <label>معرف القناة (Chat ID):</label>
+                        <input type="text" id="telegramChatIdInput" dir="ltr" placeholder="أدخل معرف القناة الجديد" style="width:100%; padding:8px 12px; border-radius:20px; border:1px solid var(--border-color); background:var(--bg-body);">
+                    </div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button onclick="updateTelegramToken()" style="background:#10b981; color:white; border:none; padding:6px 16px; border-radius:20px; cursor:pointer; font-weight:700;">💾 حفظ التغييرات</button>
+                        <span id="telegramLastUpdated" style="font-size:0.65rem; color:var(--text-muted); align-self:center;">آخر تحديث: غير معروف</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -983,14 +1005,159 @@ try {
 }
 
 // ============================================================
-// إعدادات Telegram Storage
+// إعدادات Telegram Storage (يتم جلبها من Firebase)
 // ============================================================
-var TELEGRAM_BOT_TOKEN = '8868951987:AAFYxGJOUxHN6ql-3GsJ3Our01I-7mkMAIk';
-var TELEGRAM_CHAT_ID = '-1004403757521';
-var TELEGRAM_API_URL = 'https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN;
+var TELEGRAM_BOT_TOKEN = null;
+var TELEGRAM_CHAT_ID = null;
+var TELEGRAM_API_URL = null;
 
 // ============================================================
-// المتغيرات العامة
+// دالة جلب إعدادات Telegram من Firebase
+// ============================================================
+async function loadTelegramSettings() {
+    if (!database) return;
+    try {
+        var snapshot = await database.ref('settings/telegram').once('value');
+        var data = snapshot.val();
+        if (data && data.botToken && data.chatId) {
+            TELEGRAM_BOT_TOKEN = data.botToken;
+            TELEGRAM_CHAT_ID = data.chatId;
+            TELEGRAM_API_URL = 'https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN;
+            console.log('✅ تم تحميل إعدادات Telegram من قاعدة البيانات');
+            updateTelegramSettingsUI();
+            return true;
+        } else {
+            // إذا لم توجد الإعدادات، نستخدم الإعدادات الافتراضية ونحفظها
+            TELEGRAM_BOT_TOKEN = '8868951987:AAFYxGJOUxHN6ql-3GsJ3Our01I-7mkMAIk';
+            TELEGRAM_CHAT_ID = '-1004403757521';
+            TELEGRAM_API_URL = 'https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN;
+            
+            // حفظ الإعدادات في Firebase
+            await database.ref('settings/telegram').set({
+                botToken: TELEGRAM_BOT_TOKEN,
+                chatId: TELEGRAM_CHAT_ID,
+                lastUpdated: Date.now()
+            });
+            console.log('✅ تم حفظ إعدادات Telegram في قاعدة البيانات');
+            updateTelegramSettingsUI();
+            return true;
+        }
+    } catch(e) {
+        console.error('Error loading Telegram settings:', e);
+        // استخدام الإعدادات الافتراضية في حالة الخطأ
+        TELEGRAM_BOT_TOKEN = '8868951987:AAFYxGJOUxHN6ql-3GsJ3Our01I-7mkMAIk';
+        TELEGRAM_CHAT_ID = '-1004403757521';
+        TELEGRAM_API_URL = 'https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN;
+        return false;
+    }
+}
+
+// ============================================================
+// دالة تحديث توكن Telegram من لوحة التحكم
+// ============================================================
+async function updateTelegramToken() {
+    if (!isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) {
+        showError('⚠️ غير مصرح لك - هذه الصلاحية للمسؤول فقط');
+        return;
+    }
+    
+    var newToken = document.getElementById('telegramBotTokenInput').value.trim();
+    var newChatId = document.getElementById('telegramChatIdInput').value.trim();
+    
+    if (!newToken) {
+        showWarning('⚠️ الرجاء إدخال التوكن الجديد');
+        return;
+    }
+    
+    if (!newChatId) {
+        showWarning('⚠️ الرجاء إدخال معرف القناة');
+        return;
+    }
+    
+    try {
+        // اختبار التوكن الجديد
+        var testUrl = 'https://api.telegram.org/bot' + newToken + '/getMe';
+        var response = await fetch(testUrl);
+        var result = await response.json();
+        
+        if (!result.ok) {
+            showError('❌ التوكن غير صالح، يرجى التحقق منه');
+            return;
+        }
+        
+        // حفظ الإعدادات الجديدة في Firebase
+        await database.ref('settings/telegram').set({
+            botToken: newToken,
+            chatId: newChatId,
+            lastUpdated: Date.now(),
+            updatedBy: currentUser.email
+        });
+        
+        // تحديث المتغيرات المحلية
+        TELEGRAM_BOT_TOKEN = newToken;
+        TELEGRAM_CHAT_ID = newChatId;
+        TELEGRAM_API_URL = 'https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN;
+        
+        // تحديث واجهة المستخدم
+        updateTelegramSettingsUI();
+        
+        showSuccess('✅ تم تحديث إعدادات Telegram بنجاح!');
+    } catch(e) {
+        showError('❌ فشل تحديث الإعدادات: ' + e.message);
+    }
+}
+window.updateTelegramToken = updateTelegramToken;
+
+// ============================================================
+// تحديث واجهة إعدادات Telegram
+// ============================================================
+function updateTelegramSettingsUI() {
+    var tokenDisplay = document.getElementById('telegramBotTokenDisplay');
+    var chatIdDisplay = document.getElementById('telegramChatIdDisplay');
+    var tokenInput = document.getElementById('telegramBotTokenInput');
+    var chatIdInput = document.getElementById('telegramChatIdInput');
+    var lastUpdated = document.getElementById('telegramLastUpdated');
+    var updateSection = document.getElementById('telegramUpdateSection');
+    
+    // إظهار قسم التحديث للمسؤول فقط
+    if (isAdminMode && currentUser?.email === MASTER_TEACHER_EMAIL) {
+        if (updateSection) updateSection.style.display = 'block';
+    } else {
+        if (updateSection) updateSection.style.display = 'none';
+    }
+    
+    if (tokenDisplay && TELEGRAM_BOT_TOKEN) {
+        // عرض أول 10 أحرف فقط مع نجوم
+        var masked = TELEGRAM_BOT_TOKEN.substring(0, 10) + '••••••••••••••••••••';
+        tokenDisplay.value = masked;
+        tokenDisplay.title = 'التوكن الحالي: ' + TELEGRAM_BOT_TOKEN;
+    }
+    
+    if (chatIdDisplay && TELEGRAM_CHAT_ID) {
+        chatIdDisplay.value = TELEGRAM_CHAT_ID;
+    }
+    
+    if (tokenInput && TELEGRAM_BOT_TOKEN) {
+        tokenInput.value = TELEGRAM_BOT_TOKEN;
+    }
+    
+    if (chatIdInput && TELEGRAM_CHAT_ID) {
+        chatIdInput.value = TELEGRAM_CHAT_ID;
+    }
+    
+    // جلب تاريخ آخر تحديث من Firebase
+    if (database) {
+        database.ref('settings/telegram/lastUpdated').once('value', function(snapshot) {
+            var date = snapshot.val();
+            if (date && lastUpdated) {
+                lastUpdated.textContent = 'آخر تحديث: ' + new Date(date).toLocaleString('ar');
+            }
+        });
+    }
+}
+
+// ============================================================
+// دوال مساعدة
 // ============================================================
 var MASTER_TEACHER_EMAIL = "hemikamohammed08@gmail.com";
 var FAKE_DOMAINS = ['tempmail.com', '10minutemail.com', 'guerrillamail.com', 'mailinator.com', 'yopmail.com', 'throwawaymail.com'];
@@ -1033,9 +1200,6 @@ var inviteLinks = {
     high: { telegram: "", facebook: "" }
 };
 
-// ============================================================
-// دوال مساعدة
-// ============================================================
 function escapeHtml(str) {
     if (!str) return '';
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
@@ -1220,6 +1384,14 @@ async function uploadFileToTelegram(file, caption) {
         throw new Error('لم يتم اختيار ملف');
     }
     
+    // التأكد من وجود التوكن
+    if (!TELEGRAM_BOT_TOKEN) {
+        await loadTelegramSettings();
+        if (!TELEGRAM_BOT_TOKEN) {
+            throw new Error('فشل تحميل إعدادات Telegram');
+        }
+    }
+    
     var allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
     var found = false;
     for (var i = 0; i < allowedTypes.length; i++) {
@@ -1268,7 +1440,22 @@ async function uploadFileToTelegram(file, caption) {
         var result = await response.json();
         
         if (!result.ok) {
-            throw new Error(result.description || 'فشل رفع الملف إلى Telegram');
+            // إذا فشل بسبب التوكن، حاول تحميله مرة أخرى
+            if (result.description && result.description.includes('bot token')) {
+                await loadTelegramSettings();
+                // إعادة المحاولة مرة واحدة
+                var retryResponse = await fetch(TELEGRAM_API_URL + '/sendDocument', {
+                    method: 'POST',
+                    body: formData
+                });
+                var retryResult = await retryResponse.json();
+                if (!retryResult.ok) {
+                    throw new Error(retryResult.description || 'فشل رفع الملف إلى Telegram');
+                }
+                result = retryResult;
+            } else {
+                throw new Error(result.description || 'فشل رفع الملف إلى Telegram');
+            }
         }
         
         var fileId, fileName, fileSize;
@@ -1311,9 +1498,6 @@ async function getTelegramFilePath(file_id) {
     return result.result.file_path;
 }
 
-// ============================================================
-// دالة الحصول على رابط ملف جديد من Telegram باستخدام file_id
-// ============================================================
 async function getFreshTelegramUrl(file_id) {
     if (!file_id) return null;
     try {
@@ -1595,7 +1779,7 @@ async function addJoinRequest(email, userType, stage) {
 }
 
 // ============================================================
-// دوال المصادقة الأخرى
+// دوال المصادقة الأخرى (مع التحقق من البريد)
 // ============================================================
 async function handleAdminLogin() {
     var email = document.getElementById('adminEmail').value.trim();
@@ -1674,6 +1858,7 @@ async function handleMemberLogin() {
         return; 
     }
     
+    // التحقق من تأكيد البريد الإلكتروني
     try {
         var isApproved = await checkMemberApproval(email);
         if (!isApproved) { 
@@ -1701,7 +1886,7 @@ async function handleMemberLogin() {
 }
 
 // ============================================================
-// دوال طلب التسجيل
+// دوال طلب التسجيل (مع التحقق من البريد)
 // ============================================================
 async function handleRegisterTeacher() {
     var email = document.getElementById('registerTeacherEmail').value.trim();
@@ -1728,7 +1913,12 @@ async function handleRegisterTeacher() {
     }
     
     try {
-        await auth.createUserWithEmailAndPassword(email, password);
+        var userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        var user = userCredential.user;
+        
+        // إرسال بريد التحقق
+        await user.sendEmailVerification();
+        
         await addJoinRequest(email, 'أستاذ', 'all');
         await auth.signOut();
         
@@ -1736,7 +1926,7 @@ async function handleRegisterTeacher() {
         document.getElementById('registerTeacherPassword').value = '';
         document.getElementById('registerTeacherConfirm').value = '';
         
-        showSuccess('تم إرسال طلب التسجيل كأستاذ! سيتم مراجعة طلبك قريباً.');
+        showSuccess('✅ تم إرسال طلب التسجيل كأستاذ! 📧 يرجى تأكيد بريدك الإلكتروني أولاً.');
         setTimeout(function() { hideAllModals(); }, 4000);
     } catch(error) {
         var msg = '❌ فشل إنشاء الحساب: ';
@@ -1774,7 +1964,12 @@ async function handleRegisterMember() {
     }
     
     try {
-        await auth.createUserWithEmailAndPassword(email, password);
+        var userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        var user = userCredential.user;
+        
+        // إرسال بريد التحقق
+        await user.sendEmailVerification();
+        
         await addJoinRequest(email, 'عضو', stage);
         await auth.signOut();
         
@@ -1783,7 +1978,7 @@ async function handleRegisterMember() {
         document.getElementById('registerMemberConfirm').value = '';
         
         var stageNames = { 'primary': 'الابتدائية', 'middle': 'المتوسط', 'high': 'الثانوي' };
-        showSuccess('تم إرسال طلب التسجيل كعضو في ' + (stageNames[stage] || stage) + '! سيتم مراجعة طلبك قريباً.');
+        showSuccess('✅ تم إرسال طلب التسجيل كعضو في ' + (stageNames[stage] || stage) + '! 📧 يرجى تأكيد بريدك الإلكتروني أولاً.');
         setTimeout(function() { hideAllModals(); }, 4000);
     } catch(error) {
         var msg = '❌ فشل إنشاء الحساب: ';
@@ -3605,11 +3800,18 @@ function updateAdminPanel() {
         if (panelBadge) panelBadge.textContent = 'الإدارة';
         if (adminOnlySection) adminOnlySection.style.display = 'block';
         if (panelTitle) panelTitle.innerHTML = '🔐 لوحة التحكم <span class="admin-badge">الإدارة</span>';
+        // إظهار قسم تحديث Telegram للمسؤول
+        var updateSection = document.getElementById('telegramUpdateSection');
+        if (updateSection) updateSection.style.display = 'block';
     } else if (isTeacher) {
         if (panelBadge) panelBadge.textContent = '👨‍🏫 أستاذ';
         if (adminOnlySection) adminOnlySection.style.display = 'none';
         if (panelTitle) panelTitle.innerHTML = '🔐 لوحة التحكم <span class="teacher-badge">👨‍🏫 أستاذ</span>';
+        // إخفاء قسم تحديث Telegram للمعلمين
+        var updateSection = document.getElementById('telegramUpdateSection');
+        if (updateSection) updateSection.style.display = 'none';
     }
+    updateTelegramSettingsUI();
 }
 
 function updateUIAfterLogout() {
@@ -3629,6 +3831,9 @@ function updateUIAfterLogout() {
     refreshCurrentView();
     hideAllModals();
     updateStats();
+    // إخفاء قسم تحديث Telegram
+    var updateSection = document.getElementById('telegramUpdateSection');
+    if (updateSection) updateSection.style.display = 'none';
 }
 
 async function confirmLogout() {
@@ -3681,6 +3886,9 @@ async function init() {
             return;
         }
         
+        // تحميل إعدادات Telegram أولاً
+        await loadTelegramSettings();
+        
         await Promise.all([loadDataFromFirebase(), loadLockSettings(), loadInviteLinks(), loadNews()]);
         
         bindMainStageButtons();
@@ -3713,8 +3921,8 @@ async function init() {
         
         console.log('✅ تم تحميل منصة الأستاذ محمد بنجاح!');
         console.log('📁 Telegram Storage جاهز للعمل!');
-        console.log('🤖 Bot Token:', TELEGRAM_BOT_TOKEN);
-        console.log('📢 Chat ID:', TELEGRAM_CHAT_ID);
+        console.log('🤖 Bot Token:', TELEGRAM_BOT_TOKEN ? '✅ محمل من Firebase' : '❌ غير محمل');
+        console.log('📢 Chat ID:', TELEGRAM_CHAT_ID || '❌ غير محمل');
         
     } catch(error) {
         console.error('Error in init:', error);
@@ -4055,6 +4263,18 @@ document.addEventListener('DOMContentLoaded', function() {
             if (user) {
                 var email = user.email;
                 currentUserStage = null;
+                
+                // التحقق من تأكيد البريد الإلكتروني (للمستخدمين العاديين)
+                if (email !== MASTER_TEACHER_EMAIL) {
+                    await user.reload();
+                    var refreshedUser = auth.currentUser;
+                    if (refreshedUser && !refreshedUser.emailVerified) {
+                        showWarning('📧 يرجى تأكيد بريدك الإلكتروني أولاً. تم إرسال رابط التأكيد إلى بريدك.');
+                        await auth.signOut();
+                        updateUIAfterLogout();
+                        return;
+                    }
+                }
                 
                 var isApprovedMember = await checkMemberApproval(email);
                 var isTeacher = await checkTeacherPermissions(email);
