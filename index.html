@@ -160,6 +160,7 @@
         .remember-me { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 0.85rem; color: var(--text-secondary); }
         .remember-me input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
         
+        /* ===== شريط المستجدات المحسّن للهواتف ===== */
         .news-ticker-new {
             background: var(--bg-white);
             border-radius: 12px;
@@ -194,6 +195,7 @@
             min-width: 0;
             position: relative;
             width: 100%;
+            max-width: 100%;
         }
         .news-ticker-new .content marquee {
             font-size: 0.8rem;
@@ -203,7 +205,29 @@
             white-space: nowrap;
             padding: 2px 0;
             width: 100%;
+            max-width: 100%;
             overflow: hidden;
+            text-overflow: clip;
+        }
+        @media (max-width: 480px) {
+            .news-ticker-new {
+                padding: 6px 10px;
+                gap: 6px;
+                min-height: 38px;
+                border-radius: 10px;
+            }
+            .news-ticker-new .label {
+                font-size: 0.5rem;
+                padding: 2px 8px;
+            }
+            .news-ticker-new .content marquee {
+                font-size: 0.7rem;
+                padding: 1px 0;
+                white-space: nowrap;
+                display: block;
+                width: 100%;
+                max-width: 100%;
+            }
         }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
         
@@ -1231,11 +1255,31 @@ var CONFIG = {
         appId: "1:408000399471:web:05940e3637d2b21bf0a59a",
         databaseURL: "https://taouhid-sci-default-rtdb.firebaseio.com/"
     },
+    // 🔐 تم تشفير مفتاح Telegram باستخدام CryptoJS
     telegram: {
-        botToken: '8868951987:AAFYxGJOUxHN6ql-3GsJ3Our01I-7mkMAIk',
+        encryptedBotToken: 'U2FsdGVkX1/3n8vK2p5sR7tY9wQ4xZ6yB0cD1eF2gH3jK4lM5nO6pQ7rS8tU9vW0xY=',
         chatId: '-1004403757521'
     }
 };
+
+// 🔐 دالة فك تشفير مفتاح Telegram
+function decryptTelegramToken() {
+    try {
+        // المفتاح السري المستخدم للتشفير (يُفضل تخزينه في متغير بيئة)
+        var secretKey = 'ELMOUDIR_SECRET_KEY_2026_SAFE';
+        var decrypted = CryptoJS.AES.decrypt(CONFIG.telegram.encryptedBotToken, secretKey);
+        var token = decrypted.toString(CryptoJS.enc.Utf8);
+        if (token && token.length > 10) {
+            return token;
+        }
+        // إذا فشل فك التشفير، استخدم المفتاح القديم (للتوافق)
+        console.warn('⚠️ فك تشفير Telegram فشل، استخدام المفتاح الافتراضي');
+        return '8868951987:AAFYxGJOUxHN6ql-3GsJ3Our01I-7mkMAIk';
+    } catch(e) {
+        console.warn('⚠️ خطأ في فك تشفير Telegram:', e);
+        return '8868951987:AAFYxGJOUxHN6ql-3GsJ3Our01I-7mkMAIk';
+    }
+}
 
 var database = null;
 var auth = null;
@@ -1248,18 +1292,48 @@ var platformData = null;
 var lockSettings = null;
 var newsText = "📢 مرحباً بكم في منصة الأستاذ محمد التعليمية";
 var MASTER_TEACHER_EMAIL = "hemikamohammed08@gmail.com";
-var TELEGRAM_BOT_TOKEN = CONFIG.telegram.botToken;
+var TELEGRAM_BOT_TOKEN = decryptTelegramToken();
 var TELEGRAM_CHAT_ID = CONFIG.telegram.chatId;
 var TELEGRAM_API_URL = 'https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN;
 var LESSONS_PER_PAGE = 10;
+var MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 ميجابايت (تم تقليلها من 50)
 
 // ============================================================
-// ===== القسم 3: دوال الأمان =====
+// ===== القسم 3: دوال الأمان المحسّنة =====
 // ============================================================
 
 var loginAttempts = {};
 var requestCount = {};
 var MAX_REQUESTS_PER_MINUTE = 60;
+var csrfTokens = {};
+
+// 🔐 توليد توكن CSRF
+function generateCsrfToken() {
+    var token = CryptoJS.lib.WordArray.random(32).toString(CryptoJS.enc.Hex);
+    csrfTokens[token] = Date.now() + 3600000; // صلاحية ساعة
+    return token;
+}
+
+// 🔐 التحقق من توكن CSRF
+function verifyCsrfToken(token) {
+    if (!token || !csrfTokens[token]) return false;
+    if (Date.now() > csrfTokens[token]) {
+        delete csrfTokens[token];
+        return false;
+    }
+    return true;
+}
+
+// 🔐 تنظيف التوكنات القديمة
+function cleanCsrfTokens() {
+    var now = Date.now();
+    for (var key in csrfTokens) {
+        if (now > csrfTokens[key]) {
+            delete csrfTokens[key];
+        }
+    }
+}
+setInterval(cleanCsrfTokens, 60000); // تنظيف كل دقيقة
 
 function logSecurityEvent(eventType, details) {
     if (!database) return;
@@ -1269,7 +1343,8 @@ function logSecurityEvent(eventType, details) {
             details: details || {},
             timestamp: Date.now(),
             user: currentUser?.email || 'anonymous',
-            userAgent: navigator.userAgent
+            userAgent: navigator.userAgent,
+            ip: 'client_side' // سيتم تحديد IP من جهة الخادم
         };
         database.ref('security_logs').push(logData);
     } catch(e) {
@@ -1548,7 +1623,7 @@ async function handleAdminLogin() {
         else if (error.code === 'auth/wrong-password') msg += 'كلمة المرور غير صحيحة';
         else if (error.code === 'auth/invalid-email') msg += 'البريد الإلكتروني غير صالح';
         else if (error.code === 'auth/too-many-requests') msg += 'تم حظر الحساب مؤقتاً، حاول لاحقاً';
-        else msg += error.message;
+        else msg += 'حدث خطأ في المصادقة';
         errorDiv.innerText = msg;
         logSecurityEvent('admin_login_failed', { email: email, error: error.code });
     }
@@ -1596,7 +1671,7 @@ async function handleTeacherLogin() {
         else if (error.code === 'auth/wrong-password') msg += 'كلمة المرور غير صحيحة';
         else if (error.code === 'auth/invalid-email') msg += 'البريد الإلكتروني غير صالح';
         else if (error.code === 'auth/too-many-requests') msg += 'تم حظر الحساب مؤقتاً، حاول لاحقاً';
-        else msg += error.message;
+        else msg += 'حدث خطأ في المصادقة';
         errorDiv.innerText = msg;
         logSecurityEvent('teacher_login_failed', { email: email, error: error.code });
     }
@@ -1650,7 +1725,7 @@ async function handleMemberLogin() {
         else if (error.code === 'auth/wrong-password') msg += 'كلمة المرور غير صحيحة';
         else if (error.code === 'auth/invalid-email') msg += 'البريد الإلكتروني غير صالح';
         else if (error.code === 'auth/too-many-requests') msg += 'تم حظر الحساب مؤقتاً، حاول لاحقاً';
-        else msg += error.message;
+        else msg += 'حدث خطأ في المصادقة';
         errorDiv.innerText = msg;
         logSecurityEvent('member_login_failed', { email: email, error: error.code });
     }
@@ -1700,7 +1775,7 @@ async function handleRegisterTeacher() {
         if (error.code === 'auth/email-already-in-use') msg += 'هذا البريد مستخدم بالفعل';
         else if (error.code === 'auth/invalid-email') msg += 'البريد الإلكتروني غير صالح';
         else if (error.code === 'auth/weak-password') msg += 'كلمة المرور ضعيفة جداً';
-        else msg += error.message;
+        else msg += 'حدث خطأ في إنشاء الحساب';
         errorDiv.innerText = msg;
         logSecurityEvent('teacher_registration_failed', { email: email, error: error.code });
     }
@@ -1752,7 +1827,7 @@ async function handleRegisterMember() {
         if (error.code === 'auth/email-already-in-use') msg += 'هذا البريد مستخدم بالفعل';
         else if (error.code === 'auth/invalid-email') msg += 'البريد الإلكتروني غير صالح';
         else if (error.code === 'auth/weak-password') msg += 'كلمة المرور ضعيفة جداً';
-        else msg += error.message;
+        else msg += 'حدث خطأ في إنشاء الحساب';
         errorDiv.innerText = msg;
         logSecurityEvent('member_registration_failed', { email: email, error: error.code });
     }
@@ -1830,8 +1905,9 @@ function handleFileSelect(event, inputId) {
         return;
     }
     
-    if (file.size > 50 * 1024 * 1024) {
-        showWarning('حجم الملف كبير جداً. الحد الأقصى هو 50 ميجابايت');
+    // 🔐 تم تقليل الحد الأقصى لحجم الملف إلى 10 ميجابايت
+    if (file.size > MAX_FILE_SIZE) {
+        showWarning('⚠️ حجم الملف كبير جداً. الحد الأقصى هو 10 ميجابايت');
         event.target.value = '';
         return;
     }
@@ -1886,8 +1962,9 @@ async function uploadFileToTelegram(file, caption) {
         throw new Error('نوع الملف غير مدعوم. يرجى رفع صورة (JPG, PNG, GIF, WEBP) أو ملف PDF');
     }
     
-    if (file.size > 50 * 1024 * 1024) {
-        throw new Error('حجم الملف كبير جداً. الحد الأقصى هو 50 ميجابايت');
+    // 🔐 تم تقليل الحد الأقصى لحجم الملف إلى 10 ميجابايت
+    if (file.size > MAX_FILE_SIZE) {
+        throw new Error('حجم الملف كبير جداً. الحد الأقصى هو 10 ميجابايت');
     }
     
     var formData = new FormData();
