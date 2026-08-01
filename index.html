@@ -11,6 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/DOMPurify/3.0.6/purify.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; connect-src 'self' https:; frame-ancestors 'none';">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -19,7 +20,6 @@
     <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
     
     <style>
-        /* ===== جميع الأنماط ===== */
         :root {
             --primary: #1a4a8a;
             --secondary: #e8a838;
@@ -160,7 +160,6 @@
         .remember-me { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 0.85rem; color: var(--text-secondary); }
         .remember-me input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
         
-        /* ===== شريط المستجدات المحسّن للهواتف ===== */
         .news-ticker-new {
             background: var(--bg-white);
             border-radius: 12px;
@@ -386,15 +385,64 @@
         .modal-content .btn-group { display: flex; gap: 10px; margin-top: 6px; }
         .modal-content .btn-group button { flex: 1; padding: 10px; border-radius: var(--radius-full); border: none; font-weight: 700; cursor: pointer; min-height: 44px; }
         
-        .toast-container { position: fixed; bottom: 16px; right: 16px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; max-width: 380px; width: 90%; }
-        .toast {
-            background: var(--bg-white); padding: 12px 16px; border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 10px;
-            border-right: 4px solid var(--primary);
+        .toast-container { 
+            position: fixed; 
+            bottom: 24px; 
+            right: 24px; 
+            z-index: 99999; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+            max-width: 440px; 
+            width: 92%;
+            direction: rtl;
         }
-        .toast.success { border-right-color: #10b981; }
-        .toast.error { border-right-color: #ef4444; }
-        .toast.warning { border-right-color: #f59e0b; }
+        .toast {
+            background: var(--bg-white); 
+            padding: 16px 20px; 
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15); 
+            display: flex; 
+            align-items: flex-start; 
+            gap: 12px;
+            border-right: 4px solid var(--primary);
+            animation: slideInUp 0.4s ease;
+            width: 100%;
+        }
+        .toast.success { 
+            border-right-color: #10b981; 
+            background: #f0fdf4; 
+            border: 1px solid #86efac;
+        }
+        .toast.error { 
+            border-right-color: #ef4444; 
+            background: #fef2f2; 
+            border: 1px solid #fca5a5;
+        }
+        .toast.warning { 
+            border-right-color: #f59e0b; 
+            background: #fffbeb; 
+            border: 1px solid #fcd34d;
+        }
+        
+        @keyframes slideInUp {
+            0% { opacity: 0; transform: translateY(30px) scale(0.95); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        
+        @media (max-width: 480px) {
+            .toast-container {
+                bottom: 16px;
+                right: 12px;
+                left: 12px;
+                width: auto;
+                max-width: 100%;
+            }
+            .toast {
+                padding: 14px 16px !important;
+                border-radius: 14px !important;
+            }
+        }
         
         .admin-panel-new {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -461,7 +509,6 @@
             background: #f5f5f5;
         }
 
-        /* ===== عارض الصور المتطور ===== */
         #imageViewerOverlay {
             position: fixed;
             top: 0;
@@ -898,25 +945,35 @@
     </div>
 </div>
 
+<!-- ===== نافذة الاتصال ===== -->
 <div id="contactModal" class="modal-overlay" onclick="if(event.target===this) closeContactModal()">
     <div class="modal-content">
-        <h3>📧 راسلنا</h3>
-        <p style="color:var(--text-secondary); text-align:center; font-size:0.9rem;">سيتم فتح بريدك الإلكتروني لإرسال الرسالة</p>
+        <h3>📩 راسلنا</h3>
+        <p style="color:var(--text-secondary); text-align:center; font-size:0.9rem;">
+            سيتم إرسال رسالتك إلى الإدارة عبر البريد الإلكتروني
+        </p>
         <div class="form-group">
-            <label>الاسم الكامل</label>
+            <label>👤 الاسم الكامل</label>
             <input type="text" id="contactName" placeholder="أدخل اسمك">
         </div>
         <div class="form-group">
-            <label>البريد الإلكتروني</label>
+            <label>📧 البريد الإلكتروني</label>
             <input type="email" id="contactEmail" placeholder="example@email.com">
         </div>
         <div class="form-group">
-            <label>الرسالة</label>
+            <label>📝 الرسالة</label>
             <textarea id="contactMessage" placeholder="اكتب رسالتك هنا..." rows="4"></textarea>
         </div>
-        <div class="btn-group">
-            <button class="btn btn-danger" onclick="closeContactModal()" style="flex:1;">إلغاء</button>
-            <button class="btn btn-primary" onclick="sendContactMessage()" style="flex:2;"><i class="fas fa-paper-plane"></i> إرسال</button>
+        <div class="btn-group" style="flex-direction:column; gap:8px;">
+            <button id="contactSubmitBtn" class="btn btn-primary" style="width:100%; background:#1a4a8a; color:white; font-size:1rem; padding:12px;">
+                <i class="fas fa-envelope"></i> إرسال الرسالة
+            </button>
+            <button class="btn btn-danger" onclick="closeContactModal()" style="width:100%; background:#94a3b8; color:white;">
+                <i class="fas fa-times"></i> إلغاء
+            </button>
+        </div>
+        <div style="font-size:0.65rem; color:var(--text-muted); text-align:center; margin-top:8px;">
+            🔒 سيتم إرسال رسالتك بشكل آمن
         </div>
     </div>
 </div>
@@ -1209,13 +1266,12 @@
 
 <script>
 // ============================================================
-// ===== القسم 1: الدوال الأساسية (تعرف أولاً) =====
+// ===== القسم 1: الدوال الأساسية =====
 // ============================================================
 
-// دالة عرض التنبيهات (toast)
 function showToast(message, type, duration) {
     type = type || 'info';
-    duration = duration || 3500;
+    duration = duration || 5000;
     var container = document.getElementById('toastContainer');
     if (!container) {
         var newContainer = document.createElement('div');
@@ -1227,19 +1283,20 @@ function showToast(message, type, duration) {
     var icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
     var toast = document.createElement('div');
     toast.className = 'toast ' + type;
-    toast.innerHTML = '<span><i class="fas ' + (icons[type] || icons.info) + '"></i></span><span>' + message + '</span>';
+    toast.innerHTML = '<span style="font-size:1.2rem;"><i class="fas ' + (icons[type] || icons.info) + '"></i></span><span>' + message + '</span>';
     container.appendChild(toast);
     setTimeout(function() {
         toast.style.opacity = '0';
         toast.style.transform = 'translateX(80px)';
+        toast.style.transition = 'all 0.3s ease';
         setTimeout(function() { if (toast.parentNode) toast.remove(); }, 300);
     }, duration);
 }
 
-function showWarning(message) { showToast('⚠️ ' + message, 'warning', 3500); }
-function showError(message) { showToast('❌ ' + message, 'error', 4000); }
-function showSuccess(message) { showToast('✅ ' + message, 'success', 3000); }
-function showInfo(message) { showToast('ℹ️ ' + message, 'info', 3000); }
+function showWarning(message) { showToast('⚠️ ' + message, 'warning', 4000); }
+function showError(message) { showToast('❌ ' + message, 'error', 5000); }
+function showSuccess(message) { showToast('✅ ' + message, 'success', 5000); }
+function showInfo(message) { showToast('ℹ️ ' + message, 'info', 4000); }
 
 // ============================================================
 // ===== القسم 2: التكوين والمتغيرات العامة =====
@@ -1255,24 +1312,25 @@ var CONFIG = {
         appId: "1:408000399471:web:05940e3637d2b21bf0a59a",
         databaseURL: "https://taouhid-sci-default-rtdb.firebaseio.com/"
     },
-    // 🔐 تم تشفير مفتاح Telegram باستخدام CryptoJS
     telegram: {
         encryptedBotToken: 'U2FsdGVkX1/3n8vK2p5sR7tY9wQ4xZ6yB0cD1eF2gH3jK4lM5nO6pQ7rS8tU9vW0xY=',
         chatId: '-1004403757521'
     }
 };
 
-// 🔐 دالة فك تشفير مفتاح Telegram
+// ===== إعدادات EmailJS (تم التصحيح) =====
+var EMAILJS_SERVICE_ID = 'service_v9v54om';   // ✅ تم التصحيح
+var EMAILJS_TEMPLATE_ID = 'template_bzmpqfn';
+var EMAILJS_PUBLIC_KEY = 'mQoCY5duuuVUHjuaj';
+
 function decryptTelegramToken() {
     try {
-        // المفتاح السري المستخدم للتشفير (يُفضل تخزينه في متغير بيئة)
         var secretKey = 'ELMOUDIR_SECRET_KEY_2026_SAFE';
         var decrypted = CryptoJS.AES.decrypt(CONFIG.telegram.encryptedBotToken, secretKey);
         var token = decrypted.toString(CryptoJS.enc.Utf8);
         if (token && token.length > 10) {
             return token;
         }
-        // إذا فشل فك التشفير، استخدم المفتاح القديم (للتوافق)
         console.warn('⚠️ فك تشفير Telegram فشل، استخدام المفتاح الافتراضي');
         return '8868951987:AAFYxGJOUxHN6ql-3GsJ3Our01I-7mkMAIk';
     } catch(e) {
@@ -1296,10 +1354,11 @@ var TELEGRAM_BOT_TOKEN = decryptTelegramToken();
 var TELEGRAM_CHAT_ID = CONFIG.telegram.chatId;
 var TELEGRAM_API_URL = 'https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN;
 var LESSONS_PER_PAGE = 10;
-var MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 ميجابايت (تم تقليلها من 50)
+var MAX_FILE_SIZE = 10 * 1024 * 1024;
+var CONTACT_MESSAGES_PATH = 'contact_messages';
 
 // ============================================================
-// ===== القسم 3: دوال الأمان المحسّنة =====
+// ===== القسم 3: دوال الأمان =====
 // ============================================================
 
 var loginAttempts = {};
@@ -1307,14 +1366,12 @@ var requestCount = {};
 var MAX_REQUESTS_PER_MINUTE = 60;
 var csrfTokens = {};
 
-// 🔐 توليد توكن CSRF
 function generateCsrfToken() {
     var token = CryptoJS.lib.WordArray.random(32).toString(CryptoJS.enc.Hex);
-    csrfTokens[token] = Date.now() + 3600000; // صلاحية ساعة
+    csrfTokens[token] = Date.now() + 3600000;
     return token;
 }
 
-// 🔐 التحقق من توكن CSRF
 function verifyCsrfToken(token) {
     if (!token || !csrfTokens[token]) return false;
     if (Date.now() > csrfTokens[token]) {
@@ -1324,7 +1381,6 @@ function verifyCsrfToken(token) {
     return true;
 }
 
-// 🔐 تنظيف التوكنات القديمة
 function cleanCsrfTokens() {
     var now = Date.now();
     for (var key in csrfTokens) {
@@ -1333,7 +1389,7 @@ function cleanCsrfTokens() {
         }
     }
 }
-setInterval(cleanCsrfTokens, 60000); // تنظيف كل دقيقة
+setInterval(cleanCsrfTokens, 60000);
 
 function logSecurityEvent(eventType, details) {
     if (!database) return;
@@ -1344,7 +1400,7 @@ function logSecurityEvent(eventType, details) {
             timestamp: Date.now(),
             user: currentUser?.email || 'anonymous',
             userAgent: navigator.userAgent,
-            ip: 'client_side' // سيتم تحديد IP من جهة الخادم
+            ip: 'client_side'
         };
         database.ref('security_logs').push(logData);
     } catch(e) {
@@ -1905,7 +1961,6 @@ function handleFileSelect(event, inputId) {
         return;
     }
     
-    // 🔐 تم تقليل الحد الأقصى لحجم الملف إلى 10 ميجابايت
     if (file.size > MAX_FILE_SIZE) {
         showWarning('⚠️ حجم الملف كبير جداً. الحد الأقصى هو 10 ميجابايت');
         event.target.value = '';
@@ -1962,7 +2017,6 @@ async function uploadFileToTelegram(file, caption) {
         throw new Error('نوع الملف غير مدعوم. يرجى رفع صورة (JPG, PNG, GIF, WEBP) أو ملف PDF');
     }
     
-    // 🔐 تم تقليل الحد الأقصى لحجم الملف إلى 10 ميجابايت
     if (file.size > MAX_FILE_SIZE) {
         throw new Error('حجم الملف كبير جداً. الحد الأقصى هو 10 ميجابايت');
     }
@@ -2050,7 +2104,7 @@ async function getFreshTelegramUrl(file_id) {
 }
 
 // ============================================================
-// ===== القسم 12: دوال الاتصال بنا =====
+// ===== القسم 12: دوال الاتصال بنا (نظام EmailJS) =====
 // ============================================================
 
 function openContactModal() {
@@ -2067,36 +2121,137 @@ function closeContactModal() {
 }
 window.closeContactModal = closeContactModal;
 
+// ===== إرسال الرسالة عبر EmailJS (نسخة آمنة ومصححة) =====
 function sendContactMessage() {
     if (!checkRateLimit('contact_send')) return;
     
     var name = document.getElementById('contactName').value.trim();
     var email = document.getElementById('contactEmail').value.trim();
     var message = document.getElementById('contactMessage').value.trim();
+    var submitBtn = document.getElementById('contactSubmitBtn');
     
-    if (!name) { showWarning('الرجاء إدخال الاسم'); return; }
-    if (!email) { showWarning('الرجاء إدخال البريد الإلكتروني'); return; }
-    if (!email.includes('@') || !email.includes('.')) { showWarning('البريد الإلكتروني غير صالح'); return; }
+    // التحقق من الحقول
+    if (!name) { showWarning('⚠️ الرجاء إدخال الاسم'); return; }
+    if (!email) { showWarning('⚠️ الرجاء إدخال البريد الإلكتروني'); return; }
+    if (!email.includes('@') || !email.includes('.')) { 
+        showWarning('⚠️ البريد الإلكتروني غير صالح'); 
+        return; 
+    }
     if (isFakeEmail(email)) { 
-        showWarning('الرجاء استخدام بريد إلكتروني حقيقي');
+        showWarning('⚠️ الرجاء استخدام بريد إلكتروني حقيقي');
         logSecurityEvent('fake_email_contact_attempt', { email: email });
         return; 
     }
-    if (!message) { showWarning('الرجاء كتابة الرسالة'); return; }
-    if (message.length < 10) { showWarning('الرسالة قصيرة جداً (10 أحرف على الأقل)'); return; }
+    if (!message) { showWarning('⚠️ الرجاء كتابة الرسالة'); return; }
+    if (message.length < 10) { 
+        showWarning('⚠️ الرسالة قصيرة جداً (10 أحرف على الأقل)'); 
+        return; 
+    }
     
-    var subject = encodeURIComponent('رسالة من ' + name + ' - منصة الأستاذ محمد');
-    var body = encodeURIComponent(
-        'الاسم: ' + name + '\n' +
-        'البريد الإلكتروني: ' + email + '\n\n' +
-        'الرسالة:\n' + message + '\n\n' +
-        '---\nتم الإرسال من منصة الأستاذ محمد للتعليم'
-    );
+    // ⏳ تعطيل الزر
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإرسال...';
+    }
     
-    logSecurityEvent('contact_message_sent', { name: name, email: email });
-    window.location.href = 'mailto:' + MASTER_TEACHER_EMAIL + '?subject=' + subject + '&body=' + body;
-    closeContactModal();
-    showSuccess('✅ تم فتح البريد الإلكتروني لإرسال الرسالة');
+    // ✅ تأكد من القيم
+    console.log('📤 جاري الإرسال بـ:');
+    console.log('Service ID:', EMAILJS_SERVICE_ID);
+    console.log('Template ID:', EMAILJS_TEMPLATE_ID);
+    console.log('Public Key:', EMAILJS_PUBLIC_KEY);
+    
+    // بيانات الرسالة
+    var templateParams = {
+        name: name,
+        email: email,
+        message: message,
+        date: new Date().toLocaleString('ar-DZ', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })
+    };
+    
+    console.log('📝 بيانات القالب:', templateParams);
+    
+    // تهيئة EmailJS
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+    
+    // إرسال البريد
+    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
+        .then(function(response) {
+            console.log('✅ تم إرسال البريد بنجاح:', response);
+            logSecurityEvent('contact_email_sent', { name: name, email: email });
+            
+            // حفظ نسخة احتياطية في Firebase
+            try {
+                if (database) {
+                    database.ref(CONTACT_MESSAGES_PATH).push({
+                        name: name,
+                        email: email,
+                        message: message,
+                        date: new Date().toISOString(),
+                        timestamp: Date.now(),
+                        status: 'sent',
+                        read: false
+                    });
+                    console.log('✅ تم حفظ نسخة احتياطية في Firebase');
+                }
+            } catch(fbError) {
+                console.warn('⚠️ فشل حفظ النسخة الاحتياطية:', fbError);
+            }
+            
+            // ✅ إشعار نجاح
+            showSuccess('✅ تم إرسال رسالتك بنجاح! سيتم الرد عليك قريباً.');
+            
+            // إغلاق النموذج
+            setTimeout(function() {
+                closeContactModal();
+                document.getElementById('contactName').value = '';
+                document.getElementById('contactEmail').value = '';
+                document.getElementById('contactMessage').value = '';
+            }, 1500);
+            
+            // إعادة تعيين الزر
+            if (submitBtn) {
+                setTimeout(function() {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-envelope"></i> إرسال الرسالة';
+                }, 2000);
+            }
+        })
+        .catch(function(error) {
+            console.error('❌ فشل الإرسال:', error);
+            console.error('❌ تفاصيل الخطأ:', error.text || error.message);
+            
+            // عرض رسالة خطأ مفصلة
+            var errorMsg = '❌ حدث خطأ في الإرسال.\n';
+            if (error.text) {
+                errorMsg += '📋 ' + error.text;
+            } else if (error.message) {
+                errorMsg += '📋 ' + error.message;
+            }
+            errorMsg += '\n\n💡 تأكد من:';
+            errorMsg += '\n- اتصالك بالإنترنت';
+            errorMsg += '\n- صحة بيانات EmailJS';
+            
+            showError(errorMsg);
+            logSecurityEvent('contact_email_failed', { 
+                error: error.text || error.message,
+                serviceId: EMAILJS_SERVICE_ID,
+                templateId: EMAILJS_TEMPLATE_ID
+            });
+            
+            // إعادة تعيين الزر
+            if (submitBtn) {
+                setTimeout(function() {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-envelope"></i> إرسال الرسالة';
+                }, 2000);
+            }
+        });
 }
 window.sendContactMessage = sendContactMessage;
 
@@ -2743,6 +2898,9 @@ function updateAdminPanel() {
         if (panelTitle) panelTitle.innerHTML = '🔐 لوحة التحكم <span class="admin-badge">الإدارة</span>';
         if (securityLogSection) securityLogSection.style.display = 'block';
         loadSecurityLogs();
+        loadJoinRequests(); 
+        loadApprovedMembers(); 
+        loadTeachersList();
     } else if (isTeacher) {
         if (panelBadge) panelBadge.textContent = '👨‍🏫 أستاذ';
         if (adminOnlySection) adminOnlySection.style.display = 'none';
@@ -3737,7 +3895,6 @@ window.goBack = goBack;
 function refreshCurrentView() {
     var loading = document.getElementById('app-loading');
     
-    // إخفاء شاشة التحميل فوراً
     if (loading) loading.classList.add('hidden');
     
     try {
@@ -4225,13 +4382,9 @@ async function init() {
     try {
         console.log('🚀 بدء تحميل المنصة...');
         
-        // التحقق من موافقة الخصوصية
         checkPrivacyConsent();
-        
-        // إعداد مؤقت الجلسة
         setupSessionActivityListeners();
         
-        // إخفاء شاشة التحميل بعد 3 ثواني كحد أقصى
         setTimeout(function() {
             var loading = document.getElementById('app-loading');
             if (loading) loading.classList.add('hidden');
@@ -4247,19 +4400,15 @@ async function init() {
             return;
         }
         
-        // تحميل البيانات
-        console.log('📥 جاري تحميل البيانات...');
         await loadDataFromFirebase();
         await loadLockSettings();
         await loadInviteLinks();
         await loadNews();
         console.log('✅ تم تحميل البيانات بنجاح');
         
-        // ربط الأزرار
         bindMainStageButtons();
         updateAuthButtons();
         
-        // الاستماع للتحديثات
         if (database) {
             database.ref('lessons').on('value', async function() { 
                 await loadDataFromFirebase(); 
@@ -4268,10 +4417,8 @@ async function init() {
             });
         }
         
-        // تحديث العرض
         refreshCurrentView();
         
-        // استعادة البريد الإلكتروني
         var rememberedEmail = localStorage.getItem('rememberedEmail');
         if (rememberedEmail) {
             var emailInputs = document.querySelectorAll('input[type="email"]');
@@ -4282,7 +4429,6 @@ async function init() {
             }
         }
         
-        // إخفاء شاشة التحميل نهائياً
         var loading = document.getElementById('app-loading');
         if (loading) loading.classList.add('hidden');
         
@@ -4290,7 +4436,8 @@ async function init() {
         
         console.log('✅ تم تحميل منصة الأستاذ محمد بنجاح!');
         console.log('🔒 نظام الأمان المتقدم يعمل بنجاح!');
-        console.log('🛡️ تشمل التحسينات: CSRF, Rate Limiting, Audit Log, تشفير البيانات');
+        console.log('📧 نظام إرسال البريد الإلكتروني عبر EmailJS يعمل!');
+        console.log('📱 جميع الرسائل تصل إلى: hemikamohammed08@gmail.com');
         
     } catch(error) {
         console.error('❌ خطأ في التحميل:', error);
@@ -4308,13 +4455,18 @@ async function init() {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('📄 تم تحميل DOM');
     
-    // تأكد من إخفاء شاشة التحميل فوراً
     var loading = document.getElementById('app-loading');
     if (loading) {
         setTimeout(function() {
             loading.classList.add('hidden');
             console.log('⏰ تم إخفاء شاشة التحميل (DOM ready)');
         }, 500);
+    }
+    
+    // زر إرسال الرسالة
+    var contactSubmitBtn = document.getElementById('contactSubmitBtn');
+    if (contactSubmitBtn) {
+        contactSubmitBtn.addEventListener('click', sendContactMessage);
     }
     
     // أزرار تسجيل الدخول
@@ -4647,7 +4799,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('panelBadge').textContent = 'الإدارة';
                     loadJoinRequests(); 
                     loadApprovedMembers(); 
-                    loadTeachersList(); 
+                    loadTeachersList();
                     updateAdminPanel(); 
                     updateStats(); 
                 }
