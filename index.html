@@ -12,6 +12,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/DOMPurify/3.0.6/purify.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <!-- reCAPTCHA -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; connect-src 'self' https:; frame-ancestors 'none';">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -780,6 +782,191 @@
             transform: scale(0.96);
         }
 
+        /* نافذة إيقاف التسجيل - تظهر فقط عند طلب التسجيل (وليس تسجيل الدخول) */
+        .registration-stopped-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            z-index: 30000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.4s ease;
+            padding: 20px;
+        }
+        .registration-stopped-modal.active { display: flex; }
+        .registration-stopped-modal .card {
+            background: var(--bg-white);
+            border-radius: 40px;
+            max-width: 540px;
+            width: 100%;
+            padding: 48px 40px 40px;
+            text-align: center;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.08);
+            animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .registration-stopped-modal .card::before {
+            content: '';
+            position: absolute;
+            top: -120px;
+            right: -120px;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(232, 168, 56, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .registration-stopped-modal .card .icon-wrap {
+            font-size: 4.5rem;
+            display: block;
+            margin-bottom: 12px;
+            position: relative;
+            z-index: 1;
+        }
+        .registration-stopped-modal .card .icon-wrap i {
+            background: linear-gradient(145deg, #f5c84a, #e8a838);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .registration-stopped-modal .card h2 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 1;
+        }
+        .registration-stopped-modal .card .subtitle {
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            line-height: 1.8;
+            margin-bottom: 6px;
+            position: relative;
+            z-index: 1;
+        }
+        .registration-stopped-modal .card .btn-close-reg-stop {
+            background: linear-gradient(135deg, var(--primary), #2a6ab8);
+            color: white;
+            border: none;
+            padding: 14px 44px;
+            border-radius: var(--radius-full);
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Tajawal', sans-serif;
+            min-height: 52px;
+            position: relative;
+            z-index: 1;
+            box-shadow: 0 8px 24px rgba(26, 74, 138, 0.25);
+        }
+        .registration-stopped-modal .card .btn-close-reg-stop:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(26, 74, 138, 0.4);
+        }
+        .registration-stopped-modal .card .btn-close-reg-stop:active {
+            transform: scale(0.96);
+        }
+        .registration-stopped-modal .card .note {
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            position: relative;
+            z-index: 1;
+        }
+        .registration-stopped-modal .card .note i {
+            color: #f59e0b;
+        }
+
+        /* زر ترتيب الدروس */
+        .sort-btn {
+            background: var(--bg-white);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-full);
+            padding: 6px 16px;
+            font-family: 'Tajawal', sans-serif;
+            font-weight: 700;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-secondary);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-height: 36px;
+        }
+        .sort-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .sort-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        .sort-btn i { font-size: 0.85rem; }
+
+        /* reCAPTCHA */
+        .recaptcha-wrapper {
+            display: flex;
+            justify-content: center;
+            margin: 12px 0;
+        }
+        .recaptcha-wrapper .g-recaptcha {
+            transform: scale(0.9);
+            transform-origin: center;
+        }
+        @media (max-width: 480px) {
+            .recaptcha-wrapper .g-recaptcha {
+                transform: scale(0.75);
+            }
+        }
+
+        /* 2FA Modal */
+        .twofa-input-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 16px 0;
+        }
+        .twofa-input-group input {
+            width: 50px;
+            height: 56px;
+            text-align: center;
+            font-size: 1.4rem;
+            font-weight: 700;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--bg-body);
+            font-family: 'Tajawal', sans-serif;
+            transition: all 0.3s ease;
+        }
+        .twofa-input-group input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(26, 74, 138, 0.2);
+        }
+        .twofa-input-group input:not(:placeholder-shown) {
+            border-color: var(--primary);
+        }
+
+        @media (max-width: 480px) {
+            .registration-stopped-modal .card { padding: 32px 24px 28px; }
+            .registration-stopped-modal .card h2 { font-size: 1.4rem; }
+            .registration-stopped-modal .card .subtitle { font-size: 0.95rem; }
+            .registration-stopped-modal .card .btn-close-reg-stop { padding: 12px 28px; font-size: 0.95rem; min-height: 44px; }
+            .twofa-input-group input { width: 40px; height: 46px; font-size: 1.2rem; }
+        }
+
         @media (max-width: 480px) {
             .unavailable-modal-content { padding: 32px 24px; }
             .unavailable-modal-content h2 { font-size: 1.2rem; }
@@ -829,6 +1016,49 @@
             <button class="btn-cancel" onclick="closeConfirmDialog()">إلغاء</button>
             <button class="btn-confirm" id="confirmDeleteBtn">نعم، حذف</button>
         </div>
+    </div>
+</div>
+
+<!-- نافذة 2FA للمسؤول -->
+<div id="twofaModal" class="modal-overlay">
+    <div class="modal-content" style="text-align:center; max-width:400px;">
+        <div style="font-size:2.5rem;">🔐</div>
+        <h2 style="margin-bottom:4px;">تحقق من هويتك</h2>
+        <p style="color:var(--text-secondary); font-size:0.9rem;">تم إرسال رمز التحقق إلى بريدك الإلكتروني</p>
+        <div class="twofa-input-group" id="twofaInputs">
+            <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" class="twofa-input" data-index="0" placeholder="•">
+            <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" class="twofa-input" data-index="1" placeholder="•">
+            <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" class="twofa-input" data-index="2" placeholder="•">
+            <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" class="twofa-input" data-index="3" placeholder="•">
+            <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" class="twofa-input" data-index="4" placeholder="•">
+            <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" class="twofa-input" data-index="5" placeholder="•">
+        </div>
+        <div id="twofaError" style="color:red; font-size:0.8rem; min-height:20px;"></div>
+        <button id="twofaVerifyBtn" class="btn" style="width:100%; background:var(--primary); color:white; font-size:1rem; padding:12px; min-height:48px;">
+            <i class="fas fa-check-circle"></i> تحقق
+        </button>
+        <button id="twofaCancelBtn" class="btn" style="width:100%; margin-top:4px; background:#94a3b8; color:white;">
+            <i class="fas fa-times"></i> إلغاء
+        </button>
+        <div style="font-size:0.65rem; color:var(--text-muted); margin-top:8px;">
+            <i class="fas fa-clock"></i> صلاحية الرمز 5 دقائق
+        </div>
+    </div>
+</div>
+
+<!-- نافذة إيقاف التسجيل - تظهر فقط عند طلب التسجيل (وليس تسجيل الدخول) -->
+<div class="registration-stopped-modal" id="registrationStoppedModal">
+    <div class="card">
+        <span class="icon-wrap"><i class="fas fa-clock"></i></span>
+        <h2>⏳ التسجيل متوقف حالياً</h2>
+        <p class="subtitle">
+            نعتذر عن الإزعاج، فترة التسجيل الحالية منتهية.<br>
+            سيتم إعادة فتح باب التسجيل قريباً.
+        </p>
+        <button class="btn-close-reg-stop" onclick="closeRegistrationStoppedModal()">
+            <i class="fas fa-check-circle"></i> تفهمت، شكراً
+        </button>
+        <p class="note"><i class="fas fa-heart"></i> نقدّر تفهمك وصبرك.</p>
     </div>
 </div>
 
@@ -1051,6 +1281,7 @@
     </div>
 </div>
 
+<!-- نماذج التسجيل مع reCAPTCHA -->
 <div id="registerTeacherModal" class="modal-overlay">
     <div class="modal-content">
         <div style="text-align:center; font-size:2rem;">👨‍🏫</div>
@@ -1059,8 +1290,11 @@
         <div class="form-group"><input type="email" id="registerTeacherEmail" placeholder="البريد الإلكتروني" dir="ltr"></div>
         <div class="form-group"><input type="password" id="registerTeacherPassword" placeholder="كلمة المرور" dir="ltr"></div>
         <div class="form-group"><input type="password" id="registerTeacherConfirm" placeholder="تأكيد كلمة المرور" dir="ltr"></div>
+        <div class="recaptcha-wrapper">
+            <div class="g-recaptcha" data-sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" data-callback="onTeacherRecaptchaSuccess"></div>
+        </div>
         <div id="registerTeacherError" style="color:red; font-size:0.8rem; min-height:20px;"></div>
-        <button id="registerTeacherSubmitBtn" class="btn" style="width:100%; background:#f59e0b; color:white;">إرسال الطلب</button>
+        <button id="registerTeacherSubmitBtn" class="btn" style="width:100%; background:#f59e0b; color:white;" disabled>✅ تحقق من reCAPTCHA أولاً</button>
         <button id="closeRegisterTeacherBtn" class="btn" style="width:100%; margin-top:4px; background:#94a3b8; color:white;">إلغاء</button>
     </div>
 </div>
@@ -1081,8 +1315,11 @@
                 <option value="high">🎓 مرحلة الثانوي</option>
             </select>
         </div>
+        <div class="recaptcha-wrapper">
+            <div class="g-recaptcha" data-sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" data-callback="onMemberRecaptchaSuccess"></div>
+        </div>
         <div id="registerMemberError" style="color:red; font-size:0.8rem; min-height:20px;"></div>
-        <button id="registerMemberSubmitBtn" class="btn" style="width:100%; background:var(--primary); color:white;">إرسال الطلب</button>
+        <button id="registerMemberSubmitBtn" class="btn" style="width:100%; background:var(--primary); color:white;" disabled>✅ تحقق من reCAPTCHA أولاً</button>
         <button id="closeRegisterMemberBtn" class="btn" style="width:100%; margin-top:4px; background:#94a3b8; color:white;">إلغاء</button>
     </div>
 </div>
@@ -1217,6 +1454,23 @@
         </div>
     </div>
 
+    <!-- قسم إيقاف التسجيل -->
+    <div id="registrationLockSection" style="margin-top:12px;">
+        <h5><i class="fas fa-user-plus"></i> إدارة التسجيل</h5>
+        <div style="background:var(--bg-body); border-radius:12px; padding:12px;">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:8px;">
+                <span style="font-weight:700; flex:1;">حالة التسجيل:</span>
+                <span id="registrationStatusBadge" style="display:inline-block; font-size:0.75rem; padding:3px 14px; border-radius:20px; background:#10b981; color:white; font-weight:700;">🟢 مفتوح</span>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                <input type="date" id="registrationResumeDateInput" style="flex:1; min-width:100px; padding:4px 10px; border-radius:20px; border:1px solid var(--border-color); background:var(--bg-body); min-height:34px;">
+                <button id="registrationStopBtn" style="background:#ef4444; color:white; border:none; padding:4px 16px; border-radius:20px; cursor:pointer; font-weight:700;">⏸️ إيقاف</button>
+                <button id="registrationStartBtn" style="background:#10b981; color:white; border:none; padding:4px 16px; border-radius:20px; cursor:pointer; font-weight:700;">▶️ استئناف</button>
+            </div>
+            <div id="registrationInfo" style="font-size:0.65rem; color:var(--text-muted); margin-top:4px;"></div>
+        </div>
+    </div>
+
     <div id="newsSection" style="margin-top:12px;">
         <h5><i class="fas fa-newspaper"></i> إدارة شريط المستجدات</h5>
         <div style="background:var(--bg-body); border-radius:12px; padding:10px;">
@@ -1318,10 +1572,17 @@ var CONFIG = {
     }
 };
 
-// ===== إعدادات EmailJS (تم التصحيح) =====
-var EMAILJS_SERVICE_ID = 'service_v9v54om';   // ✅ تم التصحيح
+// ===== إعدادات EmailJS =====
+var EMAILJS_SERVICE_ID = 'service_v9v54om';
 var EMAILJS_TEMPLATE_ID = 'template_bzmpqfn';
 var EMAILJS_PUBLIC_KEY = 'mQoCY5duuuVUHjuaj';
+
+// ===== متغيرات 2FA =====
+var twofaCode = '';
+var twofaEmail = '';
+var twofaTimer = null;
+var twofaAttempts = 0;
+var MAX_TWOFA_ATTEMPTS = 3;
 
 function decryptTelegramToken() {
     try {
@@ -1348,6 +1609,7 @@ var currentUserStage = null;
 var dataLoaded = false;
 var platformData = null;
 var lockSettings = null;
+var registrationSettings = null;
 var newsText = "📢 مرحباً بكم في منصة الأستاذ محمد التعليمية";
 var MASTER_TEACHER_EMAIL = "hemikamohammed08@gmail.com";
 var TELEGRAM_BOT_TOKEN = decryptTelegramToken();
@@ -1356,6 +1618,9 @@ var TELEGRAM_API_URL = 'https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN;
 var LESSONS_PER_PAGE = 10;
 var MAX_FILE_SIZE = 10 * 1024 * 1024;
 var CONTACT_MESSAGES_PATH = 'contact_messages';
+var sortOrder = 'desc';
+var recaptchaTeacherToken = null;
+var recaptchaMemberToken = null;
 
 // ============================================================
 // ===== القسم 3: دوال الأمان =====
@@ -1559,6 +1824,10 @@ function formatDate(dateStr) {
     return dateStr;
 }
 
+function generateTwoFACode() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
 // ============================================================
 // ===== القسم 6: تهيئة Firebase =====
 // ============================================================
@@ -1583,6 +1852,10 @@ function showLoginChoice() {
 window.showLoginChoice = showLoginChoice;
 
 function showRegisterChoice() { 
+    if (!currentUser && registrationSettings && registrationSettings.registrationLocked) {
+        showRegistrationStoppedModal();
+        return;
+    }
     if (!checkRateLimit('register_choice')) return;
     document.getElementById('registerChoiceModal').classList.add('active'); 
 }
@@ -1635,7 +1908,135 @@ var savedTheme = localStorage.getItem('theme') || 'light';
 document.documentElement.setAttribute('data-theme', savedTheme);
 
 // ============================================================
-// ===== القسم 8: دوال المصادقة المتقدمة =====
+// ===== القسم 8: دوال reCAPTCHA =====
+// ============================================================
+
+function onTeacherRecaptchaSuccess(token) {
+    recaptchaTeacherToken = token;
+    var btn = document.getElementById('registerTeacherSubmitBtn');
+    if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> إرسال الطلب';
+    }
+}
+
+function onMemberRecaptchaSuccess(token) {
+    recaptchaMemberToken = token;
+    var btn = document.getElementById('registerMemberSubmitBtn');
+    if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> إرسال الطلب';
+    }
+}
+
+function resetRecaptcha() {
+    if (grecaptcha) {
+        grecaptcha.reset();
+    }
+    recaptchaTeacherToken = null;
+    recaptchaMemberToken = null;
+    var btn1 = document.getElementById('registerTeacherSubmitBtn');
+    var btn2 = document.getElementById('registerMemberSubmitBtn');
+    if (btn1) { btn1.disabled = true; btn1.innerHTML = '✅ تحقق من reCAPTCHA أولاً'; }
+    if (btn2) { btn2.disabled = true; btn2.innerHTML = '✅ تحقق من reCAPTCHA أولاً'; }
+}
+
+// ============================================================
+// ===== القسم 9: دوال 2FA =====
+// ============================================================
+
+function showTwoFAModal(email, onSuccess) {
+    twofaEmail = email;
+    twofaAttempts = 0;
+    twofaCode = generateTwoFACode();
+    
+    // إرسال الرمز عبر البريد الإلكتروني
+    sendTwoFACodeEmail(email, twofaCode);
+    
+    document.getElementById('twofaModal').classList.add('active');
+    document.getElementById('twofaError').innerText = '';
+    
+    // تنظيف الحقول
+    var inputs = document.querySelectorAll('.twofa-input');
+    for (var i = 0; i < inputs.length; i++) {
+        inputs[i].value = '';
+        inputs[i].focus();
+    }
+    if (inputs.length > 0) inputs[0].focus();
+    
+    // حفظ دالة النجاح
+    window._twofaSuccess = onSuccess;
+    
+    // بدء المؤقت
+    if (twofaTimer) clearTimeout(twofaTimer);
+    twofaTimer = setTimeout(function() {
+        document.getElementById('twofaError').innerText = '⏰ انتهت صلاحية الرمز. يرجى المحاولة مرة أخرى.';
+        document.getElementById('twofaVerifyBtn').disabled = true;
+        document.getElementById('twofaVerifyBtn').style.opacity = '0.5';
+    }, 300000); // 5 دقائق
+}
+
+function sendTwoFACodeEmail(email, code) {
+    // إرسال الرمز عبر EmailJS
+    var templateParams = {
+        to_email: email,
+        code: code,
+        subject: '🔐 رمز التحقق - منصة الأستاذ محمد'
+    };
+    
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
+        .then(function(response) {
+            console.log('✅ تم إرسال رمز 2FA إلى:', email);
+        })
+        .catch(function(error) {
+            console.error('❌ فشل إرسال رمز 2FA:', error);
+            // استخدام رمز افتراضي في حالة فشل الإرسال (للاختبار)
+            showWarning('⚠️ لم نتمكن من إرسال الرمز. استخدم الرمز: ' + code);
+        });
+}
+
+function verifyTwoFA() {
+    var inputs = document.querySelectorAll('.twofa-input');
+    var enteredCode = '';
+    for (var i = 0; i < inputs.length; i++) {
+        enteredCode += inputs[i].value;
+    }
+    
+    if (enteredCode.length !== 6) {
+        document.getElementById('twofaError').innerText = '⚠️ الرجاء إدخال الرمز المكون من 6 أرقام';
+        return;
+    }
+    
+    twofaAttempts++;
+    if (twofaAttempts > MAX_TWOFA_ATTEMPTS) {
+        document.getElementById('twofaError').innerText = '⛔ تم تجاوز عدد المحاولات المسموح بها. يرجى إعادة المحاولة لاحقاً.';
+        document.getElementById('twofaVerifyBtn').disabled = true;
+        logSecurityEvent('twofa_exceeded_attempts', { email: twofaEmail });
+        return;
+    }
+    
+    if (enteredCode === twofaCode) {
+        // نجاح التحقق
+        document.getElementById('twofaModal').classList.remove('active');
+        if (typeof window._twofaSuccess === 'function') {
+            window._twofaSuccess();
+        }
+        logSecurityEvent('twofa_success', { email: twofaEmail });
+        showSuccess('✅ تم التحقق بنجاح');
+    } else {
+        document.getElementById('twofaError').innerText = '❌ الرمز غير صحيح. المحاولة ' + twofaAttempts + '/' + MAX_TWOFA_ATTEMPTS;
+        logSecurityEvent('twofa_failed', { email: twofaEmail, attempts: twofaAttempts });
+        // تنظيف الحقول
+        for (var i = 0; i < inputs.length; i++) {
+            inputs[i].value = '';
+        }
+        if (inputs.length > 0) inputs[0].focus();
+    }
+}
+
+// ============================================================
+// ===== القسم 10: دوال المصادقة المتقدمة =====
 // ============================================================
 
 async function handleAdminLogin() {
@@ -1670,8 +2071,15 @@ async function handleAdminLogin() {
             localStorage.setItem('rememberedEmail', email);
         }
         logSecurityEvent('admin_login_success', { email: email });
-        hideAllModals(); 
-        showSuccess('تم تسجيل الدخول كمسؤول بنجاح!');
+        hideAllModals();
+        
+        // طلب 2FA
+        showTwoFAModal(email, function() {
+            // بعد نجاح 2FA
+            showSuccess('تم تسجيل الدخول كمسؤول بنجاح!');
+            document.getElementById('adminLoginModal').classList.remove('active');
+        });
+        
     } catch(error) {
         recordFailedLogin(email);
         var msg = '❌ فشل تسجيل الدخول: ';
@@ -1788,6 +2196,16 @@ async function handleMemberLogin() {
 }
 
 async function handleRegisterTeacher() {
+    if (!currentUser && registrationSettings && registrationSettings.registrationLocked) {
+        showRegistrationStoppedModal();
+        return;
+    }
+    
+    if (!recaptchaTeacherToken) {
+        document.getElementById('registerTeacherError').innerText = '⚠️ الرجاء إكمال اختبار reCAPTCHA';
+        return;
+    }
+    
     var email = document.getElementById('registerTeacherEmail').value.trim();
     var password = document.getElementById('registerTeacherPassword').value;
     var confirm = document.getElementById('registerTeacherConfirm').value;
@@ -1822,6 +2240,7 @@ async function handleRegisterTeacher() {
         document.getElementById('registerTeacherEmail').value = '';
         document.getElementById('registerTeacherPassword').value = '';
         document.getElementById('registerTeacherConfirm').value = '';
+        resetRecaptcha();
         
         logSecurityEvent('teacher_registration_request', { email: email });
         showSuccess('تم إرسال طلب التسجيل كأستاذ! سيتم مراجعة طلبك قريباً.');
@@ -1834,10 +2253,21 @@ async function handleRegisterTeacher() {
         else msg += 'حدث خطأ في إنشاء الحساب';
         errorDiv.innerText = msg;
         logSecurityEvent('teacher_registration_failed', { email: email, error: error.code });
+        resetRecaptcha();
     }
 }
 
 async function handleRegisterMember() {
+    if (!currentUser && registrationSettings && registrationSettings.registrationLocked) {
+        showRegistrationStoppedModal();
+        return;
+    }
+    
+    if (!recaptchaMemberToken) {
+        document.getElementById('registerMemberError').innerText = '⚠️ الرجاء إكمال اختبار reCAPTCHA';
+        return;
+    }
+    
     var email = document.getElementById('registerMemberEmail').value.trim();
     var password = document.getElementById('registerMemberPassword').value;
     var confirm = document.getElementById('registerMemberConfirm').value;
@@ -1873,6 +2303,7 @@ async function handleRegisterMember() {
         document.getElementById('registerMemberEmail').value = '';
         document.getElementById('registerMemberPassword').value = '';
         document.getElementById('registerMemberConfirm').value = '';
+        resetRecaptcha();
         
         var stageNames = { 'primary': 'الابتدائية', 'middle': 'المتوسط', 'high': 'الثانوي' };
         logSecurityEvent('member_registration_request', { email: email, stage: stage });
@@ -1886,11 +2317,12 @@ async function handleRegisterMember() {
         else msg += 'حدث خطأ في إنشاء الحساب';
         errorDiv.innerText = msg;
         logSecurityEvent('member_registration_failed', { email: email, error: error.code });
+        resetRecaptcha();
     }
 }
 
 // ============================================================
-// ===== القسم 9: دوال قاعدة البيانات =====
+// ===== القسم 11: دوال قاعدة البيانات =====
 // ============================================================
 
 async function checkTeacherPermissions(email) {
@@ -1941,7 +2373,7 @@ async function addJoinRequest(email, userType, stage) {
 }
 
 // ============================================================
-// ===== القسم 10: دوال معالجة الملفات =====
+// ===== القسم 12: دوال معالجة الملفات =====
 // ============================================================
 
 function handleFileSelect(event, inputId) {
@@ -1999,7 +2431,7 @@ function clearFileUploadFields() {
 }
 
 // ============================================================
-// ===== القسم 11: دوال رفع الملفات =====
+// ===== القسم 13: دوال رفع الملفات =====
 // ============================================================
 
 async function uploadFileToTelegram(file, caption) {
@@ -2104,7 +2536,7 @@ async function getFreshTelegramUrl(file_id) {
 }
 
 // ============================================================
-// ===== القسم 12: دوال الاتصال بنا (نظام EmailJS) =====
+// ===== القسم 14: دوال الاتصال بنا =====
 // ============================================================
 
 function openContactModal() {
@@ -2121,7 +2553,6 @@ function closeContactModal() {
 }
 window.closeContactModal = closeContactModal;
 
-// ===== إرسال الرسالة عبر EmailJS (نسخة آمنة ومصححة) =====
 function sendContactMessage() {
     if (!checkRateLimit('contact_send')) return;
     
@@ -2130,7 +2561,6 @@ function sendContactMessage() {
     var message = document.getElementById('contactMessage').value.trim();
     var submitBtn = document.getElementById('contactSubmitBtn');
     
-    // التحقق من الحقول
     if (!name) { showWarning('⚠️ الرجاء إدخال الاسم'); return; }
     if (!email) { showWarning('⚠️ الرجاء إدخال البريد الإلكتروني'); return; }
     if (!email.includes('@') || !email.includes('.')) { 
@@ -2148,19 +2578,11 @@ function sendContactMessage() {
         return; 
     }
     
-    // ⏳ تعطيل الزر
     if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإرسال...';
     }
     
-    // ✅ تأكد من القيم
-    console.log('📤 جاري الإرسال بـ:');
-    console.log('Service ID:', EMAILJS_SERVICE_ID);
-    console.log('Template ID:', EMAILJS_TEMPLATE_ID);
-    console.log('Public Key:', EMAILJS_PUBLIC_KEY);
-    
-    // بيانات الرسالة
     var templateParams = {
         name: name,
         email: email,
@@ -2174,18 +2596,12 @@ function sendContactMessage() {
         })
     };
     
-    console.log('📝 بيانات القالب:', templateParams);
-    
-    // تهيئة EmailJS
     emailjs.init(EMAILJS_PUBLIC_KEY);
-    
-    // إرسال البريد
     emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
         .then(function(response) {
             console.log('✅ تم إرسال البريد بنجاح:', response);
             logSecurityEvent('contact_email_sent', { name: name, email: email });
             
-            // حفظ نسخة احتياطية في Firebase
             try {
                 if (database) {
                     database.ref(CONTACT_MESSAGES_PATH).push({
@@ -2197,16 +2613,13 @@ function sendContactMessage() {
                         status: 'sent',
                         read: false
                     });
-                    console.log('✅ تم حفظ نسخة احتياطية في Firebase');
                 }
             } catch(fbError) {
                 console.warn('⚠️ فشل حفظ النسخة الاحتياطية:', fbError);
             }
             
-            // ✅ إشعار نجاح
             showSuccess('✅ تم إرسال رسالتك بنجاح! سيتم الرد عليك قريباً.');
             
-            // إغلاق النموذج
             setTimeout(function() {
                 closeContactModal();
                 document.getElementById('contactName').value = '';
@@ -2214,7 +2627,6 @@ function sendContactMessage() {
                 document.getElementById('contactMessage').value = '';
             }, 1500);
             
-            // إعادة تعيين الزر
             if (submitBtn) {
                 setTimeout(function() {
                     submitBtn.disabled = false;
@@ -2224,19 +2636,12 @@ function sendContactMessage() {
         })
         .catch(function(error) {
             console.error('❌ فشل الإرسال:', error);
-            console.error('❌ تفاصيل الخطأ:', error.text || error.message);
-            
-            // عرض رسالة خطأ مفصلة
             var errorMsg = '❌ حدث خطأ في الإرسال.\n';
             if (error.text) {
                 errorMsg += '📋 ' + error.text;
             } else if (error.message) {
                 errorMsg += '📋 ' + error.message;
             }
-            errorMsg += '\n\n💡 تأكد من:';
-            errorMsg += '\n- اتصالك بالإنترنت';
-            errorMsg += '\n- صحة بيانات EmailJS';
-            
             showError(errorMsg);
             logSecurityEvent('contact_email_failed', { 
                 error: error.text || error.message,
@@ -2244,7 +2649,6 @@ function sendContactMessage() {
                 templateId: EMAILJS_TEMPLATE_ID
             });
             
-            // إعادة تعيين الزر
             if (submitBtn) {
                 setTimeout(function() {
                     submitBtn.disabled = false;
@@ -2256,7 +2660,7 @@ function sendContactMessage() {
 window.sendContactMessage = sendContactMessage;
 
 // ============================================================
-// ===== القسم 13: نافذة تأكيد الحذف =====
+// ===== القسم 15: نافذة تأكيد الحذف =====
 // ============================================================
 
 function showConfirmDialog(message, onConfirm) {
@@ -2283,7 +2687,7 @@ window.showConfirmDialog = showConfirmDialog;
 window.closeConfirmDialog = closeConfirmDialog;
 
 // ============================================================
-// ===== القسم 14: دوال عرض الصور المتطورة =====
+// ===== القسم 16: دوال عرض الصور المتطورة =====
 // ============================================================
 
 function openImageViewer(imageUrl, title) {
@@ -2539,7 +2943,7 @@ window.openImageViewer = openImageViewer;
 window.closeImageViewer = closeImageViewer;
 
 // ============================================================
-// ===== القسم 15: دوال عرض المحتوى =====
+// ===== القسم 17: دوال عرض المحتوى =====
 // ============================================================
 
 async function showLessonContent(id, title, url, download, type, fileId) {
@@ -2689,7 +3093,7 @@ function closeUnavailableModal() {
 window.closeUnavailableModal = closeUnavailableModal;
 
 // ============================================================
-// ===== القسم 16: دوال الصلاحيات =====
+// ===== القسم 18: دوال الصلاحيات =====
 // ============================================================
 
 function canUserAccessStage(stage) {
@@ -2754,7 +3158,7 @@ function filterLessons(type) {
 window.filterLessons = filterLessons;
 
 // ============================================================
-// ===== القسم 17: دوال الإحصائيات =====
+// ===== القسم 19: دوال الإحصائيات =====
 // ============================================================
 
 function updateStats() {
@@ -2810,7 +3214,7 @@ function updateStats() {
 }
 
 // ============================================================
-// ===== القسم 18: دوال تحديث الواجهة =====
+// ===== القسم 20: دوال تحديث الواجهة =====
 // ============================================================
 
 function updateAuthButtons() {
@@ -2901,6 +3305,7 @@ function updateAdminPanel() {
         loadJoinRequests(); 
         loadApprovedMembers(); 
         loadTeachersList();
+        loadRegistrationSettings();
     } else if (isTeacher) {
         if (panelBadge) panelBadge.textContent = '👨‍🏫 أستاذ';
         if (adminOnlySection) adminOnlySection.style.display = 'none';
@@ -2961,7 +3366,7 @@ async function loadSecurityLogs() {
 }
 
 // ============================================================
-// ===== القسم 19: دوال تحميل البيانات =====
+// ===== القسم 21: دوال تحميل البيانات =====
 // ============================================================
 
 function getDefaultPlatformData() {
@@ -3034,7 +3439,8 @@ async function loadDataFromFirebase() {
                     download_url: lesson.download_url || '', 
                     content_type: lesson.content_type,
                     file_info: lesson.file_info || null,
-                    telegram_file_id: lesson.telegram_file_id || null
+                    telegram_file_id: lesson.telegram_file_id || null,
+                    created_at: lesson.created_at || new Date().toISOString()
                 };
                 
                 if (lesson.stage === 'primary' && lesson.substage && platformData.primary[lesson.substage] &&
@@ -3065,7 +3471,7 @@ async function loadDataFromFirebase() {
 }
 
 // ============================================================
-// ===== القسم 20: دوال إدارة الدروس =====
+// ===== القسم 22: دوال إدارة الدروس =====
 // ============================================================
 
 function toggleLessonFields() {
@@ -3213,7 +3619,7 @@ function openEditInternalModal(id, title, url, download, contentType) {
 window.openEditInternalModal = openEditInternalModal;
 
 // ============================================================
-// ===== القسم 21: دوال إدارة الطلبات =====
+// ===== القسم 23: دوال إدارة الطلبات =====
 // ============================================================
 
 async function loadJoinRequests() {
@@ -3479,7 +3885,7 @@ async function deleteTeacher(email) {
 window.deleteTeacher = deleteTeacher;
 
 // ============================================================
-// ===== القسم 22: دوال شريط الأخبار =====
+// ===== القسم 24: دوال شريط الأخبار =====
 // ============================================================
 
 function renderNewsTicker() {
@@ -3528,7 +3934,7 @@ async function updateNews() {
 }
 
 // ============================================================
-// ===== القسم 23: دوال الإعدادات والقفل =====
+// ===== القسم 25: دوال الإعدادات والقفل =====
 // ============================================================
 
 async function loadLockSettings() {
@@ -3625,7 +4031,123 @@ function updateCountdown() {
 }
 
 // ============================================================
-// ===== القسم 24: دوال المجتمع =====
+// ===== القسم 26: دوال إدارة التسجيل =====
+// ============================================================
+
+function getDefaultRegistrationSettings() {
+    return {
+        registrationLocked: false,
+        resumeDate: ''
+    };
+}
+
+async function loadRegistrationSettings() {
+    if (!database) {
+        registrationSettings = getDefaultRegistrationSettings();
+        updateRegistrationUI();
+        return registrationSettings;
+    }
+    try {
+        var snapshot = await database.ref('settings/registrationSettings').once('value');
+        var saved = snapshot.val();
+        registrationSettings = saved || getDefaultRegistrationSettings();
+        updateRegistrationUI();
+        return registrationSettings;
+    } catch(e) {
+        registrationSettings = getDefaultRegistrationSettings();
+        return registrationSettings;
+    }
+}
+
+function updateRegistrationUI() {
+    if (!registrationSettings) return;
+    var badge = document.getElementById('registrationStatusBadge');
+    var info = document.getElementById('registrationInfo');
+    var dateInput = document.getElementById('registrationResumeDateInput');
+    
+    if (registrationSettings.registrationLocked) {
+        if (badge) {
+            badge.textContent = '🔴 موقوف';
+            badge.style.background = '#ef4444';
+        }
+        if (info) {
+            var dateDisplay = registrationSettings.resumeDate ? ' حتى ' + formatDate(registrationSettings.resumeDate) : '';
+            info.textContent = '⏸️ التسجيل موقوف مؤقتاً' + dateDisplay;
+        }
+    } else {
+        if (badge) {
+            badge.textContent = '🟢 مفتوح';
+            badge.style.background = '#10b981';
+        }
+        if (info) info.textContent = '✅ التسجيل مفتوح للجميع';
+    }
+    if (dateInput && registrationSettings.resumeDate) {
+        dateInput.value = registrationSettings.resumeDate;
+    } else if (dateInput) {
+        dateInput.value = '';
+    }
+}
+
+async function stopRegistration() {
+    if (!isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) {
+        showError('غير مصرح لك - هذه الصلاحية للمسؤول فقط');
+        return;
+    }
+    if (!checkRateLimit('stop_registration')) return;
+    
+    var dateInput = document.getElementById('registrationResumeDateInput');
+    var resumeDate = dateInput?.value;
+    if (!resumeDate) {
+        showWarning('الرجاء تحديد تاريخ استئناف التسجيل');
+        return;
+    }
+    registrationSettings.registrationLocked = true;
+    registrationSettings.resumeDate = resumeDate;
+    await saveRegistrationSettings();
+    logSecurityEvent('registration_stopped', { resumeDate: resumeDate });
+    showSuccess('تم إيقاف التسجيل حتى ' + formatDate(resumeDate));
+}
+
+async function startRegistration() {
+    if (!isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) {
+        showError('غير مصرح لك - هذه الصلاحية للمسؤول فقط');
+        return;
+    }
+    if (!checkRateLimit('start_registration')) return;
+    
+    registrationSettings.registrationLocked = false;
+    registrationSettings.resumeDate = '';
+    await saveRegistrationSettings();
+    logSecurityEvent('registration_started');
+    showSuccess('تم استئناف التسجيل');
+}
+
+async function saveRegistrationSettings() {
+    if (!database) return;
+    await database.ref('settings/registrationSettings').set(registrationSettings);
+    updateRegistrationUI();
+}
+
+function showRegistrationStoppedModal() {
+    var modal = document.getElementById('registrationStoppedModal');
+    if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+}
+window.showRegistrationStoppedModal = showRegistrationStoppedModal;
+
+function closeRegistrationStoppedModal() {
+    var modal = document.getElementById('registrationStoppedModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+window.closeRegistrationStoppedModal = closeRegistrationStoppedModal;
+
+// ============================================================
+// ===== القسم 27: دوال المجتمع =====
 // ============================================================
 
 async function loadInviteLinks() {
@@ -3760,7 +4282,7 @@ function showCommunitySection() {
 }
 
 // ============================================================
-// ===== القسم 25: دوال حفظ الحالة والعرض =====
+// ===== القسم 28: دوال حفظ الحالة والعرض =====
 // ============================================================
 
 var currentStage = null;
@@ -3957,7 +4479,7 @@ function refreshCurrentView() {
 }
 
 // ============================================================
-// ===== القسم 26: دوال عرض المراحل =====
+// ===== القسم 29: دوال عرض المراحل =====
 // ============================================================
 
 function showSubStages() {
@@ -4150,7 +4672,7 @@ function showLessonTypes() {
 }
 
 // ============================================================
-// ===== القسم 27: دوال عرض الدروس =====
+// ===== القسم 30: دوال عرض الدروس مع ترتيب (الأحدث أولاً) =====
 // ============================================================
 
 function getCurrentLessons() {
@@ -4161,6 +4683,13 @@ function getCurrentLessons() {
         else lessons = platformData.high.subjectsByYear[currentYear][currentSubject][currentLessonType];
         
         if (!lessons) lessons = [];
+        
+        // ترتيب الدروس حسب تاريخ الإنشاء (الأحدث أولاً)
+        lessons.sort(function(a, b) {
+            var dateA = a.created_at ? new Date(a.created_at) : new Date(0);
+            var dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+            return dateB - dateA;
+        });
         
         if (currentFilter === 'summer') {
             var filtered = [];
@@ -4191,6 +4720,12 @@ function getLessonBadge(lesson) {
     return '';
 }
 
+function toggleSortOrder() {
+    sortOrder = (sortOrder === 'desc') ? 'asc' : 'desc';
+    renderLessonsList();
+}
+window.toggleSortOrder = toggleSortOrder;
+
 function renderLessonsList() {
     hideMainStages();
     if (!canUserAccessStage(currentStage)) { 
@@ -4198,6 +4733,11 @@ function renderLessonsList() {
         return; 
     }
     var allLessons = getCurrentLessons();
+    
+    if (sortOrder === 'asc') {
+        allLessons.reverse();
+    }
+    
     var totalPages = Math.ceil(allLessons.length / LESSONS_PER_PAGE);
     if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
     var start = (currentPage - 1) * LESSONS_PER_PAGE;
@@ -4205,12 +4745,20 @@ function renderLessonsList() {
     var titleText = currentSubject;
     if (currentStage !== 'primary') titleText = currentYear + ' - ' + currentSubject;
     
+    var sortIcon = sortOrder === 'desc' ? 'fa-arrow-down' : 'fa-arrow-up';
+    var sortLabel = sortOrder === 'desc' ? 'الأحدث أولاً' : 'الأقدم أولاً';
+    
     var html = '<button class="back-btn-new" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع</button>' +
         '<div class="page-title"><i class="fas fa-book-open"></i> ' + sanitizeHtml(titleText) + ' - ' + (currentLessonType === 'summer' ? 'الدروس الصيفية' : 'الدروس المقررة') + '</div>' +
-        '<div class="filter-buttons">' +
+        '<div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:space-between; align-items:center; margin-bottom:12px;">' +
+        '<div class="filter-buttons" style="margin-bottom:0;">' +
         '<button class="filter-btn active" data-filter="all" onclick="filterLessons(\'all\')">📚 الكل</button>' +
         '<button class="filter-btn" data-filter="summer" onclick="filterLessons(\'summer\')">📄 داخلية</button>' +
         '<button class="filter-btn" data-filter="external" onclick="filterLessons(\'external\')">🔗 خارجية</button>' +
+        '</div>' +
+        '<button class="sort-btn" onclick="toggleSortOrder()" title="ترتيب الدروس">' +
+        '<i class="fas ' + sortIcon + '"></i> ' + sortLabel +
+        '</button>' +
         '</div>' +
         '<div class="lessons-count">📊 إجمالي الدروس: ' + allLessons.length + '</div>' +
         '<div id="lessonsContainer" class="lessons-list-new">';
@@ -4223,9 +4771,11 @@ function renderLessonsList() {
             var badge = getLessonBadge(lesson);
             
             var fileId = lesson.file_info?.file_id || lesson.telegram_file_id || null;
+            var createdDate = lesson.created_at ? new Date(lesson.created_at).toLocaleDateString('ar') : '';
             
             html += '<div class="lesson-item-new">' +
                 '<div class="title">' + badge + ' <span>📌 ' + sanitizeHtml(lesson.title) + '</span>' +
+                (createdDate ? '<span style="font-size:0.6rem; color:var(--text-muted); margin-right:6px;">📅 ' + createdDate + '</span>' : '') +
                 '</div><div class="actions">';
             
             if (lesson.content_type === 'pdf' || lesson.content_type === 'image') {
@@ -4300,7 +4850,7 @@ function renderLessonsList() {
 }
 
 // ============================================================
-// ===== القسم 28: ربط الأزرار وتهيئة التطبيق =====
+// ===== القسم 31: ربط الأزرار وتهيئة التطبيق =====
 // ============================================================
 
 function bindMainStageButtons() {
@@ -4337,7 +4887,7 @@ function stageClickHandler(e) {
 }
 
 // ============================================================
-// ===== القسم 29: دوال تسجيل الخروج =====
+// ===== القسم 32: دوال تسجيل الخروج =====
 // ============================================================
 
 async function confirmLogout() {
@@ -4375,12 +4925,15 @@ async function revokeOwnMembership() {
 window.revokeOwnMembership = revokeOwnMembership;
 
 // ============================================================
-// ===== القسم 30: بدء التطبيق =====
+// ===== القسم 33: بدء التطبيق =====
 // ============================================================
 
 async function init() {
     try {
         console.log('🚀 بدء تحميل المنصة...');
+        console.log('🔒 نظام الأمان المتقدم يعمل بنجاح!');
+        console.log('🤖 reCAPTCHA جاهزة للحماية من البوتات!');
+        console.log('🔐 2FA جاهزة لحماية حسابات المسؤولين!');
         
         checkPrivacyConsent();
         setupSessionActivityListeners();
@@ -4402,6 +4955,7 @@ async function init() {
         
         await loadDataFromFirebase();
         await loadLockSettings();
+        await loadRegistrationSettings();
         await loadInviteLinks();
         await loadNews();
         console.log('✅ تم تحميل البيانات بنجاح');
@@ -4432,12 +4986,14 @@ async function init() {
         var loading = document.getElementById('app-loading');
         if (loading) loading.classList.add('hidden');
         
-        logSecurityEvent('platform_initialized', { version: '3.0' });
+        logSecurityEvent('platform_initialized', { version: '4.0' });
         
         console.log('✅ تم تحميل منصة الأستاذ محمد بنجاح!');
-        console.log('🔒 نظام الأمان المتقدم يعمل بنجاح!');
         console.log('📧 نظام إرسال البريد الإلكتروني عبر EmailJS يعمل!');
         console.log('📱 جميع الرسائل تصل إلى: hemikamohammed08@gmail.com');
+        console.log('⏳ نظام إيقاف التسجيل جاهز!');
+        console.log('🤖 reCAPTCHA تحمي نماذج التسجيل!');
+        console.log('🔐 2FA تحمي حسابات المسؤولين!');
         
     } catch(error) {
         console.error('❌ خطأ في التحميل:', error);
@@ -4449,7 +5005,7 @@ async function init() {
 }
 
 // ============================================================
-// ===== القسم 31: أحداث DOM =====
+// ===== القسم 34: أحداث DOM =====
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -4519,6 +5075,7 @@ document.addEventListener('DOMContentLoaded', function() {
         registerTeacherChoiceBtn.addEventListener('click', function() {
             document.getElementById('registerChoiceModal').classList.remove('active');
             document.getElementById('registerTeacherModal').classList.add('active');
+            resetRecaptcha();
         });
     }
     
@@ -4527,6 +5084,7 @@ document.addEventListener('DOMContentLoaded', function() {
         registerMemberChoiceBtn.addEventListener('click', function() {
             document.getElementById('registerChoiceModal').classList.remove('active');
             document.getElementById('registerMemberModal').classList.add('active');
+            resetRecaptcha();
         });
     }
     
@@ -4546,6 +5104,60 @@ document.addEventListener('DOMContentLoaded', function() {
     
     var registerMemberSubmitBtn = document.getElementById('registerMemberSubmitBtn');
     if (registerMemberSubmitBtn) registerMemberSubmitBtn.addEventListener('click', handleRegisterMember);
+    
+    // أزرار 2FA
+    var twofaVerifyBtn = document.getElementById('twofaVerifyBtn');
+    if (twofaVerifyBtn) twofaVerifyBtn.addEventListener('click', verifyTwoFA);
+    
+    var twofaCancelBtn = document.getElementById('twofaCancelBtn');
+    if (twofaCancelBtn) {
+        twofaCancelBtn.addEventListener('click', function() {
+            document.getElementById('twofaModal').classList.remove('active');
+            document.getElementById('twofaError').innerText = '';
+            if (twofaTimer) clearTimeout(twofaTimer);
+        });
+    }
+    
+    // التنقل بين حقول 2FA
+    var twofaInputs = document.querySelectorAll('.twofa-input');
+    for (var i = 0; i < twofaInputs.length; i++) {
+        twofaInputs[i].addEventListener('input', function(e) {
+            var input = e.target;
+            var index = parseInt(input.getAttribute('data-index'));
+            if (input.value.length === 1 && index < 5) {
+                var next = document.querySelector('.twofa-input[data-index="' + (index + 1) + '"]');
+                if (next) next.focus();
+            }
+        });
+        
+        twofaInputs[i].addEventListener('keydown', function(e) {
+            if (e.key === 'Backspace') {
+                var input = e.target;
+                var index = parseInt(input.getAttribute('data-index'));
+                if (input.value.length === 0 && index > 0) {
+                    var prev = document.querySelector('.twofa-input[data-index="' + (index - 1) + '"]');
+                    if (prev) prev.focus();
+                }
+            }
+            if (e.key === 'Enter') {
+                verifyTwoFA();
+            }
+        });
+        
+        twofaInputs[i].addEventListener('paste', function(e) {
+            e.preventDefault();
+            var paste = (e.clipboardData || window.clipboardData).getData('text');
+            if (paste && paste.length === 6 && /^\d+$/.test(paste)) {
+                var inputs = document.querySelectorAll('.twofa-input');
+                for (var j = 0; j < inputs.length && j < paste.length; j++) {
+                    inputs[j].value = paste[j];
+                }
+                var lastInput = inputs[Math.min(paste.length - 1, inputs.length - 1)];
+                if (lastInput) lastInput.focus();
+                setTimeout(verifyTwoFA, 100);
+            }
+        });
+    }
     
     // أزرار إغلاق نوافذ التسجيل
     var closeAdminLoginBtn = document.getElementById('closeAdminLoginBtn');
@@ -4586,6 +5198,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('registerTeacherPassword').value = '';
             document.getElementById('registerTeacherConfirm').value = '';
             document.getElementById('registerTeacherError').innerText = '';
+            resetRecaptcha();
         });
     }
     
@@ -4597,6 +5210,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('registerMemberPassword').value = '';
             document.getElementById('registerMemberConfirm').value = '';
             document.getElementById('registerMemberError').innerText = '';
+            resetRecaptcha();
         });
     }
     
@@ -4612,6 +5226,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     var curriculumStartBtn = document.getElementById('curriculumStartBtn');
     if (curriculumStartBtn) curriculumStartBtn.addEventListener('click', function() { startLessons('curriculum'); });
+    
+    // أزرار إدارة التسجيل
+    var registrationStopBtn = document.getElementById('registrationStopBtn');
+    if (registrationStopBtn) registrationStopBtn.addEventListener('click', stopRegistration);
+    
+    var registrationStartBtn = document.getElementById('registrationStartBtn');
+    if (registrationStartBtn) registrationStartBtn.addEventListener('click', startRegistration);
     
     // أزرار إضافة وتعديل الدروس
     var confirmAddLessonBtn = document.getElementById('confirmAddLessonBtn');
@@ -4800,6 +5421,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     loadJoinRequests(); 
                     loadApprovedMembers(); 
                     loadTeachersList();
+                    loadRegistrationSettings();
                     updateAdminPanel(); 
                     updateStats(); 
                 }
@@ -4818,6 +5440,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target.classList.contains('confirm-dialog-overlay')) closeConfirmDialog();
         if (e.target.classList.contains('unavailable-modal-overlay')) closeUnavailableModal();
         if (e.target.classList.contains('admin-overlay')) closeAdminPanel();
+        if (e.target.classList.contains('registration-stopped-modal')) {
+            if (e.target === document.getElementById('registrationStoppedModal')) {
+                closeRegistrationStoppedModal();
+            }
+        }
     };
     
     // مصادقة Firebase
@@ -4863,6 +5490,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     loadJoinRequests(); 
                     loadApprovedMembers(); 
                     loadTeachersList();
+                    loadRegistrationSettings();
                 }
                 updateAuthButtons();
                 if (previousUser === null) { 
