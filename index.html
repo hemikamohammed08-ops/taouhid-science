@@ -931,40 +931,11 @@
             }
         }
 
-        /* 2FA Modal */
-        .twofa-input-group {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin: 16px 0;
-        }
-        .twofa-input-group input {
-            width: 50px;
-            height: 56px;
-            text-align: center;
-            font-size: 1.4rem;
-            font-weight: 700;
-            border: 2px solid var(--border-color);
-            border-radius: 12px;
-            background: var(--bg-body);
-            font-family: 'Tajawal', sans-serif;
-            transition: all 0.3s ease;
-        }
-        .twofa-input-group input:focus {
-            border-color: var(--primary);
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(26, 74, 138, 0.2);
-        }
-        .twofa-input-group input:not(:placeholder-shown) {
-            border-color: var(--primary);
-        }
-
         @media (max-width: 480px) {
             .registration-stopped-modal .card { padding: 32px 24px 28px; }
             .registration-stopped-modal .card h2 { font-size: 1.4rem; }
             .registration-stopped-modal .card .subtitle { font-size: 0.95rem; }
             .registration-stopped-modal .card .btn-close-reg-stop { padding: 12px 28px; font-size: 0.95rem; min-height: 44px; }
-            .twofa-input-group input { width: 40px; height: 46px; font-size: 1.2rem; }
         }
 
         @media (max-width: 480px) {
@@ -1015,33 +986,6 @@
         <div class="btn-group">
             <button class="btn-cancel" onclick="closeConfirmDialog()">إلغاء</button>
             <button class="btn-confirm" id="confirmDeleteBtn">نعم، حذف</button>
-        </div>
-    </div>
-</div>
-
-<!-- نافذة 2FA للمسؤول -->
-<div id="twofaModal" class="modal-overlay">
-    <div class="modal-content" style="text-align:center; max-width:400px;">
-        <div style="font-size:2.5rem;">🔐</div>
-        <h2 style="margin-bottom:4px;">تحقق من هويتك</h2>
-        <p style="color:var(--text-secondary); font-size:0.9rem;">تم إرسال رمز التحقق إلى بريدك الإلكتروني</p>
-        <div class="twofa-input-group" id="twofaInputs">
-            <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" class="twofa-input" data-index="0" placeholder="•">
-            <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" class="twofa-input" data-index="1" placeholder="•">
-            <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" class="twofa-input" data-index="2" placeholder="•">
-            <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" class="twofa-input" data-index="3" placeholder="•">
-            <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" class="twofa-input" data-index="4" placeholder="•">
-            <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" class="twofa-input" data-index="5" placeholder="•">
-        </div>
-        <div id="twofaError" style="color:red; font-size:0.8rem; min-height:20px;"></div>
-        <button id="twofaVerifyBtn" class="btn" style="width:100%; background:var(--primary); color:white; font-size:1rem; padding:12px; min-height:48px;">
-            <i class="fas fa-check-circle"></i> تحقق
-        </button>
-        <button id="twofaCancelBtn" class="btn" style="width:100%; margin-top:4px; background:#94a3b8; color:white;">
-            <i class="fas fa-times"></i> إلغاء
-        </button>
-        <div style="font-size:0.65rem; color:var(--text-muted); margin-top:8px;">
-            <i class="fas fa-clock"></i> صلاحية الرمز 5 دقائق
         </div>
     </div>
 </div>
@@ -1577,13 +1521,6 @@ var EMAILJS_SERVICE_ID = 'service_v9v54om';
 var EMAILJS_TEMPLATE_ID = 'template_bzmpqfn';
 var EMAILJS_PUBLIC_KEY = 'mQoCY5duuuVUHjuaj';
 
-// ===== متغيرات 2FA =====
-var twofaCode = '';
-var twofaEmail = '';
-var twofaTimer = null;
-var twofaAttempts = 0;
-var MAX_TWOFA_ATTEMPTS = 3;
-
 function decryptTelegramToken() {
     try {
         var secretKey = 'ELMOUDIR_SECRET_KEY_2026_SAFE';
@@ -1824,10 +1761,6 @@ function formatDate(dateStr) {
     return dateStr;
 }
 
-function generateTwoFACode() {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
 // ============================================================
 // ===== القسم 6: تهيئة Firebase =====
 // ============================================================
@@ -1942,101 +1875,7 @@ function resetRecaptcha() {
 }
 
 // ============================================================
-// ===== القسم 9: دوال 2FA =====
-// ============================================================
-
-function showTwoFAModal(email, onSuccess) {
-    twofaEmail = email;
-    twofaAttempts = 0;
-    twofaCode = generateTwoFACode();
-    
-    // إرسال الرمز عبر البريد الإلكتروني
-    sendTwoFACodeEmail(email, twofaCode);
-    
-    document.getElementById('twofaModal').classList.add('active');
-    document.getElementById('twofaError').innerText = '';
-    
-    // تنظيف الحقول
-    var inputs = document.querySelectorAll('.twofa-input');
-    for (var i = 0; i < inputs.length; i++) {
-        inputs[i].value = '';
-        inputs[i].focus();
-    }
-    if (inputs.length > 0) inputs[0].focus();
-    
-    // حفظ دالة النجاح
-    window._twofaSuccess = onSuccess;
-    
-    // بدء المؤقت
-    if (twofaTimer) clearTimeout(twofaTimer);
-    twofaTimer = setTimeout(function() {
-        document.getElementById('twofaError').innerText = '⏰ انتهت صلاحية الرمز. يرجى المحاولة مرة أخرى.';
-        document.getElementById('twofaVerifyBtn').disabled = true;
-        document.getElementById('twofaVerifyBtn').style.opacity = '0.5';
-    }, 300000); // 5 دقائق
-}
-
-function sendTwoFACodeEmail(email, code) {
-    // إرسال الرمز عبر EmailJS
-    var templateParams = {
-        to_email: email,
-        code: code,
-        subject: '🔐 رمز التحقق - منصة الأستاذ محمد'
-    };
-    
-    emailjs.init(EMAILJS_PUBLIC_KEY);
-    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
-        .then(function(response) {
-            console.log('✅ تم إرسال رمز 2FA إلى:', email);
-        })
-        .catch(function(error) {
-            console.error('❌ فشل إرسال رمز 2FA:', error);
-            // استخدام رمز افتراضي في حالة فشل الإرسال (للاختبار)
-            showWarning('⚠️ لم نتمكن من إرسال الرمز. استخدم الرمز: ' + code);
-        });
-}
-
-function verifyTwoFA() {
-    var inputs = document.querySelectorAll('.twofa-input');
-    var enteredCode = '';
-    for (var i = 0; i < inputs.length; i++) {
-        enteredCode += inputs[i].value;
-    }
-    
-    if (enteredCode.length !== 6) {
-        document.getElementById('twofaError').innerText = '⚠️ الرجاء إدخال الرمز المكون من 6 أرقام';
-        return;
-    }
-    
-    twofaAttempts++;
-    if (twofaAttempts > MAX_TWOFA_ATTEMPTS) {
-        document.getElementById('twofaError').innerText = '⛔ تم تجاوز عدد المحاولات المسموح بها. يرجى إعادة المحاولة لاحقاً.';
-        document.getElementById('twofaVerifyBtn').disabled = true;
-        logSecurityEvent('twofa_exceeded_attempts', { email: twofaEmail });
-        return;
-    }
-    
-    if (enteredCode === twofaCode) {
-        // نجاح التحقق
-        document.getElementById('twofaModal').classList.remove('active');
-        if (typeof window._twofaSuccess === 'function') {
-            window._twofaSuccess();
-        }
-        logSecurityEvent('twofa_success', { email: twofaEmail });
-        showSuccess('✅ تم التحقق بنجاح');
-    } else {
-        document.getElementById('twofaError').innerText = '❌ الرمز غير صحيح. المحاولة ' + twofaAttempts + '/' + MAX_TWOFA_ATTEMPTS;
-        logSecurityEvent('twofa_failed', { email: twofaEmail, attempts: twofaAttempts });
-        // تنظيف الحقول
-        for (var i = 0; i < inputs.length; i++) {
-            inputs[i].value = '';
-        }
-        if (inputs.length > 0) inputs[0].focus();
-    }
-}
-
-// ============================================================
-// ===== القسم 10: دوال المصادقة المتقدمة =====
+// ===== القسم 9: دوال المصادقة المتقدمة (تم إزالة 2FA) =====
 // ============================================================
 
 async function handleAdminLogin() {
@@ -2072,13 +1911,8 @@ async function handleAdminLogin() {
         }
         logSecurityEvent('admin_login_success', { email: email });
         hideAllModals();
-        
-        // طلب 2FA
-        showTwoFAModal(email, function() {
-            // بعد نجاح 2FA
-            showSuccess('تم تسجيل الدخول كمسؤول بنجاح!');
-            document.getElementById('adminLoginModal').classList.remove('active');
-        });
+        showSuccess('تم تسجيل الدخول كمسؤول بنجاح!');
+        document.getElementById('adminLoginModal').classList.remove('active');
         
     } catch(error) {
         recordFailedLogin(email);
@@ -2322,7 +2156,7 @@ async function handleRegisterMember() {
 }
 
 // ============================================================
-// ===== القسم 11: دوال قاعدة البيانات =====
+// ===== القسم 10: دوال قاعدة البيانات =====
 // ============================================================
 
 async function checkTeacherPermissions(email) {
@@ -2373,7 +2207,7 @@ async function addJoinRequest(email, userType, stage) {
 }
 
 // ============================================================
-// ===== القسم 12: دوال معالجة الملفات =====
+// ===== القسم 11: دوال معالجة الملفات =====
 // ============================================================
 
 function handleFileSelect(event, inputId) {
@@ -2431,7 +2265,7 @@ function clearFileUploadFields() {
 }
 
 // ============================================================
-// ===== القسم 13: دوال رفع الملفات =====
+// ===== القسم 12: دوال رفع الملفات =====
 // ============================================================
 
 async function uploadFileToTelegram(file, caption) {
@@ -2536,7 +2370,7 @@ async function getFreshTelegramUrl(file_id) {
 }
 
 // ============================================================
-// ===== القسم 14: دوال الاتصال بنا =====
+// ===== القسم 13: دوال الاتصال بنا =====
 // ============================================================
 
 function openContactModal() {
@@ -2660,7 +2494,7 @@ function sendContactMessage() {
 window.sendContactMessage = sendContactMessage;
 
 // ============================================================
-// ===== القسم 15: نافذة تأكيد الحذف =====
+// ===== القسم 14: نافذة تأكيد الحذف =====
 // ============================================================
 
 function showConfirmDialog(message, onConfirm) {
@@ -2687,7 +2521,7 @@ window.showConfirmDialog = showConfirmDialog;
 window.closeConfirmDialog = closeConfirmDialog;
 
 // ============================================================
-// ===== القسم 16: دوال عرض الصور المتطورة =====
+// ===== القسم 15: دوال عرض الصور المتطورة =====
 // ============================================================
 
 function openImageViewer(imageUrl, title) {
@@ -2943,7 +2777,7 @@ window.openImageViewer = openImageViewer;
 window.closeImageViewer = closeImageViewer;
 
 // ============================================================
-// ===== القسم 17: دوال عرض المحتوى =====
+// ===== القسم 16: دوال عرض المحتوى =====
 // ============================================================
 
 async function showLessonContent(id, title, url, download, type, fileId) {
@@ -3093,7 +2927,7 @@ function closeUnavailableModal() {
 window.closeUnavailableModal = closeUnavailableModal;
 
 // ============================================================
-// ===== القسم 18: دوال الصلاحيات =====
+// ===== القسم 17: دوال الصلاحيات =====
 // ============================================================
 
 function canUserAccessStage(stage) {
@@ -3158,7 +2992,7 @@ function filterLessons(type) {
 window.filterLessons = filterLessons;
 
 // ============================================================
-// ===== القسم 19: دوال الإحصائيات =====
+// ===== القسم 18: دوال الإحصائيات =====
 // ============================================================
 
 function updateStats() {
@@ -3214,7 +3048,7 @@ function updateStats() {
 }
 
 // ============================================================
-// ===== القسم 20: دوال تحديث الواجهة =====
+// ===== القسم 19: دوال تحديث الواجهة =====
 // ============================================================
 
 function updateAuthButtons() {
@@ -3366,7 +3200,7 @@ async function loadSecurityLogs() {
 }
 
 // ============================================================
-// ===== القسم 21: دوال تحميل البيانات =====
+// ===== القسم 20: دوال تحميل البيانات =====
 // ============================================================
 
 function getDefaultPlatformData() {
@@ -3471,7 +3305,7 @@ async function loadDataFromFirebase() {
 }
 
 // ============================================================
-// ===== القسم 22: دوال إدارة الدروس =====
+// ===== القسم 21: دوال إدارة الدروس =====
 // ============================================================
 
 function toggleLessonFields() {
@@ -3619,7 +3453,7 @@ function openEditInternalModal(id, title, url, download, contentType) {
 window.openEditInternalModal = openEditInternalModal;
 
 // ============================================================
-// ===== القسم 23: دوال إدارة الطلبات =====
+// ===== القسم 22: دوال إدارة الطلبات =====
 // ============================================================
 
 async function loadJoinRequests() {
@@ -3885,7 +3719,7 @@ async function deleteTeacher(email) {
 window.deleteTeacher = deleteTeacher;
 
 // ============================================================
-// ===== القسم 24: دوال شريط الأخبار =====
+// ===== القسم 23: دوال شريط الأخبار =====
 // ============================================================
 
 function renderNewsTicker() {
@@ -3934,7 +3768,7 @@ async function updateNews() {
 }
 
 // ============================================================
-// ===== القسم 25: دوال الإعدادات والقفل =====
+// ===== القسم 24: دوال الإعدادات والقفل =====
 // ============================================================
 
 async function loadLockSettings() {
@@ -4031,7 +3865,7 @@ function updateCountdown() {
 }
 
 // ============================================================
-// ===== القسم 26: دوال إدارة التسجيل =====
+// ===== القسم 25: دوال إدارة التسجيل =====
 // ============================================================
 
 function getDefaultRegistrationSettings() {
@@ -4147,7 +3981,7 @@ function closeRegistrationStoppedModal() {
 window.closeRegistrationStoppedModal = closeRegistrationStoppedModal;
 
 // ============================================================
-// ===== القسم 27: دوال المجتمع =====
+// ===== القسم 26: دوال المجتمع =====
 // ============================================================
 
 async function loadInviteLinks() {
@@ -4282,7 +4116,7 @@ function showCommunitySection() {
 }
 
 // ============================================================
-// ===== القسم 28: دوال حفظ الحالة والعرض =====
+// ===== القسم 27: دوال حفظ الحالة والعرض =====
 // ============================================================
 
 var currentStage = null;
@@ -4479,7 +4313,7 @@ function refreshCurrentView() {
 }
 
 // ============================================================
-// ===== القسم 29: دوال عرض المراحل =====
+// ===== القسم 28: دوال عرض المراحل =====
 // ============================================================
 
 function showSubStages() {
@@ -4672,7 +4506,7 @@ function showLessonTypes() {
 }
 
 // ============================================================
-// ===== القسم 30: دوال عرض الدروس مع ترتيب (الأحدث أولاً) =====
+// ===== القسم 29: دوال عرض الدروس مع ترتيب (الأحدث أولاً) =====
 // ============================================================
 
 function getCurrentLessons() {
@@ -4850,7 +4684,7 @@ function renderLessonsList() {
 }
 
 // ============================================================
-// ===== القسم 31: ربط الأزرار وتهيئة التطبيق =====
+// ===== القسم 30: ربط الأزرار وتهيئة التطبيق =====
 // ============================================================
 
 function bindMainStageButtons() {
@@ -4887,7 +4721,7 @@ function stageClickHandler(e) {
 }
 
 // ============================================================
-// ===== القسم 32: دوال تسجيل الخروج =====
+// ===== القسم 31: دوال تسجيل الخروج =====
 // ============================================================
 
 async function confirmLogout() {
@@ -4925,7 +4759,7 @@ async function revokeOwnMembership() {
 window.revokeOwnMembership = revokeOwnMembership;
 
 // ============================================================
-// ===== القسم 33: بدء التطبيق =====
+// ===== القسم 32: بدء التطبيق =====
 // ============================================================
 
 async function init() {
@@ -4933,7 +4767,7 @@ async function init() {
         console.log('🚀 بدء تحميل المنصة...');
         console.log('🔒 نظام الأمان المتقدم يعمل بنجاح!');
         console.log('🤖 reCAPTCHA جاهزة للحماية من البوتات!');
-        console.log('🔐 2FA جاهزة لحماية حسابات المسؤولين!');
+        console.log('❌ تم إلغاء المصادقة الثنائية (2FA)');
         
         checkPrivacyConsent();
         setupSessionActivityListeners();
@@ -4993,7 +4827,7 @@ async function init() {
         console.log('📱 جميع الرسائل تصل إلى: hemikamohammed08@gmail.com');
         console.log('⏳ نظام إيقاف التسجيل جاهز!');
         console.log('🤖 reCAPTCHA تحمي نماذج التسجيل!');
-        console.log('🔐 2FA تحمي حسابات المسؤولين!');
+        console.log('❌ تم إلغاء المصادقة الثنائية (2FA) بناءً على طلبك');
         
     } catch(error) {
         console.error('❌ خطأ في التحميل:', error);
@@ -5005,7 +4839,7 @@ async function init() {
 }
 
 // ============================================================
-// ===== القسم 34: أحداث DOM =====
+// ===== القسم 33: أحداث DOM =====
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -5104,60 +4938,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     var registerMemberSubmitBtn = document.getElementById('registerMemberSubmitBtn');
     if (registerMemberSubmitBtn) registerMemberSubmitBtn.addEventListener('click', handleRegisterMember);
-    
-    // أزرار 2FA
-    var twofaVerifyBtn = document.getElementById('twofaVerifyBtn');
-    if (twofaVerifyBtn) twofaVerifyBtn.addEventListener('click', verifyTwoFA);
-    
-    var twofaCancelBtn = document.getElementById('twofaCancelBtn');
-    if (twofaCancelBtn) {
-        twofaCancelBtn.addEventListener('click', function() {
-            document.getElementById('twofaModal').classList.remove('active');
-            document.getElementById('twofaError').innerText = '';
-            if (twofaTimer) clearTimeout(twofaTimer);
-        });
-    }
-    
-    // التنقل بين حقول 2FA
-    var twofaInputs = document.querySelectorAll('.twofa-input');
-    for (var i = 0; i < twofaInputs.length; i++) {
-        twofaInputs[i].addEventListener('input', function(e) {
-            var input = e.target;
-            var index = parseInt(input.getAttribute('data-index'));
-            if (input.value.length === 1 && index < 5) {
-                var next = document.querySelector('.twofa-input[data-index="' + (index + 1) + '"]');
-                if (next) next.focus();
-            }
-        });
-        
-        twofaInputs[i].addEventListener('keydown', function(e) {
-            if (e.key === 'Backspace') {
-                var input = e.target;
-                var index = parseInt(input.getAttribute('data-index'));
-                if (input.value.length === 0 && index > 0) {
-                    var prev = document.querySelector('.twofa-input[data-index="' + (index - 1) + '"]');
-                    if (prev) prev.focus();
-                }
-            }
-            if (e.key === 'Enter') {
-                verifyTwoFA();
-            }
-        });
-        
-        twofaInputs[i].addEventListener('paste', function(e) {
-            e.preventDefault();
-            var paste = (e.clipboardData || window.clipboardData).getData('text');
-            if (paste && paste.length === 6 && /^\d+$/.test(paste)) {
-                var inputs = document.querySelectorAll('.twofa-input');
-                for (var j = 0; j < inputs.length && j < paste.length; j++) {
-                    inputs[j].value = paste[j];
-                }
-                var lastInput = inputs[Math.min(paste.length - 1, inputs.length - 1)];
-                if (lastInput) lastInput.focus();
-                setTimeout(verifyTwoFA, 100);
-            }
-        });
-    }
     
     // أزرار إغلاق نوافذ التسجيل
     var closeAdminLoginBtn = document.getElementById('closeAdminLoginBtn');
