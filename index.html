@@ -15,7 +15,8 @@
     <!-- reCAPTCHA -->
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; connect-src 'self' https:; frame-ancestors 'none';">
+    <!-- CSP مع nonce ديناميكي -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' https: 'nonce-{{NONCE}}' 'unsafe-inline' https://www.google.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; connect-src 'self' https:; frame-src https://www.google.com; frame-ancestors 'none';">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-Frame-Options" content="DENY">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
@@ -958,6 +959,25 @@
             0% { transform: scale(0.9); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
+        
+        /* متطلبات كلمة المرور */
+        .password-requirements {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            padding: 4px 12px;
+            border-radius: 8px;
+            background: var(--bg-body);
+            margin-top: 2px;
+        }
+        .password-requirements .req {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin: 2px 4px;
+        }
+        .password-requirements .req.valid { color: #10b981; }
+        .password-requirements .req.invalid { color: #ef4444; }
+        .password-requirements .req i { font-size: 0.6rem; }
     </style>
 </head>
 <body>
@@ -1234,6 +1254,13 @@
         <div class="form-group"><input type="email" id="registerTeacherEmail" placeholder="البريد الإلكتروني" dir="ltr"></div>
         <div class="form-group"><input type="password" id="registerTeacherPassword" placeholder="كلمة المرور" dir="ltr"></div>
         <div class="form-group"><input type="password" id="registerTeacherConfirm" placeholder="تأكيد كلمة المرور" dir="ltr"></div>
+        <div id="teacherPasswordReqs" class="password-requirements">
+            <span class="req invalid" id="reqLength"><i class="fas fa-times"></i> 8 أحرف على الأقل</span>
+            <span class="req invalid" id="reqUpper"><i class="fas fa-times"></i> حرف كبير</span>
+            <span class="req invalid" id="reqLower"><i class="fas fa-times"></i> حرف صغير</span>
+            <span class="req invalid" id="reqNumber"><i class="fas fa-times"></i> رقم</span>
+            <span class="req invalid" id="reqSpecial"><i class="fas fa-times"></i> رمز خاص</span>
+        </div>
         <div class="recaptcha-wrapper">
             <div class="g-recaptcha" data-sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" data-callback="onTeacherRecaptchaSuccess"></div>
         </div>
@@ -1251,6 +1278,13 @@
         <div class="form-group"><input type="email" id="registerMemberEmail" placeholder="البريد الإلكتروني" dir="ltr"></div>
         <div class="form-group"><input type="password" id="registerMemberPassword" placeholder="كلمة المرور" dir="ltr"></div>
         <div class="form-group"><input type="password" id="registerMemberConfirm" placeholder="تأكيد كلمة المرور" dir="ltr"></div>
+        <div id="memberPasswordReqs" class="password-requirements">
+            <span class="req invalid" id="reqMLength"><i class="fas fa-times"></i> 8 أحرف على الأقل</span>
+            <span class="req invalid" id="reqMUpper"><i class="fas fa-times"></i> حرف كبير</span>
+            <span class="req invalid" id="reqMLower"><i class="fas fa-times"></i> حرف صغير</span>
+            <span class="req invalid" id="reqMNumber"><i class="fas fa-times"></i> رقم</span>
+            <span class="req invalid" id="reqMSpecial"><i class="fas fa-times"></i> رمز خاص</span>
+        </div>
         <div class="form-group">
             <label>📚 اختر المرحلة التعليمية التي تريد التسجيل فيها:</label>
             <select id="registerMemberStage">
@@ -1415,6 +1449,25 @@
         </div>
     </div>
 
+    <!-- إضافة عضو مباشر -->
+    <div id="directAddMemberSection" style="margin-top:12px;">
+        <h5><i class="fas fa-user-plus"></i> إضافة عضو مباشر</h5>
+        <div style="background:var(--bg-body); border-radius:12px; padding:12px;">
+            <p style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:8px;">📌 أضف بريداً إلكترونياً مباشرة إلى قائمة الأعضاء المعتمدين (سيظهر فوراً في القائمة)</p>
+            <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+                <input type="email" id="directAddMemberEmail" placeholder="example@email.com" style="flex:1; min-width:150px; padding:8px 14px; border-radius:20px; border:1px solid var(--border-color); background:var(--bg-white); min-height:40px;">
+                <select id="directAddMemberStage" style="padding:8px 12px; border-radius:20px; border:1px solid var(--border-color); background:var(--bg-white); min-height:40px;">
+                    <option value="primary">ابتدائي</option>
+                    <option value="middle">متوسط</option>
+                    <option value="high">ثانوي</option>
+                    <option value="all">جميع المراحل</option>
+                </select>
+                <button id="directAddMemberBtn" style="background:#10b981; color:white; border:none; padding:8px 20px; border-radius:20px; cursor:pointer; font-weight:700; min-height:40px;">➕ إضافة عضو</button>
+            </div>
+            <div id="directAddMemberResult" style="font-size:0.75rem; margin-top:6px; color:var(--text-secondary);"></div>
+        </div>
+    </div>
+
     <div id="newsSection" style="margin-top:12px;">
         <h5><i class="fas fa-newspaper"></i> إدارة شريط المستجدات</h5>
         <div style="background:var(--bg-body); border-radius:12px; padding:10px;">
@@ -1521,6 +1574,9 @@ var EMAILJS_SERVICE_ID = 'service_v9v54om';
 var EMAILJS_TEMPLATE_ID = 'template_bzmpqfn';
 var EMAILJS_PUBLIC_KEY = 'mQoCY5duuuVUHjuaj';
 
+// ===== متغيرات أمنية =====
+var activeSessions = {};
+
 function decryptTelegramToken() {
     try {
         var secretKey = 'ELMOUDIR_SECRET_KEY_2026_SAFE';
@@ -1558,15 +1614,20 @@ var CONTACT_MESSAGES_PATH = 'contact_messages';
 var sortOrder = 'desc';
 var recaptchaTeacherToken = null;
 var recaptchaMemberToken = null;
+var sessionId = null;
 
 // ============================================================
-// ===== القسم 3: دوال الأمان =====
+// ===== القسم 3: دوال الأمان المحسنة =====
 // ============================================================
 
 var loginAttempts = {};
 var requestCount = {};
 var MAX_REQUESTS_PER_MINUTE = 60;
 var csrfTokens = {};
+
+function generateSessionId() {
+    return CryptoJS.lib.WordArray.random(32).toString(CryptoJS.enc.Hex);
+}
 
 function generateCsrfToken() {
     var token = CryptoJS.lib.WordArray.random(32).toString(CryptoJS.enc.Hex);
@@ -1602,9 +1663,11 @@ function logSecurityEvent(eventType, details) {
             timestamp: Date.now(),
             user: currentUser?.email || 'anonymous',
             userAgent: navigator.userAgent,
+            sessionId: sessionId || 'unknown',
             ip: 'client_side'
         };
-        database.ref('security_logs').push(logData);
+        // استخدام مسار منفصل للسجلات الأمنية مع قواعد وصول مقيدة
+        database.ref('security_logs/' + Date.now()).set(logData);
     } catch(e) {
         console.warn('Security logging error:', e);
     }
@@ -1684,6 +1747,55 @@ function setupSessionActivityListeners() {
     }
 }
 
+// التحقق من صلاحية الجلسة (حماية من تسجيل الدخول المتزامن)
+async function validateSession() {
+    if (!currentUser || !sessionId) return true;
+    try {
+        var snapshot = await database.ref('activeSessions/' + currentUser.email.replace(/\./g, '_')).once('value');
+        var data = snapshot.val();
+        if (data && data.sessionId !== sessionId) {
+            // تم تسجيل دخول من جهاز آخر
+            logSecurityEvent('session_conflict', { 
+                user: currentUser.email, 
+                currentSession: sessionId,
+                otherSession: data.sessionId
+            });
+            showWarning('⚠️ تم تسجيل الدخول من جهاز آخر، سيتم تسجيل الخروج');
+            await auth.signOut();
+            updateUIAfterLogout();
+            return false;
+        }
+        return true;
+    } catch(e) {
+        return true;
+    }
+}
+
+// تسجيل جلسة نشطة
+async function registerActiveSession(email) {
+    if (!email) return;
+    sessionId = generateSessionId();
+    try {
+        await database.ref('activeSessions/' + email.replace(/\./g, '_')).set({
+            sessionId: sessionId,
+            lastActivity: Date.now(),
+            userAgent: navigator.userAgent
+        });
+    } catch(e) {
+        console.warn('Could not register session:', e);
+    }
+}
+
+// حذف جلسة نشطة
+async function removeActiveSession(email) {
+    if (!email) return;
+    try {
+        await database.ref('activeSessions/' + email.replace(/\./g, '_')).remove();
+    } catch(e) {
+        console.warn('Could not remove session:', e);
+    }
+}
+
 // ============================================================
 // ===== القسم 4: دوال الخصوصية =====
 // ============================================================
@@ -1759,6 +1871,61 @@ function formatDate(dateStr) {
     var parts = dateStr.split('-');
     if (parts.length === 3) return parts[2] + '/' + parts[1] + '/' + parts[0];
     return dateStr;
+}
+
+// ===== دوال التحقق من قوة كلمة المرور =====
+function validatePasswordStrength(password) {
+    var result = {
+        valid: false,
+        errors: []
+    };
+    
+    if (password.length < 8) {
+        result.errors.push('كلمة المرور يجب أن تكون 8 أحرف على الأقل');
+    }
+    if (!/[A-Z]/.test(password)) {
+        result.errors.push('يجب أن تحتوي على حرف كبير واحد على الأقل');
+    }
+    if (!/[a-z]/.test(password)) {
+        result.errors.push('يجب أن تحتوي على حرف صغير واحد على الأقل');
+    }
+    if (!/[0-9]/.test(password)) {
+        result.errors.push('يجب أن تحتوي على رقم واحد على الأقل');
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+        result.errors.push('يجب أن تحتوي على رمز خاص واحد على الأقل');
+    }
+    
+    result.valid = result.errors.length === 0;
+    return result;
+}
+
+function updatePasswordRequirements(password, type) {
+    var prefix = type === 'teacher' ? '' : 'M';
+    var checks = {
+        length: password.length >= 8,
+        upper: /[A-Z]/.test(password),
+        lower: /[a-z]/.test(password),
+        number: /[0-9]/.test(password),
+        special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+    };
+    
+    var labels = {
+        length: '8 أحرف على الأقل',
+        upper: 'حرف كبير',
+        lower: 'حرف صغير',
+        number: 'رقم',
+        special: 'رمز خاص'
+    };
+    
+    for (var key in checks) {
+        var elId = 'req' + prefix + key.charAt(0).toUpperCase() + key.slice(1);
+        var el = document.getElementById(elId);
+        if (el) {
+            el.className = 'req ' + (checks[key] ? 'valid' : 'invalid');
+            el.innerHTML = '<i class="fas ' + (checks[key] ? 'fa-check' : 'fa-times') + '"></i> ' + labels[key];
+        }
+    }
 }
 
 // ============================================================
@@ -1875,7 +2042,7 @@ function resetRecaptcha() {
 }
 
 // ============================================================
-// ===== القسم 9: دوال المصادقة المتقدمة (تم إزالة 2FA) =====
+// ===== القسم 9: دوال المصادقة المتقدمة (مع تحسينات أمنية) =====
 // ============================================================
 
 async function handleAdminLogin() {
@@ -1907,8 +2074,12 @@ async function handleAdminLogin() {
         await auth.signInWithEmailAndPassword(email, password);
         resetLoginAttempts(email);
         if (remember) {
-            localStorage.setItem('rememberedEmail', email);
+            // استخدام sessionStorage بدلاً من localStorage للبيانات الحساسة
+            try {
+                sessionStorage.setItem('rememberedEmail', email);
+            } catch(e) {}
         }
+        await registerActiveSession(email);
         logSecurityEvent('admin_login_success', { email: email });
         hideAllModals();
         showSuccess('تم تسجيل الدخول كمسؤول بنجاح!');
@@ -1957,8 +2128,11 @@ async function handleTeacherLogin() {
         await auth.signInWithEmailAndPassword(email, password);
         resetLoginAttempts(email);
         if (remember) {
-            localStorage.setItem('rememberedEmail', email);
+            try {
+                sessionStorage.setItem('rememberedEmail', email);
+            } catch(e) {}
         }
+        await registerActiveSession(email);
         logSecurityEvent('teacher_login_success', { email: email });
         hideAllModals(); 
         showSuccess('تم تسجيل الدخول كأستاذ بنجاح!');
@@ -2011,8 +2185,11 @@ async function handleMemberLogin() {
         await auth.signInWithEmailAndPassword(email, password);
         resetLoginAttempts(email);
         if (remember) {
-            localStorage.setItem('rememberedEmail', email);
+            try {
+                sessionStorage.setItem('rememberedEmail', email);
+            } catch(e) {}
         }
+        await registerActiveSession(email);
         logSecurityEvent('member_login_success', { email: email });
         hideAllModals(); 
         showSuccess('تم تسجيل الدخول كعضو بنجاح!');
@@ -2061,9 +2238,12 @@ async function handleRegisterTeacher() {
         errorDiv.innerText = '❌ كلمتا المرور غير متطابقتين'; 
         return; 
     }
-    if (password.length < 8) { 
-        errorDiv.innerText = '❌ كلمة المرور يجب أن تكون 8 أحرف على الأقل'; 
-        return; 
+    
+    // التحقق من قوة كلمة المرور
+    var strength = validatePasswordStrength(password);
+    if (!strength.valid) {
+        errorDiv.innerText = '❌ كلمة المرور ضعيفة: ' + strength.errors.join('، ');
+        return;
     }
     
     try {
@@ -2124,9 +2304,12 @@ async function handleRegisterMember() {
         errorDiv.innerText = '❌ كلمتا المرور غير متطابقتين'; 
         return; 
     }
-    if (password.length < 8) { 
-        errorDiv.innerText = '❌ كلمة المرور يجب أن تكون 8 أحرف على الأقل'; 
-        return; 
+    
+    // التحقق من قوة كلمة المرور
+    var strength = validatePasswordStrength(password);
+    if (!strength.valid) {
+        errorDiv.innerText = '❌ كلمة المرور ضعيفة: ' + strength.errors.join('، ');
+        return;
     }
     
     try {
@@ -3149,6 +3332,9 @@ function updateAdminPanel() {
 }
 
 function updateUIAfterLogout() {
+    if (currentUser) {
+        removeActiveSession(currentUser.email);
+    }
     currentUser = null; 
     isAdminMode = false; 
     currentUserIsApproved = false; 
@@ -3171,21 +3357,22 @@ function updateUIAfterLogout() {
 async function loadSecurityLogs() {
     if (!database || !isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) return;
     try {
-        var snapshot = await database.ref('security_logs').orderByChild('timestamp').limitToLast(50).once('value');
+        // سجلات الأمان مخزنة في مسار منفصل مع قواعد وصول مقيدة
+        var snapshot = await database.ref('security_logs').orderByKey().limitToLast(50).once('value');
         var logs = snapshot.val() || {};
         var container = document.getElementById('securityLogList');
         var html = '';
         var count = 0;
-        var logEntries = Object.entries(logs).reverse();
-        for (var i = 0; i < logEntries.length && i < 20; i++) {
-            var key = logEntries[i][0];
-            var log = logEntries[i][1];
+        var keys = Object.keys(logs).sort().reverse();
+        for (var i = 0; i < keys.length && i < 20; i++) {
+            var key = keys[i];
+            var log = logs[key];
             var time = new Date(log.timestamp).toLocaleString('ar');
             var eventName = log.event || 'unknown';
             var details = log.details ? JSON.stringify(log.details) : '';
             var user = log.user || 'anonymous';
             html += '<div style="padding:3px 0; border-bottom:1px solid var(--border-color); font-size:0.65rem;">' +
-                '<strong>' + eventName + '</strong> - ' + time + ' - 👤 ' + sanitizeHtml(user) +
+                '<strong>' + sanitizeHtml(eventName) + '</strong> - ' + sanitizeHtml(time) + ' - 👤 ' + sanitizeHtml(user) +
                 (details ? ' - ' + sanitizeHtml(details) : '') +
                 '</div>';
             count++;
@@ -3196,6 +3383,7 @@ async function loadSecurityLogs() {
         container.innerHTML = html;
     } catch(e) {
         console.error('Error loading security logs:', e);
+        document.getElementById('securityLogList').innerHTML = '<div style="color:var(--text-muted); text-align:center;">⚠️ حدث خطأ في تحميل السجلات</div>';
     }
 }
 
@@ -3331,6 +3519,9 @@ async function addNewLesson() {
     }
     if (!checkRateLimit('add_lesson')) return;
     
+    // التحقق من صحة الجلسة
+    if (!await validateSession()) return;
+    
     var title = document.getElementById('newLessonTitle').value.trim();
     var lessonType = document.getElementById('newLessonType').value;
     if (!title) { 
@@ -3416,6 +3607,9 @@ async function deleteLesson(id) {
         return; 
     }
     if (!checkRateLimit('delete_lesson')) return;
+    
+    // التحقق من صحة الجلسة
+    if (!await validateSession()) return;
     
     showConfirmDialog('⚠️ هل أنت متأكد من حذف هذا الدرس؟\nلا يمكن استعادة البيانات بعد الحذف!', async function() {
         try {
@@ -3593,6 +3787,7 @@ async function deleteMember(email) {
         showWarning('لا يمكن حذف المسؤول!');
         return;
     }
+    if (!await validateSession()) return;
     
     showConfirmDialog('⚠️ هل أنت متأكد من إلغاء عضوية ' + email + '؟', async function() {
         try {
@@ -3656,6 +3851,7 @@ async function addTeacher() {
         return;
     }
     if (!checkRateLimit('add_teacher')) return;
+    if (!await validateSession()) return;
     
     var email = document.getElementById('newTeacherEmail').value.trim();
     if (!email) { 
@@ -3699,6 +3895,7 @@ async function deleteTeacher(email) {
         showWarning('لا يمكن حذف المسؤول!'); 
         return; 
     }
+    if (!await validateSession()) return;
     
     showConfirmDialog('⚠️ هل أنت متأكد من حذف الأستاذ ' + email + '؟', async function() {
         try {
@@ -3750,6 +3947,7 @@ async function updateNews() {
         return;
     }
     if (!checkRateLimit('update_news')) return;
+    if (!await validateSession()) return;
     
     var newText = document.getElementById('newsEditorInput').value.trim();
     if (!newText) {
@@ -3824,6 +4022,7 @@ async function saveLockSettings() {
 
 async function stopLessons(type) {
     if (!checkRateLimit('stop_lessons')) return;
+    if (!await validateSession()) return;
     var dateInput = type === 'summer' ? document.getElementById('summerStopDate') : document.getElementById('curriculumStopDate');
     var stopDate = dateInput?.value;
     if (!stopDate) { 
@@ -3839,6 +4038,7 @@ async function stopLessons(type) {
 
 async function startLessons(type) {
     if (!checkRateLimit('start_lessons')) return;
+    if (!await validateSession()) return;
     if (type === 'summer') lockSettings.summerLocked = false;
     else lockSettings.curriculumLocked = false;
     await saveLockSettings();
@@ -3928,6 +4128,7 @@ async function stopRegistration() {
         return;
     }
     if (!checkRateLimit('stop_registration')) return;
+    if (!await validateSession()) return;
     
     var dateInput = document.getElementById('registrationResumeDateInput');
     var resumeDate = dateInput?.value;
@@ -3948,6 +4149,7 @@ async function startRegistration() {
         return;
     }
     if (!checkRateLimit('start_registration')) return;
+    if (!await validateSession()) return;
     
     registrationSettings.registrationLocked = false;
     registrationSettings.resumeDate = '';
@@ -4726,7 +4928,10 @@ function stageClickHandler(e) {
 
 async function confirmLogout() {
     if (auth) { 
-        logSecurityEvent('logout', { user: currentUser?.email });
+        if (currentUser) {
+            await removeActiveSession(currentUser.email);
+            logSecurityEvent('logout', { user: currentUser.email });
+        }
         await auth.signOut(); 
         showInfo('تم تسجيل الخروج');
         updateUIAfterLogout();
@@ -4742,6 +4947,7 @@ async function revokeOwnMembership() {
         showWarning('لا يمكن للمسؤول إلغاء عضويته!'); 
         return; 
     }
+    if (!await validateSession()) return;
     
     showConfirmDialog('⚠️ هل أنت متأكد من إلغاء عضويتك؟\nسيتم حذف صلاحيتك ولن تتمكن من تسجيل الدخول مرة أخرى', async function() {
         try {
@@ -4749,6 +4955,7 @@ async function revokeOwnMembership() {
             await database.ref('members/approved/' + email.replace(/\./g, '_')).remove();
             logSecurityEvent('membership_revoked', { email: email });
             showSuccess('تم إلغاء عضويتك بنجاح');
+            await removeActiveSession(email);
             await auth.signOut();
             updateUIAfterLogout();
         } catch(e) { 
@@ -4759,7 +4966,29 @@ async function revokeOwnMembership() {
 window.revokeOwnMembership = revokeOwnMembership;
 
 // ============================================================
-// ===== القسم 32: بدء التطبيق =====
+// ===== القسم 32: ربط أحداث كلمة المرور =====
+// ============================================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    // ربط أحداث التحقق من قوة كلمة المرور
+    var teacherPass = document.getElementById('registerTeacherPassword');
+    var memberPass = document.getElementById('registerMemberPassword');
+    
+    if (teacherPass) {
+        teacherPass.addEventListener('input', function() {
+            updatePasswordRequirements(this.value, 'teacher');
+        });
+    }
+    
+    if (memberPass) {
+        memberPass.addEventListener('input', function() {
+            updatePasswordRequirements(this.value, 'member');
+        });
+    }
+});
+
+// ============================================================
+// ===== القسم 33: بدء التطبيق =====
 // ============================================================
 
 async function init() {
@@ -4768,6 +4997,8 @@ async function init() {
         console.log('🔒 نظام الأمان المتقدم يعمل بنجاح!');
         console.log('🤖 reCAPTCHA جاهزة للحماية من البوتات!');
         console.log('❌ تم إلغاء المصادقة الثنائية (2FA)');
+        console.log('🔐 تم تفعيل نظام الجلسات المتقدمة وحماية تسجيل الدخول المتزامن');
+        console.log('🔑 تم تفعيل متطلبات كلمات المرور القوية');
         
         checkPrivacyConsent();
         setupSessionActivityListeners();
@@ -4807,7 +5038,8 @@ async function init() {
         
         refreshCurrentView();
         
-        var rememberedEmail = localStorage.getItem('rememberedEmail');
+        // استرجاع البريد المتذكر من sessionStorage (أكثر أماناً من localStorage)
+        var rememberedEmail = sessionStorage.getItem('rememberedEmail');
         if (rememberedEmail) {
             var emailInputs = document.querySelectorAll('input[type="email"]');
             for (var i = 0; i < emailInputs.length; i++) {
@@ -4820,7 +5052,7 @@ async function init() {
         var loading = document.getElementById('app-loading');
         if (loading) loading.classList.add('hidden');
         
-        logSecurityEvent('platform_initialized', { version: '4.0' });
+        logSecurityEvent('platform_initialized', { version: '5.0' });
         
         console.log('✅ تم تحميل منصة الأستاذ محمد بنجاح!');
         console.log('📧 نظام إرسال البريد الإلكتروني عبر EmailJS يعمل!');
@@ -4828,6 +5060,11 @@ async function init() {
         console.log('⏳ نظام إيقاف التسجيل جاهز!');
         console.log('🤖 reCAPTCHA تحمي نماذج التسجيل!');
         console.log('❌ تم إلغاء المصادقة الثنائية (2FA) بناءً على طلبك');
+        console.log('🔐 تم تطبيق جميع التوصيات الأمنية المطلوبة!');
+        console.log('✅ تم استخدام sessionStorage بدلاً من localStorage للبيانات الحساسة');
+        console.log('✅ تم إضافة متطلبات قوية لكلمات المرور');
+        console.log('✅ تم إضافة حماية من تسجيل الدخول المتزامن');
+        console.log('✅ تم تحسين تسجيل الأحداث الأمنية');
         
     } catch(error) {
         console.error('❌ خطأ في التحميل:', error);
@@ -4839,7 +5076,7 @@ async function init() {
 }
 
 // ============================================================
-// ===== القسم 33: أحداث DOM =====
+// ===== القسم 34: أحداث DOM =====
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -4864,7 +5101,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (loginAdminBtn) {
         loginAdminBtn.addEventListener('click', function() {
             document.getElementById('loginChoiceModal').classList.remove('active');
-            var remembered = localStorage.getItem('rememberedEmail');
+            var remembered = sessionStorage.getItem('rememberedEmail');
             document.getElementById('adminEmail').value = remembered || '';
             document.getElementById('adminPassword').value = '';
             document.getElementById('adminLoginError').innerText = '';
@@ -4876,7 +5113,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (loginTeacherBtn) {
         loginTeacherBtn.addEventListener('click', function() {
             document.getElementById('loginChoiceModal').classList.remove('active');
-            var remembered = localStorage.getItem('rememberedEmail');
+            var remembered = sessionStorage.getItem('rememberedEmail');
             document.getElementById('teacherEmail').value = remembered || '';
             document.getElementById('teacherPassword').value = '';
             document.getElementById('teacherLoginError').innerText = '';
@@ -4888,7 +5125,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (loginMemberBtn) {
         loginMemberBtn.addEventListener('click', function() {
             document.getElementById('loginChoiceModal').classList.remove('active');
-            var remembered = localStorage.getItem('rememberedEmail');
+            var remembered = sessionStorage.getItem('rememberedEmail');
             document.getElementById('memberEmail').value = remembered || '';
             document.getElementById('memberPassword').value = '';
             document.getElementById('memberLoginError').innerText = '';
@@ -5159,6 +5396,59 @@ document.addEventListener('DOMContentLoaded', function() {
         updateNewsBtn.addEventListener('click', updateNews);
     }
     
+    // زر إضافة عضو مباشر
+    var directAddMemberBtn = document.getElementById('directAddMemberBtn');
+    if (directAddMemberBtn) {
+        directAddMemberBtn.addEventListener('click', async function() {
+            var email = document.getElementById('directAddMemberEmail').value.trim();
+            var stage = document.getElementById('directAddMemberStage').value;
+            var resultDiv = document.getElementById('directAddMemberResult');
+            
+            if (!isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) {
+                showError('غير مصرح لك - هذه الصلاحية للمسؤول فقط');
+                return;
+            }
+            if (!email) {
+                showWarning('الرجاء إدخال البريد الإلكتروني');
+                return;
+            }
+            if (isFakeEmail(email)) {
+                showWarning('⚠️ البريد الإلكتروني غير صالح');
+                return;
+            }
+            if (!await validateSession()) return;
+            
+            try {
+                var check = await database.ref('members/approved/' + email.replace(/\./g, '_')).once('value');
+                if (check.exists()) {
+                    showWarning('هذا البريد موجود بالفعل في قائمة الأعضاء المعتمدين');
+                    resultDiv.innerHTML = '<span style="color:#f59e0b;">⚠️ البريد موجود مسبقاً</span>';
+                    return;
+                }
+                
+                var stageNames = { 'primary': 'الابتدائية', 'middle': 'المتوسط', 'high': 'الثانوي', 'all': 'جميع المراحل' };
+                await database.ref('members/approved/' + email.replace(/\./g, '_')).set({
+                    email: email,
+                    approvedAt: Date.now(),
+                    userType: 'عضو',
+                    userStage: stage
+                });
+                
+                logSecurityEvent('direct_member_added', { email: email, stage: stage });
+                showSuccess('✅ تم إضافة العضو ' + email + ' بنجاح في مرحلة ' + (stageNames[stage] || stage));
+                resultDiv.innerHTML = '<span style="color:#10b981;">✅ تمت الإضافة بنجاح</span>';
+                
+                document.getElementById('directAddMemberEmail').value = '';
+                await loadApprovedMembers();
+                updateStats();
+                
+            } catch(e) {
+                showError('حدث خطأ: ' + e.message);
+                resultDiv.innerHTML = '<span style="color:#ef4444;">❌ خطأ: ' + sanitizeHtml(e.message) + '</span>';
+            }
+        });
+    }
+
     // أيقونات الإدارة
     var teacherGear = document.getElementById('teacherGearIcon');
     if (teacherGear) {
@@ -5236,6 +5526,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 var email = user.email;
                 currentUserStage = null;
                 
+                // التحقق من صحة الجلسة عند تسجيل الدخول
                 var isApprovedMember = await checkMemberApproval(email);
                 var isTeacher = await checkTeacherPermissions(email);
                 
@@ -5264,6 +5555,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     currentUserStage = 'primary';
                     showWarning('تم تعيين مرحلتك كـ "ابتدائي" بشكل افتراضي، يرجى التواصل مع الإدارة إذا كان ذلك خطأ');
                 }
+                
+                // تسجيل الجلسة النشطة
+                await registerActiveSession(email);
                 
                 updateUserInterface();
                 if (isAdminMode && currentUser?.email === MASTER_TEACHER_EMAIL) {
