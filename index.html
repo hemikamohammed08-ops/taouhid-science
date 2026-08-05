@@ -2119,13 +2119,21 @@ async function handleTeacherLogin() {
     }
     
     try {
-        var isTeacher = await checkTeacherPermissions(email);
-        if (!isTeacher) { 
-            errorDiv.innerText = '❌ هذا البريد ليس لديه صلاحية أستاذ'; 
-            logSecurityEvent('unauthorized_teacher_login_attempt', { email: email });
-            return; 
-        }
+        // يجب تسجيل الدخول أولاً حتى تصبح auth != null، وإلا فإن قواعد
+        // قاعدة البيانات سترفض قراءة teachers/ ويفشل الفحص دائماً.
+        // كما نجبر تحديث رمز المصادقة فور الدخول لتفادي أي تأخر في انتشاره.
         await auth.signInWithEmailAndPassword(email, password);
+        await auth.currentUser.getIdToken(true);
+
+        var isTeacher = await checkTeacherPermissions(email);
+        if (!isTeacher) {
+            logSecurityEvent('unauthorized_teacher_login_attempt', { email: email });
+            await auth.signOut();
+            errorDiv.innerText = '❌ هذا البريد ليس لديه صلاحية أستاذ';
+            recordFailedLogin(email);
+            return;
+        }
+
         resetLoginAttempts(email);
         if (remember) {
             try {
@@ -2170,19 +2178,28 @@ async function handleMemberLogin() {
     }
     
     try {
+        // يجب تسجيل الدخول أولاً حتى تصبح auth != null، وإلا فإن قواعد
+        // قاعدة البيانات سترفض قراءة members/approved و teachers/.
+        // كما نجبر تحديث رمز المصادقة فور الدخول لتفادي أي تأخر في انتشاره.
+        await auth.signInWithEmailAndPassword(email, password);
+        await auth.currentUser.getIdToken(true);
+
         var isApproved = await checkMemberApproval(email);
-        if (!isApproved) { 
-            errorDiv.innerText = '⏳ لم يتم الموافقة على طلبك بعد. يرجى الانتظار حتى يوافق المسؤول.'; 
+        if (!isApproved) {
             logSecurityEvent('unapproved_member_login_attempt', { email: email });
-            return; 
+            await auth.signOut();
+            errorDiv.innerText = '⏳ لم يتم الموافقة على طلبك بعد. يرجى الانتظار حتى يوافق المسؤول.';
+            recordFailedLogin(email);
+            return;
         }
         var isTeacher = await checkTeacherPermissions(email);
         if (isTeacher || email === MASTER_TEACHER_EMAIL) {
-            errorDiv.innerText = '❌ هذا الحساب مسجل كأستاذ/مسؤول، يرجى استخدام خيار تسجيل الدخول المناسب';
             logSecurityEvent('member_login_as_teacher_attempt', { email: email });
+            await auth.signOut();
+            errorDiv.innerText = '❌ هذا الحساب مسجل كأستاذ/مسؤول، يرجى استخدام خيار تسجيل الدخول المناسب';
+            recordFailedLogin(email);
             return;
         }
-        await auth.signInWithEmailAndPassword(email, password);
         resetLoginAttempts(email);
         if (remember) {
             try {
@@ -3651,7 +3668,7 @@ window.openEditInternalModal = openEditInternalModal;
 // ============================================================
 
 async function loadJoinRequests() {
-    if (!database || !isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) return;
+    if (!database || !auth || !auth.currentUser || auth.currentUser.email !== MASTER_TEACHER_EMAIL) return;
     try {
         var snapshot = await database.ref('members/joinRequests').once('value');
         var requests = snapshot.val() || {};
@@ -3661,7 +3678,12 @@ async function loadJoinRequests() {
             joinRequests.push({ id: id, email: data.email, userType: data.userType, stage: data.stage, createdAt: data.createdAt });
         }
         renderJoinRequestsList();
-    } catch(e) { console.error('Error loading requests:', e); }
+    } catch(e) {
+        console.error('Error loading requests:', e);
+        if (e && e.code === 'PERMISSION_DENIED') {
+            showWarning('⚠️ تعذّر تحميل طلبات الانضمام (صلاحيات القاعدة). تحقق من نشر قواعد قاعدة البيانات.');
+        }
+    }
 }
 
 function renderJoinRequestsList() {
@@ -3731,7 +3753,7 @@ function renderJoinRequestsList() {
 }
 
 async function loadApprovedMembers() {
-    if (!database || !isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) return;
+    if (!database || !auth || !auth.currentUser || auth.currentUser.email !== MASTER_TEACHER_EMAIL) return;
     try {
         var snapshot = await database.ref('members/approved').once('value');
         var data = snapshot.val() || {};
@@ -3748,7 +3770,12 @@ async function loadApprovedMembers() {
         }
         renderApprovedMembersList();
         updateStats();
-    } catch(e) { console.error('Error loading approved members:', e); }
+    } catch(e) {
+        console.error('Error loading approved members:', e);
+        if (e && e.code === 'PERMISSION_DENIED') {
+            showWarning('⚠️ تعذّر تحميل قائمة الأعضاء المعتمدين (صلاحيات القاعدة). حدّث الصفحة وحاول مجدداً، وإن استمر الأمر تأكد من نشر قواعد قاعدة البيانات بشكل صحيح.');
+        }
+    }
 }
 
 function renderApprovedMembersList() {
@@ -3816,7 +3843,7 @@ async function deleteMember(email) {
 window.deleteMember = deleteMember;
 
 async function loadTeachersList() {
-    if (!isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) {
+    if (!auth || !auth.currentUser || auth.currentUser.email !== MASTER_TEACHER_EMAIL) {
         document.getElementById('teacherManagementSection').style.display = 'none';
         return;
     }
