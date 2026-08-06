@@ -1551,11 +1551,10 @@ var CONFIG = {
         appId: "1:408000399471:web:05940e3637d2b21bf0a59a",
         databaseURL: "https://taouhid-sci-default-rtdb.firebaseio.com/"
     },
-    telegram: {
-        encryptedBotToken: 'U2FsdGVkX1/3n8vK2p5sR7tY9wQ4xZ6yB0cD1eF2gH3jK4lM5nO6pQ7rS8tU9vW0xY=',
-        chatId: '-1004403757521'
-    }
 };
+// ملاحظة: توكن ومعرّف قناة تيليجرام لم يعودا موجودين هنا إطلاقاً — أصبحا
+// متغيرات بيئة على الخادم (TELEGRAM_BOT_TOKEN و TELEGRAM_CHAT_ID في Vercel)
+// تُستخدم فقط داخل api/proxy.js و api/telegram-file.js.
 
 var EMAILJS_SERVICE_ID = 'service_v9v54om';
 var EMAILJS_TEMPLATE_ID = 'template_bzmpqfn';
@@ -1574,9 +1573,6 @@ var countdownTargetDate = null;
 var registrationSettings = null;
 var newsItems = ["📢 مرحباً بكم في منصة الأستاذ محمد التعليمية"];
 var MASTER_TEACHER_EMAIL = "hemikamohammed08@gmail.com";
-var TELEGRAM_BOT_TOKEN = '';
-var TELEGRAM_CHAT_ID = CONFIG.telegram.chatId;
-var TELEGRAM_API_URL = '';
 var LESSONS_PER_PAGE = 10;
 var MAX_FILE_SIZE = 10 * 1024 * 1024;
 var CONTACT_MESSAGES_PATH = 'contact_messages';
@@ -1662,46 +1658,10 @@ function getSecurePersistentData(key) {
 }
 
 // ============================================================
-// ⚠️ تحذير أمني هام حول توكن بوت تيليجرام
+// ✅ توكن تيليجرام لم يعد موجودًا في هذا الملف نهائياً.
+// الرفع يمر عبر api/proxy.js والتنزيل عبر api/telegram-file.js على
+// الخادم، واللذان يقرآن التوكن من متغيرات بيئة Vercel فقط.
 // ============================================================
-// أي توكن بوت مكتوب أو "مشفّر" هنا سيبقى قابلاً للقراءة من أي شخص يفتح
-// أدوات المطور (F12) ويشغّل decryptTelegramToken() يدوياً، لأن مفتاح فك
-// التشفير نفسه (secretParts) موجود بجانبه في نفس الملف الذي يُرسَل لكل
-// زائر. لا يوجد أي أسلوب "تشفير من جهة العميل" يحل هذه المشكلة —
-// السر الحقيقي الوحيد هو عدم إرسال التوكن للمتصفح إطلاقاً.
-//
-// الحل الصحيح: انقل استدعاء تيليجرام إلى خادم (مثلاً Firebase Cloud
-// Function أو أي backend بسيط)، يحتفظ هو بالتوكن، والمتصفح يستدعي
-// نقطة نهاية عندك (مثل /sendTelegramMessage) بدون أن يرى التوكن مطلقاً.
-//
-// التوكن القديم المكتوب صراحة في هذا الملف كان مكشوفاً بالكامل لكل
-// زوار الموقع — يجب إبطاله فوراً من BotFather (/revoke) وإنشاء توكن
-// جديد، ثم عدم وضعه في أي كود يعمل على المتصفح.
-function decryptTelegramToken() {
-    try {
-        if (!CONFIG.telegram.encryptedBotToken) return '';
-        var salt = 'SALT_2026_TELEGRAM_SECURE';
-        var secretParts = [
-            'ELMOUDIR_SECRET_KEY_2026_SAFE',
-            navigator.userAgent.substring(0, 20),
-            screen.width + '_' + screen.height,
-            'TELEGRAM_BOT_V2'
-        ];
-        var key = CryptoJS.PBKDF2(secretParts.join('_'), salt, { keySize: 256 / 32, iterations: 1000 });
-        var decrypted = CryptoJS.AES.decrypt(CONFIG.telegram.encryptedBotToken, key);
-        var token = decrypted.toString(CryptoJS.enc.Utf8);
-        if (token && token.length > 10 && token.includes(':')) return token;
-        return '';
-    } catch(e) {
-        return '';
-    }
-}
-
-TELEGRAM_BOT_TOKEN = decryptTelegramToken();
-if (!TELEGRAM_BOT_TOKEN) {
-    console.warn('⚠️ لم يتم العثور على توكن تيليجرام صالح — ميزات إرسال إشعارات تيليجرام معطّلة حتى يُنقل التوكن إلى خادم خلفي آمن.');
-}
-TELEGRAM_API_URL = TELEGRAM_BOT_TOKEN ? ('https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN) : '';
 
 function generateSessionId() {
     return CryptoJS.lib.WordArray.random(32).toString(CryptoJS.enc.Hex);
@@ -2445,6 +2405,22 @@ function clearFileUploadFields() {
     if (i2) i2.value = '';
 }
 
+// الرفع يمر عبر api/proxy.js: نحوّل الملف إلى base64 ونرسله كـ JSON،
+// والخادم فقط هو من يعرف التوكن ويكمل الرفع الفعلي إلى تيليجرام.
+function fileToBase64(file) {
+    return new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function() {
+            // نتجاهل الجزء "data:...;base64," ونبقي فقط البيانات
+            var result = reader.result;
+            var base64 = result.substring(result.indexOf(',') + 1);
+            resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
 async function uploadFileToTelegram(file, caption) {
     caption = caption || '';
     if (!file) { throw new Error('لم يتم اختيار ملف'); }
@@ -2456,11 +2432,6 @@ async function uploadFileToTelegram(file, caption) {
     }
     if (!found) { throw new Error('نوع الملف غير مدعوم. يرجى رفع صورة (JPG, PNG, GIF, WEBP) أو ملف PDF'); }
     if (file.size > MAX_FILE_SIZE) { throw new Error('حجم الملف كبير جداً. الحد الأقصى هو 10 ميجابايت'); }
-    
-    var formData = new FormData();
-    formData.append('chat_id', TELEGRAM_CHAT_ID);
-    formData.append('document', file, file.name);
-    if (caption) formData.append('caption', caption);
     
     var progressEl = document.getElementById('uploadProgress');
     if (progressEl) {
@@ -2477,28 +2448,35 @@ async function uploadFileToTelegram(file, caption) {
     }
     
     try {
-        var response = await fetch(TELEGRAM_API_URL + '/sendDocument', { method: 'POST', body: formData });
+        var base64 = await fileToBase64(file);
+        var response = await fetch('/api/proxy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                caption: caption,
+                file_base64: base64,
+                file_name: file.name,
+                file_type: file.type
+            })
+        });
+        
         if (progressEl) progressEl.classList.remove('active');
         var fill = document.getElementById('progressFill');
         if (fill) fill.style.width = '0%';
         
         var result = await response.json();
-        if (!result.ok) { throw new Error(result.description || 'فشل رفع الملف إلى Telegram'); }
+        if (!result.ok) { throw new Error(result.description || result.error || 'فشل رفع الملف إلى Telegram'); }
         
         var fileId, fileName, fileSize;
-        if (result.result.document) {
+        if (result.result && result.result.document) {
             fileId = result.result.document.file_id;
             fileName = result.result.document.file_name || file.name;
             fileSize = result.result.document.file_size;
         } else { throw new Error('لم يتم العثور على الملف في الرد'); }
         
-        var filePath = await getTelegramFilePath(fileId);
-        var tempFileUrl = 'https://api.telegram.org/file/bot' + TELEGRAM_BOT_TOKEN + '/' + filePath;
-        
         return {
-            url: tempFileUrl,
+            url: getFreshTelegramUrl(fileId),
             file_id: fileId,
-            file_path: filePath,
             name: fileName,
             size: fileSize,
             type: file.type
@@ -2511,19 +2489,11 @@ async function uploadFileToTelegram(file, caption) {
     }
 }
 
-async function getTelegramFilePath(file_id) {
-    var response = await fetch(TELEGRAM_API_URL + '/getFile?file_id=' + file_id);
-    var result = await response.json();
-    if (!result.ok) { throw new Error('فشل الحصول على مسار الملف: ' + (result.description || 'خطأ غير معروف')); }
-    return result.result.file_path;
-}
-
-async function getFreshTelegramUrl(file_id) {
+function getFreshTelegramUrl(file_id) {
     if (!file_id) return null;
-    try {
-        var filePath = await getTelegramFilePath(file_id);
-        return 'https://api.telegram.org/file/bot' + TELEGRAM_BOT_TOKEN + '/' + filePath;
-    } catch(e) { return null; }
+    // رابط لا يحتوي أي توكن — api/telegram-file.js هو من يتصل بتيليجرام
+    // فعلياً على الخادم ويُعيد محتوى الملف مباشرة
+    return '/api/telegram-file?file_id=' + encodeURIComponent(file_id);
 }
 
 // ============================================================
