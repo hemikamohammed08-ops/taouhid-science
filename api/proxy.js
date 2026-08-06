@@ -1,7 +1,8 @@
 // api/proxy.js
+// التوكن يُقرأ الآن من متغير بيئة على Vercel (Settings → Environment Variables)
+// ولم يعد مكتوبًا في الكود إطلاقًا — لا يظهر أبدًا في GitHub أو للمتصفح.
 
 export default async function handler(req, res) {
-  // السماح بـ CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -14,6 +15,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
 
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const defaultChatId = process.env.TELEGRAM_CHAT_ID;
+
+  if (!token) {
+    return res.status(500).json({ ok: false, error: 'Server not configured (missing TELEGRAM_BOT_TOKEN)' });
+  }
+
   try {
     const { chat_id, caption, file_base64, file_name, file_type } = req.body;
 
@@ -22,9 +30,8 @@ export default async function handler(req, res) {
     }
 
     const buffer = Buffer.from(file_base64, 'base64');
-    const token = '8868951987:AAFYxGJOUxHN6ql-3GsJ3Our01I-7mkMAIk';
     const formData = new FormData();
-    formData.append('chat_id', chat_id);
+    formData.append('chat_id', chat_id || defaultChatId);
     formData.append('caption', caption || '📚 منصة الأستاذ محمد للتعليم');
     formData.append('document', new Blob([buffer], { type: file_type || 'application/octet-stream' }), file_name || 'file.pdf');
 
