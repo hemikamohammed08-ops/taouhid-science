@@ -3411,7 +3411,6 @@ async function addNewLesson() {
                 lessonData.file_info = {
                     url: fileInfo.url,
                     file_id: fileInfo.file_id,
-                    file_path: fileInfo.file_path,
                     name: fileInfo.name,
                     size: fileInfo.size,
                     type: fileInfo.type
@@ -3441,7 +3440,12 @@ async function addNewLesson() {
     }
     
     var lessonId = getLessonId();
-    await database.ref('lessons/' + lessonId).set(lessonData);
+    try {
+        await database.ref('lessons/' + lessonId).set(lessonData);
+    } catch (error) {
+        showError('❌ فشل حفظ الدرس في قاعدة البيانات: ' + error.message);
+        return;
+    }
     logSecurityEvent('lesson_added', { lessonId: lessonId, title: title, stage: currentStage });
     showSuccess('✅ تم إضافة الدرس بنجاح 📚');
     
@@ -5116,7 +5120,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         updateData.file_info = {
                             url: fileInfo.url,
                             file_id: fileInfo.file_id,
-                            file_path: fileInfo.file_path,
                             name: fileInfo.name,
                             size: fileInfo.size,
                             type: fileInfo.type
@@ -5138,7 +5141,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 
-                await database.ref('lessons/' + editingInternalLessonId).update(updateData);
+                try {
+                    await database.ref('lessons/' + editingInternalLessonId).update(updateData);
+                } catch (error) {
+                    showError('❌ فشل حفظ التعديل في قاعدة البيانات: ' + error.message);
+                    return;
+                }
                 logSecurityEvent('lesson_updated', { lessonId: editingInternalLessonId });
                 showSuccess('تم تعديل الدرس بنجاح');
             }
