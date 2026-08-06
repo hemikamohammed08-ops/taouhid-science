@@ -2492,8 +2492,11 @@ async function uploadFileToTelegram(file, caption) {
 function getFreshTelegramUrl(file_id) {
     if (!file_id) return null;
     // رابط لا يحتوي أي توكن — api/telegram-file.js هو من يتصل بتيليجرام
-    // فعلياً على الخادم ويُعيد محتوى الملف مباشرة
-    return '/api/telegram-file?file_id=' + encodeURIComponent(file_id);
+    // فعلياً على الخادم ويُعيد محتوى الملف مباشرة.
+    // مهم: يجب أن يكون الرابط كاملاً (absolute) وليس نسبياً، لأن Google Docs
+    // Viewer (المستخدم لعرض ملفات PDF) يحتاج دومين كامل ليتمكن خادم Google
+    // من جلب الملف؛ رابط نسبي مثل "/api/telegram-file?..." لا يعمل معه.
+    return window.location.origin + '/api/telegram-file?file_id=' + encodeURIComponent(file_id);
 }
 
 // ============================================================
