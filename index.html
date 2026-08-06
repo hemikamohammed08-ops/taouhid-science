@@ -248,6 +248,15 @@
                 padding: 0 12px;
             }
         }
+        @media (max-width: 360px) {
+            .news-ticker-new .label {
+                font-size: 0.45rem;
+                padding: 2px 6px;
+            }
+            .news-ticker-new .marquee-item {
+                font-size: 0.65rem;
+            }
+        }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
         
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -3745,13 +3754,43 @@ function renderNewsTicker() {
     // العنصر مكرر مرتين للحصول على تمرير متواصل بدون قفزة، بنفس السرعة والاتجاه مهما كان عدد الأخبار
     track.innerHTML = itemsHtml + itemsHtml;
 
-    requestAnimationFrame(function() {
+    applyNewsMarqueeTiming(track);
+}
+
+// حساب مدة الحركة بناءً على العرض الفعلي للنص. نعيد الحساب أكثر من مرة لأن الخط (Tajawal)
+// قد يكتمل تحميله بعد أول رسم على الهواتف، فيتغيّر العرض الحقيقي للنص ويظهر الشريط مقصوصاً
+// أو غير مكتمل إن اعتمدنا على قياس واحد فقط عند التحميل الأول.
+function applyNewsMarqueeTiming(track) {
+    if (!track) return;
+    var recalc = function() {
         var trackWidth = track.scrollWidth / 2;
         var duration = Math.max(trackWidth / NEWS_MARQUEE_SPEED_PX_PER_SEC, 8);
+        track.style.animation = 'none';
+        // إجبار المتصفح على إعادة تطبيق الحركة من جديد بالقيم المحدثة
+        void track.offsetWidth;
         track.style.animationDuration = duration + 's';
         track.style.animation = 'newsMarqueeScroll ' + duration + 's linear infinite';
-    });
+    };
+    requestAnimationFrame(recalc);
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(recalc).catch(function() {});
+    }
+    // قياس احتياطي بعد استقرار الصفحة تماماً (خاصة على الهواتف البطيئة)
+    setTimeout(recalc, 600);
 }
+
+var _newsTickerResizeTimer = null;
+window.addEventListener('resize', function() {
+    clearTimeout(_newsTickerResizeTimer);
+    _newsTickerResizeTimer = setTimeout(function() {
+        var track = document.querySelector('#newsTickerContent .marquee-track');
+        applyNewsMarqueeTiming(track);
+    }, 250);
+});
+window.addEventListener('orientationchange', function() {
+    var track = document.querySelector('#newsTickerContent .marquee-track');
+    setTimeout(function() { applyNewsMarqueeTiming(track); }, 300);
+});
 
 async function loadNews() {
     if (!database) return;
