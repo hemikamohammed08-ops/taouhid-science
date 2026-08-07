@@ -2108,7 +2108,14 @@ async function handleTeacherLogin() {
     try {
         await auth.signInWithEmailAndPassword(email, password);
         await auth.currentUser.getIdToken(true);
-        var isTeacher = await checkTeacherPermissions(email);
+        var isTeacher;
+        try {
+            isTeacher = await checkTeacherPermissions(email);
+        } catch (permError) {
+            logSecurityEvent('teacher_permission_check_failed', { email: email, error: permError && permError.message });
+            errorDiv.innerText = '⚠️ تعذر التحقق من صلاحياتك بسبب ضعف الاتصال. يرجى المحاولة مرة أخرى.';
+            return;
+        }
         if (!isTeacher) {
             logSecurityEvent('unauthorized_teacher_login_attempt', { email: email });
             await auth.signOut();
@@ -2154,7 +2161,15 @@ async function handleMemberLogin() {
     try {
         await auth.signInWithEmailAndPassword(email, password);
         await auth.currentUser.getIdToken(true);
-        var isApproved = await checkMemberApproval(email);
+        var isApproved, isTeacher;
+        try {
+            isApproved = await checkMemberApproval(email);
+            isTeacher = await checkTeacherPermissions(email);
+        } catch (permError) {
+            logSecurityEvent('member_permission_check_failed', { email: email, error: permError && permError.message });
+            errorDiv.innerText = '⚠️ تعذر التحقق من صلاحياتك بسبب ضعف الاتصال. يرجى المحاولة مرة أخرى.';
+            return;
+        }
         if (!isApproved) {
             logSecurityEvent('unapproved_member_login_attempt', { email: email });
             await auth.signOut();
@@ -2162,7 +2177,6 @@ async function handleMemberLogin() {
             recordFailedLogin(email);
             return;
         }
-        var isTeacher = await checkTeacherPermissions(email);
         if (isTeacher || email === MASTER_TEACHER_EMAIL) {
             logSecurityEvent('member_login_as_teacher_attempt', { email: email });
             await auth.signOut();
@@ -2298,22 +2312,22 @@ async function handleRegisterMember() {
 async function checkTeacherPermissions(email) {
     if (!database || !email) return false;
     if (email === MASTER_TEACHER_EMAIL) { currentUserStage = 'all'; return true; }
-    try {
-        var snapshot = await database.ref('teachers/' + email.replace(/\./g, '_')).once('value');
-        var data = snapshot.val();
-        if (data) { currentUserStage = data.userStage || 'all'; return true; }
-        return false;
-    } catch(e) { return false; }
+    // ملاحظة: لا نلتقط أخطاء الشبكة هنا ونحوّلها إلى false، لأن ذلك يجعل
+    // انقطاع الاتصال (شائع على الهاتف) يبدو وكأن الأستاذ "غير مصرح له".
+    // نترك الخطأ يصعد للأعلى ليتم التعامل معه بإعادة محاولة بدل تسجيل الخروج.
+    var snapshot = await database.ref('teachers/' + email.replace(/\./g, '_')).once('value');
+    var data = snapshot.val();
+    if (data) { currentUserStage = data.userStage || 'all'; return true; }
+    return false;
 }
 
 async function checkMemberApproval(email) {
     if (!database || !email) return false;
-    try {
-        var snapshot = await database.ref('members/approved/' + email.replace(/\./g, '_')).once('value');
-        var data = snapshot.val();
-        if (data) { currentUserStage = data.userStage || 'primary'; return true; }
-        return false;
-    } catch(e) { return false; }
+    // نفس الملاحظة أعلاه: لا نُخفي أخطاء الشبكة، بل نتركها تصعد للأعلى.
+    var snapshot = await database.ref('members/approved/' + email.replace(/\./g, '_')).once('value');
+    var data = snapshot.val();
+    if (data) { currentUserStage = data.userStage || 'primary'; return true; }
+    return false;
 }
 
 async function addJoinRequest(email, userType, stage) {
@@ -5333,8 +5347,40 @@ document.addEventListener('DOMContentLoaded', function() {
                 var email = user.email;
                 currentUserStage = null;
                 
-                var isApprovedMember = await checkMemberApproval(email);
-                var isTeacher = await checkTeacherPermissions(email);
+                // نحاول التحقق من الصلاحيات مع إعادة محاولة عند فشل الشبكة
+                // (شائع على الهاتف) بدل تسجيل الخروج الفوري واتهام الأستاذ/العضو
+                // بأنه "غير معتمد" بسبب انقطاع مؤقت في الاتصال.
+                var isApprovedMember, isTeacher;
+                var permissionCheckAttempts = 0;
+                var permissionCheckSucceeded = false;
+                while (permissionCheckAttempts < 3 && !permissionCheckSucceeded) {
+                    try {
+                        isApprovedMember = await checkMemberApproval(email);
+                        isTeacher = await checkTeacherPermissions(email);
+                        permissionCheckSucceeded = true;
+                    } catch (permError) {
+                        permissionCheckAttempts++;
+                        logSecurityEvent('permission_check_network_error', { 
+                            email: email, 
+                            attempt: permissionCheckAttempts, 
+                            error: permError && permError.message 
+                        });
+                        if (permissionCheckAttempts < 3) {
+                            // انتظار قصير قبل إعادة المحاولة (0.8 ثانية، 1.6 ثانية)
+                            await new Promise(function(resolve) { 
+                                setTimeout(resolve, 800 * permissionCheckAttempts); 
+                            });
+                        }
+                    }
+                }
+                
+                if (!permissionCheckSucceeded) {
+                    // فشل التحقق بسبب مشكلة اتصال متكررة: لا نسجّل خروج المستخدم
+                    // ولا نتهمه بأنه غير معتمد، فقط نطلب منه المحاولة لاحقاً.
+                    showWarning('⚠️ تعذر التحقق من صلاحياتك بسبب ضعف الاتصال بالإنترنت. يرجى التحقق من الاتصال والمحاولة مرة أخرى.');
+                    updateAuthButtons();
+                    return;
+                }
                 
                 if (!isApprovedMember && !isTeacher && email !== MASTER_TEACHER_EMAIL) {
                     await auth.signOut();
