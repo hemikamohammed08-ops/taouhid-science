@@ -1582,7 +1582,6 @@ var sessionId = null;
 var loginAttempts = {};
 var requestCount = {};
 var MAX_REQUESTS_PER_MINUTE = 60;
-var csrfTokens = {};
 
 var currentStage = null;
 var currentSubStage = null;
@@ -1615,25 +1614,20 @@ var inviteLinks = {
 // ===== دوال الأمان =====
 // ============================================================
 
-// ملاحظة: تشفير sessionStorage/localStorage بمفتاح ثابت مكتوب في الكود لا يحمي
-// من مهاجم يقرأ نفس الكود — أي أحد يفتح الملف يرى المفتاح 'secure_session_key'
-// ويقدر يفك التشفير بنفس الطريقة. هذا التخزين مناسب فقط لإخفاء البيانات عن
-// نظرة عابرة (مثل حفظ بريد إلكتروني "تذكرني")، وليس لحماية بيانات حساسة فعلاً.
-// لا تخزن هنا كلمات مرور أو رموز جلسات حقيقية أو أي بيانات حساسة.
+// ملاحظة أمنية: كانت هذه الدوال تستخدم CryptoJS.AES مع مفتاح ثابت مكتوب في نص
+// الكود ('secure_session_key'). أي شخص يفتح الملف يرى المفتاح ويفك أي بيانات
+// "مشفَّرة" بنفس الطريقة، فهذا لا يوفّر أي حماية حقيقية — بل يعطي إحساساً كاذباً
+// بالأمان. بما أن هذه الدوال تُستخدم فقط لتخزين بريد "تذكرني" (بيانات غير حساسة)،
+// تمت إزالة طبقة "التشفير" الوهمية والاكتفاء بتخزين مباشر.
+// تحذير: لا تُستخدم هذه الدوال أبداً لتخزين كلمات مرور أو رموز جلسات حقيقية أو
+// أي بيانات حساسة فعلياً — sessionStorage/localStorage بطبيعتهما غير آمنين لذلك،
+// بتشفير أو بدونه، طالما المفتاح موجود في نفس الكود الذي يقرأه المهاجم.
 function setSecureSessionData(key, value) {
-    try {
-        var encrypted = CryptoJS.AES.encrypt(value, 'secure_session_key').toString();
-        sessionStorage.setItem('sec_' + key, encrypted);
-    } catch(e) {}
+    try { sessionStorage.setItem('sec_' + key, value); } catch(e) {}
 }
 
 function getSecureSessionData(key) {
-    try {
-        var encrypted = sessionStorage.getItem('sec_' + key);
-        if (!encrypted) return null;
-        var decrypted = CryptoJS.AES.decrypt(encrypted, 'secure_session_key');
-        return decrypted.toString(CryptoJS.enc.Utf8);
-    } catch(e) { return null; }
+    try { return sessionStorage.getItem('sec_' + key); } catch(e) { return null; }
 }
 
 function clearSecureSessionData(key) {
@@ -1642,19 +1636,11 @@ function clearSecureSessionData(key) {
 
 // تخزين دائم (يبقى بعد إغلاق المتصفح) خاص بخاصية "تذكرني" فقط
 function setSecurePersistentData(key, value) {
-    try {
-        var encrypted = CryptoJS.AES.encrypt(value, 'secure_session_key').toString();
-        localStorage.setItem('sec_' + key, encrypted);
-    } catch(e) {}
+    try { localStorage.setItem('sec_' + key, value); } catch(e) {}
 }
 
 function getSecurePersistentData(key) {
-    try {
-        var encrypted = localStorage.getItem('sec_' + key);
-        if (!encrypted) return null;
-        var decrypted = CryptoJS.AES.decrypt(encrypted, 'secure_session_key');
-        return decrypted.toString(CryptoJS.enc.Utf8);
-    } catch(e) { return null; }
+    try { return localStorage.getItem('sec_' + key); } catch(e) { return null; }
 }
 
 // ============================================================
@@ -1666,31 +1652,6 @@ function getSecurePersistentData(key) {
 function generateSessionId() {
     return CryptoJS.lib.WordArray.random(32).toString(CryptoJS.enc.Hex);
 }
-
-function generateCsrfToken() {
-    var token = CryptoJS.lib.WordArray.random(32).toString(CryptoJS.enc.Hex);
-    csrfTokens[token] = Date.now() + 3600000;
-    return token;
-}
-
-function verifyCsrfToken(token) {
-    if (!token || !csrfTokens[token]) return false;
-    if (Date.now() > csrfTokens[token]) {
-        delete csrfTokens[token];
-        return false;
-    }
-    return true;
-}
-
-function cleanCsrfTokens() {
-    var now = Date.now();
-    for (var key in csrfTokens) {
-        if (now > csrfTokens[key]) {
-            delete csrfTokens[key];
-        }
-    }
-}
-setInterval(cleanCsrfTokens, 60000);
 
 function logSecurityEvent(eventType, details) {
     if (!database) return;
@@ -3941,7 +3902,7 @@ async function saveLockSettings() {
 }
 
 async function stopLessons(type) {
-    if (!isAdminMode) { showError('غير مصرح لك - هذه الصلاحية للإدارة فقط'); return; }
+    if (!isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) { showError('غير مصرح لك - هذه الصلاحية للمسؤول الرئيسي فقط'); return; }
     if (!checkRateLimit('stop_lessons')) return;
     if (!await validateSession()) return;
     var dateInput = type === 'summer' ? document.getElementById('summerStopDate') : document.getElementById('curriculumStopDate');
@@ -3963,7 +3924,7 @@ async function stopLessons(type) {
 }
 
 async function startLessons(type) {
-    if (!isAdminMode) { showError('غير مصرح لك - هذه الصلاحية للإدارة فقط'); return; }
+    if (!isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) { showError('غير مصرح لك - هذه الصلاحية للمسؤول الرئيسي فقط'); return; }
     if (!checkRateLimit('start_lessons')) return;
     if (!await validateSession()) return;
     if (!lockSettings) lockSettings = getDefaultLockSettings();
