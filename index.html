@@ -4417,6 +4417,12 @@ function refreshCurrentView() {
             return;
         }
         
+        if (currentViewingFile && currentViewingLesson) {
+            showLessonContent(currentViewingFile, currentViewingLesson.title, currentViewingLesson.url, currentViewingLesson.download, currentViewingLesson.type, currentViewingLesson.fileId);
+            updateStats();
+            return;
+        }
+        
         if (currentLessonType) renderLessonsList();
         else if (currentSubject) showLessonTypes();
         else if (currentYear) showSubjects();
