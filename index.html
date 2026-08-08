@@ -2078,12 +2078,17 @@ async function handleAdminLogin() {
         document.getElementById('adminLoginModal').classList.remove('active');
     } catch(error) {
         recordFailedLogin(email);
+        console.error('🔴 Firebase Auth error code:', error.code, error.message);
         var msg = '❌ فشل تسجيل الدخول: ';
         if (error.code === 'auth/user-not-found') msg += 'لا يوجد حساب بهذا البريد';
         else if (error.code === 'auth/wrong-password') msg += 'كلمة المرور غير صحيحة';
+        else if (error.code === 'auth/invalid-credential') msg += 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
         else if (error.code === 'auth/invalid-email') msg += 'البريد الإلكتروني غير صالح';
         else if (error.code === 'auth/too-many-requests') msg += 'تم حظر الحساب مؤقتاً، حاول لاحقاً';
-        else msg += 'حدث خطأ في المصادقة';
+        else if (error.code === 'auth/network-request-failed') msg += 'تعذر الاتصال بالخادم، تحقق من الإنترنت';
+        else if (error.code === 'auth/unauthorized-domain') msg += 'هذا النطاق غير مصرح له بتسجيل الدخول، تواصل مع الإدارة';
+        else if (error.code === 'auth/user-disabled') msg += 'تم تعطيل هذا الحساب';
+        else msg += 'حدث خطأ في المصادقة (' + (error.code || 'غير معروف') + ')';
         errorDiv.innerText = msg;
         logSecurityEvent('admin_login_failed', { email: email, error: error.code });
     }
@@ -2131,12 +2136,17 @@ async function handleTeacherLogin() {
         showSuccess('تم تسجيل الدخول كأستاذ بنجاح!');
     } catch(error) {
         recordFailedLogin(email);
+        console.error('🔴 Firebase Auth error code:', error.code, error.message);
         var msg = '❌ فشل تسجيل الدخول: ';
         if (error.code === 'auth/user-not-found') msg += 'لا يوجد حساب بهذا البريد';
         else if (error.code === 'auth/wrong-password') msg += 'كلمة المرور غير صحيحة';
+        else if (error.code === 'auth/invalid-credential') msg += 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
         else if (error.code === 'auth/invalid-email') msg += 'البريد الإلكتروني غير صالح';
         else if (error.code === 'auth/too-many-requests') msg += 'تم حظر الحساب مؤقتاً، حاول لاحقاً';
-        else msg += 'حدث خطأ في المصادقة';
+        else if (error.code === 'auth/network-request-failed') msg += 'تعذر الاتصال بالخادم، تحقق من الإنترنت';
+        else if (error.code === 'auth/unauthorized-domain') msg += 'هذا النطاق غير مصرح له بتسجيل الدخول، تواصل مع الإدارة';
+        else if (error.code === 'auth/user-disabled') msg += 'تم تعطيل هذا الحساب';
+        else msg += 'حدث خطأ في المصادقة (' + (error.code || 'غير معروف') + ')';
         errorDiv.innerText = msg;
         logSecurityEvent('teacher_login_failed', { email: email, error: error.code });
     }
@@ -2192,12 +2202,17 @@ async function handleMemberLogin() {
         showSuccess('تم تسجيل الدخول كعضو بنجاح!');
     } catch(error) {
         recordFailedLogin(email);
+        console.error('🔴 Firebase Auth error code:', error.code, error.message);
         var msg = '❌ فشل تسجيل الدخول: ';
         if (error.code === 'auth/user-not-found') msg += 'لا يوجد حساب بهذا البريد';
         else if (error.code === 'auth/wrong-password') msg += 'كلمة المرور غير صحيحة';
+        else if (error.code === 'auth/invalid-credential') msg += 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
         else if (error.code === 'auth/invalid-email') msg += 'البريد الإلكتروني غير صالح';
         else if (error.code === 'auth/too-many-requests') msg += 'تم حظر الحساب مؤقتاً، حاول لاحقاً';
-        else msg += 'حدث خطأ في المصادقة';
+        else if (error.code === 'auth/network-request-failed') msg += 'تعذر الاتصال بالخادم، تحقق من الإنترنت';
+        else if (error.code === 'auth/unauthorized-domain') msg += 'هذا النطاق غير مصرح له بتسجيل الدخول، تواصل مع الإدارة';
+        else if (error.code === 'auth/user-disabled') msg += 'تم تعطيل هذا الحساب';
+        else msg += 'حدث خطأ في المصادقة (' + (error.code || 'غير معروف') + ')';
         errorDiv.innerText = msg;
         logSecurityEvent('member_login_failed', { email: email, error: error.code });
     }
