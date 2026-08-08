@@ -2324,25 +2324,57 @@ async function handleRegisterMember() {
 // ===== دوال قاعدة البيانات =====
 // ============================================================
 
+// ذاكرة تخزين مؤقت قصيرة الأمد لنتائج فحص الصلاحيات.
+// السبب: كل من دوال تسجيل الدخول (handleTeacherLogin/handleMemberLogin/...)
+// ومستمع onAuthStateChanged يقومان بفحص نفس صلاحيات نفس المستخدم بشكل
+// مستقل وفي نفس اللحظة تقريباً بعد كل تسجيل دخول. إذا حدث هذا الفحص
+// المزدوج في توقيتين مختلفين قليلاً (سباق/race condition)، قد تختلف
+// النتيجة بينهما بسبب تأخر مزامنة رمز المصادقة مع قاعدة البيانات،
+// فيظهر للمستخدم تناقض: "تم تسجيل الدخول بنجاح" ثم فوراً "لم تتم
+// الموافقة على طلبك" مع تسجيل خروج غير متوقع.
+// الحل: أول فحص ناجح خلال 8 ثوانٍ يُخزَّن ويُعاد استخدامه، بدل تكرار
+// الاستعلام من قاعدة البيانات في كل مرة، لضمان اتساق النتيجة بين
+// جميع نقاط الفحص لنفس المستخدم.
+var permissionCache = {};
+var PERMISSION_CACHE_TTL_MS = 8000;
+
+function getCachedPermission(cacheKey) {
+    var entry = permissionCache[cacheKey];
+    if (entry && (Date.now() - entry.timestamp) < PERMISSION_CACHE_TTL_MS) {
+        return entry;
+    }
+    return null;
+}
+
 async function checkTeacherPermissions(email) {
     if (!database || !email) return false;
     if (email === MASTER_TEACHER_EMAIL) { currentUserStage = 'all'; return true; }
+    var cacheKey = 'teacher:' + email;
+    var cached = getCachedPermission(cacheKey);
+    if (cached) { currentUserStage = cached.userStage || currentUserStage; return cached.result; }
     // ملاحظة: لا نلتقط أخطاء الشبكة هنا ونحوّلها إلى false، لأن ذلك يجعل
     // انقطاع الاتصال (شائع على الهاتف) يبدو وكأن الأستاذ "غير مصرح له".
     // نترك الخطأ يصعد للأعلى ليتم التعامل معه بإعادة محاولة بدل تسجيل الخروج.
     var snapshot = await database.ref('teachers/' + email.replace(/\./g, '_')).once('value');
     var data = snapshot.val();
-    if (data) { currentUserStage = data.userStage || 'all'; return true; }
-    return false;
+    var result = false;
+    if (data) { currentUserStage = data.userStage || 'all'; result = true; }
+    permissionCache[cacheKey] = { result: result, userStage: currentUserStage, timestamp: Date.now() };
+    return result;
 }
 
 async function checkMemberApproval(email) {
     if (!database || !email) return false;
+    var cacheKey = 'member:' + email;
+    var cached = getCachedPermission(cacheKey);
+    if (cached) { currentUserStage = cached.userStage || currentUserStage; return cached.result; }
     // نفس الملاحظة أعلاه: لا نُخفي أخطاء الشبكة، بل نتركها تصعد للأعلى.
     var snapshot = await database.ref('members/approved/' + email.replace(/\./g, '_')).once('value');
     var data = snapshot.val();
-    if (data) { currentUserStage = data.userStage || 'primary'; return true; }
-    return false;
+    var result = false;
+    if (data) { currentUserStage = data.userStage || 'primary'; result = true; }
+    permissionCache[cacheKey] = { result: result, userStage: currentUserStage, timestamp: Date.now() };
+    return result;
 }
 
 async function addJoinRequest(email, userType, stage) {
