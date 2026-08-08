@@ -1573,6 +1573,20 @@ var countdownTargetDate = null;
 var registrationSettings = null;
 var newsItems = ["📢 مرحباً بكم في منصة الأستاذ محمد التعليمية"];
 var MASTER_TEACHER_EMAIL = "hemikamohammed08@gmail.com";
+// دالة موحّدة لتحويل البريد إلى مفتاح قاعدة بيانات آمن.
+// السبب: Firebase Auth يُطبّع بريد المستخدم إلى أحرف صغيرة تلقائياً بعد
+// تسجيل الدخول (user.email دائماً بأحرف صغيرة)، بينما أي بريد يُقرأ من
+// حقل نموذج أو من سجل قديم في قاعدة البيانات قد يحتفظ بحالة الأحرف كما
+// كتبها المستخدم أصلاً. إن بُني مفتاح قاعدة البيانات من نسختين مختلفتي
+// الحالة لنفس البريد في مكانين مختلفين من الكود، فلن يتطابق المفتاحان
+// أبداً، وستفشل عمليات التحقق من الصلاحيات بصمت (بلا أي خطأ ظاهر).
+// لذلك: كل مكان يبني مفتاحاً من بريد إلكتروني يجب أن يمر عبر هذه الدالة.
+function emailToKey(email) {
+    return (email || '').trim().toLowerCase().replace(/\./g, '_');
+}
+function normalizeEmail(email) {
+    return (email || '').trim().toLowerCase();
+}
 var LESSONS_PER_PAGE = 10;
 var MAX_FILE_SIZE = 10 * 1024 * 1024;
 var CONTACT_MESSAGES_PATH = 'contact_messages';
@@ -1743,7 +1757,7 @@ function setupSessionActivityListeners() {
 async function validateSession() {
     if (!currentUser || !sessionId) return true;
     try {
-        var snapshot = await database.ref('activeSessions/' + currentUser.email.replace(/\./g, '_')).once('value');
+        var snapshot = await database.ref('activeSessions/' + emailToKey(currentUser.email)).once('value');
         var data = snapshot.val();
         if (data && data.sessionId !== sessionId) {
             logSecurityEvent('session_conflict', { 
@@ -1764,7 +1778,7 @@ async function registerActiveSession(email) {
     if (!email) return;
     sessionId = generateSessionId();
     try {
-        await database.ref('activeSessions/' + email.replace(/\./g, '_')).set({
+        await database.ref('activeSessions/' + emailToKey(email)).set({
             sessionId: sessionId,
             lastActivity: Date.now(),
             userAgent: navigator.userAgent
@@ -1775,7 +1789,7 @@ async function registerActiveSession(email) {
 async function removeActiveSession(email) {
     if (!email) return;
     try {
-        await database.ref('activeSessions/' + email.replace(/\./g, '_')).remove();
+        await database.ref('activeSessions/' + emailToKey(email)).remove();
     } catch(e) {}
 }
 
@@ -2047,7 +2061,7 @@ try {
 // ============================================================
 
 async function handleAdminLogin() {
-    var email = document.getElementById('adminEmail').value.trim();
+    var email = normalizeEmail(document.getElementById('adminEmail').value);
     var password = document.getElementById('adminPassword').value;
     var remember = document.getElementById('adminRemember').checked;
     var errorDiv = document.getElementById('adminLoginError');
@@ -2095,7 +2109,7 @@ async function handleAdminLogin() {
 }
 
 async function handleTeacherLogin() {
-    var email = document.getElementById('teacherEmail').value.trim();
+    var email = normalizeEmail(document.getElementById('teacherEmail').value);
     var password = document.getElementById('teacherPassword').value;
     var remember = document.getElementById('teacherRemember').checked;
     var errorDiv = document.getElementById('teacherLoginError');
@@ -2153,7 +2167,7 @@ async function handleTeacherLogin() {
 }
 
 async function handleMemberLogin() {
-    var email = document.getElementById('memberEmail').value.trim();
+    var email = normalizeEmail(document.getElementById('memberEmail').value);
     var password = document.getElementById('memberPassword').value;
     var remember = document.getElementById('memberRemember').checked;
     var errorDiv = document.getElementById('memberLoginError');
@@ -2224,7 +2238,7 @@ async function handleRegisterTeacher() {
         return;
     }
     
-    var email = document.getElementById('registerTeacherEmail').value.trim();
+    var email = normalizeEmail(document.getElementById('registerTeacherEmail').value);
     var password = document.getElementById('registerTeacherPassword').value;
     var confirm = document.getElementById('registerTeacherConfirm').value;
     var errorDiv = document.getElementById('registerTeacherError');
@@ -2274,7 +2288,7 @@ async function handleRegisterMember() {
         return;
     }
     
-    var email = document.getElementById('registerMemberEmail').value.trim();
+    var email = normalizeEmail(document.getElementById('registerMemberEmail').value);
     var password = document.getElementById('registerMemberPassword').value;
     var confirm = document.getElementById('registerMemberConfirm').value;
     var stage = document.getElementById('registerMemberStage').value;
@@ -2348,6 +2362,7 @@ function getCachedPermission(cacheKey) {
 
 async function checkTeacherPermissions(email) {
     if (!database || !email) return false;
+    email = normalizeEmail(email);
     if (email === MASTER_TEACHER_EMAIL) { currentUserStage = 'all'; return true; }
     var cacheKey = 'teacher:' + email;
     var cached = getCachedPermission(cacheKey);
@@ -2355,7 +2370,7 @@ async function checkTeacherPermissions(email) {
     // ملاحظة: لا نلتقط أخطاء الشبكة هنا ونحوّلها إلى false، لأن ذلك يجعل
     // انقطاع الاتصال (شائع على الهاتف) يبدو وكأن الأستاذ "غير مصرح له".
     // نترك الخطأ يصعد للأعلى ليتم التعامل معه بإعادة محاولة بدل تسجيل الخروج.
-    var snapshot = await database.ref('teachers/' + email.replace(/\./g, '_')).once('value');
+    var snapshot = await database.ref('teachers/' + emailToKey(email)).once('value');
     var data = snapshot.val();
     var result = false;
     if (data) { currentUserStage = data.userStage || 'all'; result = true; }
@@ -2365,11 +2380,12 @@ async function checkTeacherPermissions(email) {
 
 async function checkMemberApproval(email) {
     if (!database || !email) return false;
+    email = normalizeEmail(email);
     var cacheKey = 'member:' + email;
     var cached = getCachedPermission(cacheKey);
     if (cached) { currentUserStage = cached.userStage || currentUserStage; return cached.result; }
     // نفس الملاحظة أعلاه: لا نُخفي أخطاء الشبكة، بل نتركها تصعد للأعلى.
-    var snapshot = await database.ref('members/approved/' + email.replace(/\./g, '_')).once('value');
+    var snapshot = await database.ref('members/approved/' + emailToKey(email)).once('value');
     var data = snapshot.val();
     var result = false;
     if (data) { currentUserStage = data.userStage || 'primary'; result = true; }
@@ -2379,6 +2395,7 @@ async function checkMemberApproval(email) {
 
 async function addJoinRequest(email, userType, stage) {
     if (!database) return;
+    email = normalizeEmail(email);
     await database.ref('members/joinRequests/' + Date.now()).set({ 
         email: email,
         userType: userType,
@@ -3590,11 +3607,11 @@ function renderJoinRequestsList() {
             var userType = this.getAttribute('data-type');
             var stage = this.getAttribute('data-stage') || 'primary';
             
-            await database.ref('members/approved/' + email.replace(/\./g, '_')).set({
+            await database.ref('members/approved/' + emailToKey(email)).set({
                 email: email, approvedAt: Date.now(), userType: userType, userStage: stage
             });
             if (userType === 'أستاذ') {
-                await database.ref('teachers/' + email.replace(/\./g, '_')).set({
+                await database.ref('teachers/' + emailToKey(email)).set({
                     email: email, addedAt: Date.now(), addedBy: currentUser.email, userStage: stage
                 });
             }
@@ -3687,7 +3704,7 @@ async function deleteMember(email) {
     
     showConfirmDialog('⚠️ هل أنت متأكد من إلغاء عضوية ' + email + '؟', async function() {
         try {
-            await database.ref('members/approved/' + email.replace(/\./g, '_')).remove();
+            await database.ref('members/approved/' + emailToKey(email)).remove();
             var requestsSnapshot = await database.ref('members/joinRequests').once('value');
             var requests = requestsSnapshot.val() || {};
             for (var key in requests) {
@@ -3751,14 +3768,14 @@ async function addTeacher() {
     if (!email) { showWarning('الرجاء إدخال البريد الإلكتروني'); return; }
     if (email === MASTER_TEACHER_EMAIL) { showWarning('هذا هو بريد المسؤول!'); return; }
     try {
-        var check = await database.ref('teachers/' + email.replace(/\./g, '_')).once('value');
+        var check = await database.ref('teachers/' + emailToKey(email)).once('value');
         if (check.exists()) { showWarning('هذا البريد مسجل بالفعل كأستاذ'); return; }
         var stageInput = prompt('📚 اختر المرحلة:\nأدخل: primary / middle / high / all');
         var stage = 'all';
         if (stageInput && ['primary','middle','high','all'].includes(stageInput.toLowerCase())) {
             stage = stageInput.toLowerCase();
         }
-        await database.ref('teachers/' + email.replace(/\./g, '_')).set({
+        await database.ref('teachers/' + emailToKey(email)).set({
             email: email, addedAt: Date.now(), addedBy: currentUser.email, userStage: stage
         });
         logSecurityEvent('teacher_added', { email: email, stage: stage });
@@ -3779,7 +3796,7 @@ async function deleteTeacher(email) {
     
     showConfirmDialog('⚠️ هل أنت متأكد من حذف الأستاذ ' + email + '؟', async function() {
         try {
-            await database.ref('teachers/' + email.replace(/\./g, '_')).remove();
+            await database.ref('teachers/' + emailToKey(email)).remove();
             logSecurityEvent('teacher_deleted', { email: email });
             showSuccess('تم حذف الأستاذ ' + email + ' بنجاح');
             await loadTeachersList();
@@ -4913,7 +4930,7 @@ async function revokeOwnMembership() {
     showConfirmDialog('⚠️ هل أنت متأكد من إلغاء عضويتك؟\nسيتم حذف صلاحيتك ولن تتمكن من تسجيل الدخول مرة أخرى', async function() {
         try {
             var email = currentUser.email;
-            await database.ref('members/approved/' + email.replace(/\./g, '_')).remove();
+            await database.ref('members/approved/' + emailToKey(email)).remove();
             logSecurityEvent('membership_revoked', { email: email });
             showSuccess('تم إلغاء عضويتك بنجاح');
             await removeActiveSession(email);
@@ -5287,7 +5304,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!await validateSession()) return;
             
             try {
-                var check = await database.ref('members/approved/' + email.replace(/\./g, '_')).once('value');
+                var check = await database.ref('members/approved/' + emailToKey(email)).once('value');
                 if (check.exists()) {
                     showWarning('هذا البريد موجود بالفعل في قائمة الأعضاء المعتمدين');
                     resultDiv.innerHTML = '<span style="color:#f59e0b;">⚠️ البريد موجود مسبقاً</span>';
@@ -5295,7 +5312,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 var stageNames = { 'primary': 'الابتدائية', 'middle': 'المتوسط', 'high': 'الثانوي', 'all': 'جميع المراحل' };
-                await database.ref('members/approved/' + email.replace(/\./g, '_')).set({
+                await database.ref('members/approved/' + emailToKey(email)).set({
                     email: email,
                     approvedAt: Date.now(),
                     userType: 'عضو',
@@ -5391,7 +5408,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var previousUser = currentUser;
             currentUser = user;
             if (user) {
-                var email = user.email;
+                var email = normalizeEmail(user.email);
                 currentUserStage = null;
                 
                 // نحاول التحقق من الصلاحيات مع إعادة محاولة عند فشل الشبكة
