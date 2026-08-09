@@ -18,6 +18,14 @@ const MIME_MAP = {
   mp4: 'video/mp4', mp3: 'audio/mpeg', txt: 'text/plain'
 };
 
+// خريطة عكسية (MIME -> امتداد)، تُستخدم عندما يفشل استخراج الامتداد من مسار
+// تيليجرام (يحدث غالباً مع ملفات PDF/المستندات المُرسلة كـ document)، لضمان أن
+// اسم الملف المحفوظ ينتهي دائماً بامتداد صحيح حتى لو كان محتوى الملف سليماً.
+const EXT_FROM_MIME = {};
+for (const key in MIME_MAP) {
+  if (!EXT_FROM_MIME[MIME_MAP[key]]) EXT_FROM_MIME[MIME_MAP[key]] = key;
+}
+
 // يزيل أي أحرف قد تكسر ترويسة Content-Disposition أو غير مسموحة في أسماء الملفات
 function sanitizeFilename(name) {
   return name.replace(/["\\\r\n]/g, '').replace(/[\\/:*?<>|]/g, '_').trim();
@@ -103,7 +111,6 @@ export default async function handler(req, res) {
     // بناء اسم الملف: نفضّل الاسم المُمرر من الواجهة (مثلاً عنوان الدرس)، وإلا اسم عام
     let baseName = filename ? sanitizeFilename(decodeURIComponent(filename)) : '';
     if (!baseName) baseName = 'file_' + file_id.slice(-8);
-    if (ext && !baseName.toLowerCase().endsWith('.' + ext)) baseName += '.' + ext;
 
     // إصلاح: خوادم ملفات تيليجرام (api.telegram.org/file/bot.../...) تُرجع في الغالب
     // Content-Type عامًا (application/octet-stream) بغض النظر عن نوع الملف الحقيقي.
@@ -119,6 +126,13 @@ export default async function handler(req, res) {
       || (!isGenericType && telegramContentType)
       || telegramContentType
       || 'application/octet-stream';
+
+    // إصلاح: إذا لم يحمل مسار تيليجرام امتداداً واضحاً (يحدث غالباً مع ملفات PDF
+    // والمستندات)، نشتقّ الامتداد الآن من Content-Type النهائي بدل تركه بلا امتداد —
+    // وإلا يصل المحتوى صحيحاً لكن باسم ملف بلا امتداد، فيبدو "غريباً" لنظام التشغيل
+    // والمتصفح رغم أن الملف داخلياً سليم تماماً.
+    const finalExt = ext || EXT_FROM_MIME[contentType] || '';
+    if (finalExt && !baseName.toLowerCase().endsWith('.' + finalExt)) baseName += '.' + finalExt;
 
     res.setHeader('Content-Type', contentType);
     res.setHeader('Cache-Control', 'public, max-age=3600');
