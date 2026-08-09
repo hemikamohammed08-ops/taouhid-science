@@ -105,7 +105,21 @@ export default async function handler(req, res) {
     if (!baseName) baseName = 'file_' + file_id.slice(-8);
     if (ext && !baseName.toLowerCase().endsWith('.' + ext)) baseName += '.' + ext;
 
-    const contentType = fileRes.headers.get('content-type') || MIME_MAP[ext] || 'application/octet-stream';
+    // إصلاح: خوادم ملفات تيليجرام (api.telegram.org/file/bot.../...) تُرجع في الغالب
+    // Content-Type عامًا (application/octet-stream) بغض النظر عن نوع الملف الحقيقي.
+    // عندما يستقبل المتصفح "application/octet-stream" فإنه يتجاهل قيمة
+    // Content-Disposition: inline ويفرض تحميل الملف مباشرة بدل عرضه — وهذا بالضبط
+    // ما كان يسبب تحميل ملفات PDF تلقائيًا بدل عرضها داخل iframe. لذلك يجب إعطاء
+    // الأولوية لامتداد الملف (MIME_MAP) على ترويسة تيليجرام العامة.
+    const telegramContentType = fileRes.headers.get('content-type');
+    const isGenericType = !telegramContentType
+      || telegramContentType.includes('octet-stream')
+      || telegramContentType.includes('unknown');
+    const contentType = (ext && MIME_MAP[ext])
+      || (!isGenericType && telegramContentType)
+      || telegramContentType
+      || 'application/octet-stream';
+
     res.setHeader('Content-Type', contentType);
     res.setHeader('Cache-Control', 'public, max-age=3600');
     // إصلاح: filename= (الجزء الأول) يجب أن يبقى ASCII بحت دائماً — راجع asciiSafe() أعلاه.
