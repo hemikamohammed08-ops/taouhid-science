@@ -2529,7 +2529,7 @@ async function uploadFileToTelegram(file, caption) {
         } else { throw new Error('لم يتم العثور على الملف في الرد'); }
         
         return {
-            url: getFreshTelegramUrl(fileId),
+            url: getFreshTelegramUrl(fileId, fileName),
             file_id: fileId,
             name: fileName,
             size: fileSize,
@@ -2543,14 +2543,18 @@ async function uploadFileToTelegram(file, caption) {
     }
 }
 
-function getFreshTelegramUrl(file_id) {
+function getFreshTelegramUrl(file_id, filename) {
     if (!file_id) return null;
     // رابط لا يحتوي أي توكن — api/telegram-file.js هو من يتصل بتيليجرام
     // فعلياً على الخادم ويُعيد محتوى الملف مباشرة.
     // مهم: يجب أن يكون الرابط كاملاً (absolute) وليس نسبياً، لأن Google Docs
     // Viewer (المستخدم لعرض ملفات PDF) يحتاج دومين كامل ليتمكن خادم Google
     // من جلب الملف؛ رابط نسبي مثل "/api/telegram-file?..." لا يعمل معه.
-    return window.location.origin + '/api/telegram-file?file_id=' + encodeURIComponent(file_id);
+    var u = window.location.origin + '/api/telegram-file?file_id=' + encodeURIComponent(file_id);
+    // تمرير اسم الملف (مثلاً عنوان الدرس) يجعل api/telegram-file.js يرسل
+    // ترويسة Content-Disposition باسم وامتداد صحيحين بدل "telegram-file" بدون امتداد.
+    if (filename) u += '&filename=' + encodeURIComponent(filename);
+    return u;
 }
 
 // ============================================================
@@ -2925,7 +2929,7 @@ async function showLessonContent(id, title, url, download, type, fileId) {
     var freshDownload = download;
     if (fileId) {
         try {
-            freshUrl = await getFreshTelegramUrl(fileId);
+            freshUrl = await getFreshTelegramUrl(fileId, title);
             freshDownload = freshUrl;
             if (!freshUrl) {
                 freshUrl = url;
