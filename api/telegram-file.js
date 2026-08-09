@@ -23,6 +23,18 @@ function sanitizeFilename(name) {
   return name.replace(/["\\\r\n]/g, '').replace(/[\\/:*?<>|]/g, '_').trim();
 }
 
+// إصلاح مهم: Node.js يرفض أي حرف خارج نطاق ASCII/Latin1 داخل *قيمة* ترويسة HTTP
+// ويرمي TypeError [ERR_INVALID_CHAR] فوراً — وهو بالضبط الخطأ 500 الذي كان يحدث مع
+// كل درس عنوانه عربي (أي كل الدروس تقريباً). لذلك: الجزء الأول من Content-Disposition
+// (filename=) يجب أن يبقى ASCII بحت دائماً كـ"احتياط" للمتصفحات القديمة فقط، بينما
+// الاسم الحقيقي (بالعربية أو أي لغة) يُنقل حصراً عبر الصيغة المُرمَّزة filename*
+// (RFC 5987) التي تدعمها كل المتصفحات الحديثة أصلاً.
+function asciiSafe(name) {
+  // يبقي فقط أحرف/أرقام/نقطة/شرطة/شرطة سفلية، ويستبدل أي شيء آخر (كالعربية) بشرطة سفلية
+  var cleaned = name.replace(/[^\x20-\x7E]/g, '_').replace(/["\\]/g, '_').trim();
+  return cleaned || 'file';
+}
+
 // صفحة خطأ HTML بسيطة تُعرض داخل <img>/<iframe> بدل ترك المتصفح يحاول تفسير
 // استجابة فاشلة على أنها صورة أو PDF (وهو ما كان يسبب "صورة معطوبة" أو
 // "Aucun aperçu disponible" بصمت دون أي رسالة توضح السبب الحقيقي للمستخدم).
@@ -96,10 +108,13 @@ export default async function handler(req, res) {
     const contentType = fileRes.headers.get('content-type') || MIME_MAP[ext] || 'application/octet-stream';
     res.setHeader('Content-Type', contentType);
     res.setHeader('Cache-Control', 'public, max-age=3600');
-    // filename للمتصفحات القديمة + filename* (RFC 5987) لدعم الأحرف العربية بشكل صحيح
+    // إصلاح: filename= (الجزء الأول) يجب أن يبقى ASCII بحت دائماً — راجع asciiSafe() أعلاه.
+    // الاسم الحقيقي (عربي أو غيره) يُنقل فقط عبر filename* المُرمَّز، وهو ما تدعمه
+    // كل المتصفحات الحديثة فعلياً؛ الجزء الأول مجرد احتياط لا يُعرض عملياً أبداً.
+    const asciiName = asciiSafe(baseName);
     res.setHeader(
       'Content-Disposition',
-      `${disposition}; filename="${baseName}"; filename*=UTF-8''${encodeURIComponent(baseName)}`
+      `${disposition}; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(baseName)}`
     );
 
     const buffer = Buffer.from(await fileRes.arrayBuffer());
