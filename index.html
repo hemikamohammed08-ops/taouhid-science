@@ -1563,6 +1563,9 @@ var EMAILJS_PUBLIC_KEY = 'mQoCY5duuuVUHjuaj';
 var database = null;
 var auth = null;
 var currentUser = null;
+// يصير true فقط بعد أن يحسم Firebase حالة تسجيل الدخول نهائياً (مسجّل أو غير مسجّل)،
+// يُستخدم لتفادي عرض "غير متاح" بشكل خاطئ عند استعادة عرض درس فور تحديث الصفحة.
+var isAuthReady = false;
 var isAdminMode = false;
 var currentUserIsApproved = false;
 var currentUserStage = null;
@@ -2543,7 +2546,7 @@ async function uploadFileToTelegram(file, caption) {
     }
 }
 
-function getFreshTelegramUrl(file_id, filename) {
+function getFreshTelegramUrl(file_id, filename, forceDownload) {
     if (!file_id) return null;
     // رابط لا يحتوي أي توكن — api/telegram-file.js هو من يتصل بتيليجرام
     // فعلياً على الخادم ويُعيد محتوى الملف مباشرة.
@@ -2551,10 +2554,30 @@ function getFreshTelegramUrl(file_id, filename) {
     // Viewer (المستخدم لعرض ملفات PDF) يحتاج دومين كامل ليتمكن خادم Google
     // من جلب الملف؛ رابط نسبي مثل "/api/telegram-file?..." لا يعمل معه.
     var u = window.location.origin + '/api/telegram-file?file_id=' + encodeURIComponent(file_id);
-    // تمرير اسم الملف (مثلاً عنوان الدرس) يجعل api/telegram-file.js يرسل
+    // تمرير اسم الملف (عنوان الدرس) يجعل api/telegram-file.js يرسل
     // ترويسة Content-Disposition باسم وامتداد صحيحين بدل "telegram-file" بدون امتداد.
     if (filename) u += '&filename=' + encodeURIComponent(filename);
+    // dl=1 فقط لزر "تحميل" الصريح — يجبر المتصفح على حفظ الملف كمرفق.
+    // بدونها الرابط "inline" ليعمل بشكل طبيعي داخل <img> و<iframe> (عارض PDF).
+    if (forceDownload) u += '&dl=1';
     return u;
+}
+
+// ينتظر حتى يحسم Firebase حالة تسجيل الدخول (isAuthReady=true) أو حتى تنتهي المهلة القصوى،
+// أيهما أسبق. يُستخدم فقط عند استعادة عرض درس محفوظ فور تحديث الصفحة، لتفادي عرض
+// "غير متاح" بشكل خاطئ بسبب أن currentUser لم يُحسم بعد.
+function waitForAuthReady(maxWaitMs) {
+    return new Promise(function(resolve) {
+        if (isAuthReady) { resolve(); return; }
+        var waited = 0;
+        var iv = setInterval(function() {
+            waited += 50;
+            if (isAuthReady || waited >= maxWaitMs) {
+                clearInterval(iv);
+                resolve();
+            }
+        }, 50);
+    });
 }
 
 // ============================================================
@@ -2929,8 +2952,8 @@ async function showLessonContent(id, title, url, download, type, fileId) {
     var freshDownload = download;
     if (fileId) {
         try {
-            freshUrl = await getFreshTelegramUrl(fileId, title);
-            freshDownload = freshUrl;
+            freshUrl = getFreshTelegramUrl(fileId, title, false);      // للعرض داخل الصفحة (inline)
+            freshDownload = getFreshTelegramUrl(fileId, title, true);  // لزر "تحميل" (attachment)
             if (!freshUrl) {
                 freshUrl = url;
                 freshDownload = download;
@@ -4414,7 +4437,7 @@ function goBack() {
 }
 window.goBack = goBack;
 
-function refreshCurrentView() {
+async function refreshCurrentView() {
     var loading = document.getElementById('app-loading');
     if (loading) loading.classList.add('hidden');
     
@@ -4431,6 +4454,10 @@ function refreshCurrentView() {
                     return;
                 }
                 if (currentViewingFile && currentViewingLesson) {
+                    // ننتظر حتى يحسم Firebase حالة تسجيل الدخول (حتى 4 ثوانٍ كحد أقصى)
+                    // قبل محاولة عرض الدرس، لتفادي رفضه خطأً بسبب أن currentUser
+                    // لم يُحسم بعد فور تحديث الصفحة (سباق زمني).
+                    await waitForAuthReady(4000);
                     setTimeout(function() {
                         showLessonContent(currentViewingFile, currentViewingLesson.title, currentViewingLesson.url, currentViewingLesson.download, currentViewingLesson.type, currentViewingLesson.fileId);
                         isRestoringState = false;
@@ -5447,6 +5474,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // ولا نتهمه بأنه غير معتمد، فقط نطلب منه المحاولة لاحقاً.
                     showWarning('⚠️ تعذر التحقق من صلاحياتك بسبب ضعف الاتصال بالإنترنت. يرجى التحقق من الاتصال والمحاولة مرة أخرى.');
                     updateAuthButtons();
+                    isAuthReady = true;
                     return;
                 }
                 
@@ -5455,6 +5483,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     logSecurityEvent('unapproved_user_attempt', { email: email });
                     showWarning('لم يتم الموافقة على طلبك بعد');
                     updateUIAfterLogout();
+                    isAuthReady = true;
                     return;
                 }
                 
@@ -5486,12 +5515,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     loadRegistrationSettings();
                 }
                 updateAuthButtons();
+                isAuthReady = true;
                 if (previousUser === null) { 
                     refreshCurrentView(); 
                     updateStats();
                 }
                 resetSessionTimer();
             } else {
+                isAuthReady = true;
                 if (previousUser !== null) updateUIAfterLogout();
                 else updateAuthButtons();
             }
