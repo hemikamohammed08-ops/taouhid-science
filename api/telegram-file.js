@@ -25,7 +25,11 @@ function sanitizeFilename(name) {
 
 export default async function handler(req, res) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const { file_id, filename } = req.query;
+  const { file_id, filename, dl } = req.query;
+  // dl=1 يعني طلب تحميل صريح (زر "تحميل") -> attachment.
+  // بدونها الطلب للعرض داخل الصفحة (<img>, عارض PDF) -> inline، وإلا يرفض
+  // المتصفح عرض المحتوى ويحاول تنزيله بدل إظهاره.
+  const disposition = dl ? 'attachment' : 'inline';
 
   if (!token) return res.status(500).json({ error: 'Server not configured (missing TELEGRAM_BOT_TOKEN)' });
   if (!file_id) return res.status(400).json({ error: 'file_id required' });
@@ -58,7 +62,7 @@ export default async function handler(req, res) {
     // filename للمتصفحات القديمة + filename* (RFC 5987) لدعم الأحرف العربية بشكل صحيح
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="${baseName}"; filename*=UTF-8''${encodeURIComponent(baseName)}`
+      `${disposition}; filename="${baseName}"; filename*=UTF-8''${encodeURIComponent(baseName)}`
     );
 
     const buffer = Buffer.from(await fileRes.arrayBuffer());
