@@ -1161,6 +1161,9 @@
 </head>
 <body>
 
+<!-- خلفية الموقع للأعضاء والزوار (بديل حقل الإحصائيات) -->
+<div id="statsImageBackground" style="display:none; position:fixed; inset:0; top:0; left:0; right:0; bottom:0; width:100vw; height:100vh; z-index:-1; pointer-events:none; background-image:url('stats-placeholder.jpg'); background-size:cover; background-position:center; background-repeat:no-repeat;"></div>
+
 <!-- شاشة التحميل -->
 <div id="app-loading">
     <div class="spinner"></div>
@@ -1299,9 +1302,7 @@
         </div>
     </div>
 
-    <div id="statsImagePlaceholder" style="display:none; margin:16px 0; text-align:center;">
-        <img src="stats-placeholder.jpg" alt="منصة الأستاذ محمد للتعليم" style="max-width:100%; border-radius:var(--radius-lg); box-shadow:var(--shadow-md);">
-    </div>
+
 
     <div id="dynamicArea">
         <div class="welcome-new">
@@ -3672,17 +3673,19 @@ window.filterLessons = filterLessons;
 // المشكلة 5: إصلاح الإحصائيات - تحسين عد الدروس وتحميل الأعضاء بشكل صحيح
 function updateStats() {
     var container = document.getElementById('statsContainer');
-    var imagePlaceholder = document.getElementById('statsImagePlaceholder');
+    var imageBackground = document.getElementById('statsImageBackground');
     if (!container) return;
     
     // الإحصائيات الحقيقية تظهر فقط للمسؤول والأساتذة (isAdminMode)
-    // الأعضاء والزوار يظهر لهم بديل بصري بدلاً من الإحصائيات، دون التأثير على باقي وظائف الموقع
+    // الأعضاء والزوار يظهر لهم بديل بصري كخلفية للموقع بدلاً من الإحصائيات
+    // الخلفية ثابتة (position:fixed) بطبقة z-index أدنى من كل شيء آخر، لذا كل علب الحوار
+    // ومحتوى الموقع والوظائف الأخرى تبقى تظهر فوقها دون أي تأثير على عملها
     if (!isAdminMode) {
         container.style.display = 'none';
-        if (imagePlaceholder) imagePlaceholder.style.display = 'block';
+        if (imageBackground) imageBackground.style.display = 'block';
         return;
     }
-    if (imagePlaceholder) imagePlaceholder.style.display = 'none';
+    if (imageBackground) imageBackground.style.display = 'none';
     
     var totalLessons = 0;
     if (platformData) {
