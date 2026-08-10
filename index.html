@@ -1818,7 +1818,7 @@ function logSecurityEvent(eventType, details) {
             userAgent: navigator.userAgent,
             sessionId: sessionId || 'unknown'
         };
-        database.ref('security_logs/' + Date.now()).set(logData);
+        database.ref('security_logs').push(logData);
     } catch(e) {}
 }
 
@@ -2508,7 +2508,7 @@ async function checkMemberApproval(email) {
 async function addJoinRequest(email, userType, stage) {
     if (!database) return;
     email = normalizeEmail(email);
-    await database.ref('members/joinRequests/' + Date.now()).set({ 
+    await database.ref('members/joinRequests').push({ 
         email: email,
         userType: userType,
         stage: stage || 'primary',
