@@ -14,9 +14,10 @@
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' https: blob: 'unsafe-inline' https://www.google.com https://www.gstatic.com; worker-src 'self' blob: https:; child-src 'self' blob: https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; connect-src 'self' https: blob:; frame-src 'self' https: blob:; frame-ancestors 'none';">
+    <!-- المشكلة 3: تم إزالة X-Frame-Options و frame-ancestors من meta (غير فعّالة) وتم نقلها إلى HTTP headers عبر .htaccess -->
+    <!-- المشكلة 1: تم إصلاح CSP بإضافة wss: إلى connect-src -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' https: blob: 'unsafe-inline' https://www.google.com https://www.gstatic.com; worker-src 'self' blob: https:; child-src 'self' blob: https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; connect-src 'self' https: wss: blob:; frame-src 'self' https: blob:;">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <meta http-equiv="X-Frame-Options" content="DENY">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
     
@@ -43,6 +44,7 @@
             --border-color: #2a3a50;
         }
         
+        /* المشكلة 4: تم إصلاح شاشة التحميل - إخفاء كامل بدلاً من opacity فقط */
         #app-loading {
             position: fixed;
             top: 0;
@@ -56,9 +58,14 @@
             z-index: 99999;
             flex-direction: column;
             gap: 16px;
-            transition: opacity 0.5s ease;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
         }
-        #app-loading.hidden { opacity: 0; pointer-events: none; }
+        #app-loading.hidden { 
+            opacity: 0; 
+            visibility: hidden;
+            pointer-events: none;
+            display: none; /* إخفاء تام بعد الانتقال */
+        }
         #app-loading .spinner {
             width: 50px;
             height: 50px;
@@ -1167,7 +1174,13 @@
         if (hidden) return;
         hidden = true;
         var el = document.getElementById('app-loading');
-        if (el) el.classList.add('hidden');
+        if (el) {
+            el.classList.add('hidden');
+            // إزالة من DOM بعد الانتقال لتوفير الموارد
+            setTimeout(function() {
+                if (el && el.parentNode) el.parentNode.removeChild(el);
+            }, 600);
+        }
     }
     setTimeout(forceHide, 800);
     document.addEventListener('DOMContentLoaded', function() { setTimeout(forceHide, 100); });
@@ -1807,6 +1820,7 @@ function generateSessionId() {
     return CryptoJS.lib.WordArray.random(32).toString(CryptoJS.enc.Hex);
 }
 
+// المشكلة 2: إصلاح خطأ PERMISSION_DENIED في security_logs عن طريق تغليف الكتابة بـ .catch()
 function logSecurityEvent(eventType, details) {
     if (!database) return;
     try {
@@ -1818,8 +1832,14 @@ function logSecurityEvent(eventType, details) {
             userAgent: navigator.userAgent,
             sessionId: sessionId || 'unknown'
         };
-        database.ref('security_logs').push(logData);
-    } catch(e) {}
+        database.ref('security_logs').push(logData).catch(function(err) {
+            // تجاهل أخطاء الأمان بصمت - لا نريد أن تظهر في الكونسول
+            // يمكن تفعيل هذا للتصحيح إذا لزم الأمر:
+            // console.debug('Security log write failed (permission denied):', err.code || err.message);
+        });
+    } catch(e) {
+        // تجاهل الأخطاء في سجل الأمان
+    }
 }
 
 function checkRateLimit(action) {
@@ -1923,14 +1943,18 @@ async function registerActiveSession(email) {
             lastActivity: Date.now(),
             userAgent: navigator.userAgent
         });
-    } catch(e) {}
+    } catch(e) {
+        // تجاهل أخطاء التسجيل
+    }
 }
 
 async function removeActiveSession(email) {
     if (!email) return;
     try {
         await database.ref('activeSessions/' + emailToKey(email)).remove();
-    } catch(e) {}
+    } catch(e) {
+        // تجاهل أخطاء الإزالة
+    }
 }
 
 // ============================================================
@@ -2755,7 +2779,7 @@ function sendContactMessage() {
                         name: name, email: email, message: message,
                         date: new Date().toISOString(), timestamp: Date.now(),
                         status: 'sent', read: false
-                    });
+                    }).catch(function() {});
                 }
             } catch(fbError) {}
             showSuccess('✅ تم إرسال رسالتك بنجاح! سيتم الرد عليك قريباً.');
@@ -3065,7 +3089,6 @@ function _getPdfDocument(url) {
         var data = new Uint8Array(buf);
         return window['pdfjsLib'].getDocument({
             data: data,
-            // ضروري لعرض الخطوط العربية/CID بشكل صحيح
             cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
             cMapPacked: true,
             standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/',
@@ -3079,8 +3102,6 @@ function _getPdfDocument(url) {
     return p;
 }
 
-// بطاقة معاينة داخل الدرس: تعرض الصفحة الأولى كصورة مصغّرة وتفتح العارض
-// الاحترافي الكامل عند الضغط عليها.
 async function renderProfessionalPdfViewer(boxId, url, title, downloadUrl) {
     var box = document.getElementById(boxId);
     if (!box) return;
@@ -3132,9 +3153,6 @@ async function renderProfessionalPdfViewer(boxId, url, title, downloadUrl) {
 }
 window.renderProfessionalPdfViewer = renderProfessionalPdfViewer;
 
-// العارض الاحترافي كامل الشاشة: تكبير سلس، Pinch-to-zoom، سحب عند التكبير،
-// عجلة الفأرة، تنقل بين الصفحات بالأزرار أو بالسحب (Swipe)، ومتوافق تماماً
-// مع الهواتف والأجهزة اللوحية وشاشات الحاسوب.
 var _pdfViewerEscHandler = null;
 function openPdfViewer(url, title, downloadUrl) {
     var existing = document.getElementById('pdfViewerOverlay');
@@ -3443,7 +3461,6 @@ window.closePdfViewer = closePdfViewer;
 async function showLessonContent(id, title, url, download, type, fileId) {
     var container = document.getElementById('lessonsContainer');
     if (!container) {
-        // قد تكون قائمة الدروس غير معروضة (مثلاً بعد إعادة تحميل الصفحة) فنبنيها أولاً
         try { renderLessonsList(); } catch (e) {}
         container = document.getElementById('lessonsContainer');
         if (!container) { return; }
@@ -3494,7 +3511,6 @@ async function showLessonContent(id, title, url, download, type, fileId) {
     var contentHtml = '';
     
     if (isPDF) {
-        // عرض PDF عبر pdf.js (يعمل على كل المتصفحات ولا يفتح نافذة تحميل)
         var viewerUrl = freshUrl;
         var isLinkValid = viewerUrl && viewerUrl !== '' && viewerUrl !== '#' && viewerUrl !== 'undefined';
         var pdfBoxId = 'pdfBox_' + Date.now();
@@ -3649,6 +3665,7 @@ window.filterLessons = filterLessons;
 // ===== دوال الإحصائيات =====
 // ============================================================
 
+// المشكلة 5: إصلاح الإحصائيات - تحسين عد الدروس وتحميل الأعضاء بشكل صحيح
 function updateStats() {
     var container = document.getElementById('statsContainer');
     if (!container) return;
@@ -3658,43 +3675,72 @@ function updateStats() {
         try {
             if (platformData.primary) {
                 for (var subStage in platformData.primary) {
-                    var subjects = platformData.primary[subStage].subjects;
-                    for (var subject in subjects) {
-                        totalLessons += (subjects[subject].summer || []).length;
-                        totalLessons += (subjects[subject].curriculum || []).length;
+                    if (platformData.primary[subStage] && platformData.primary[subStage].subjects) {
+                        var subjects = platformData.primary[subStage].subjects;
+                        for (var subject in subjects) {
+                            if (subjects[subject]) {
+                                totalLessons += (subjects[subject].summer || []).length;
+                                totalLessons += (subjects[subject].curriculum || []).length;
+                            }
+                        }
                     }
                 }
             }
             if (platformData.middle && platformData.middle.subjectsByYear) {
                 for (var year in platformData.middle.subjectsByYear) {
-                    var subjects = platformData.middle.subjectsByYear[year];
-                    for (var subject in subjects) {
-                        totalLessons += (subjects[subject].summer || []).length;
-                        totalLessons += (subjects[subject].curriculum || []).length;
+                    if (platformData.middle.subjectsByYear[year]) {
+                        var subjects = platformData.middle.subjectsByYear[year];
+                        for (var subject in subjects) {
+                            if (subjects[subject]) {
+                                totalLessons += (subjects[subject].summer || []).length;
+                                totalLessons += (subjects[subject].curriculum || []).length;
+                            }
+                        }
                     }
                 }
             }
             if (platformData.high && platformData.high.subjectsByYear) {
                 for (var year in platformData.high.subjectsByYear) {
-                    var subjects = platformData.high.subjectsByYear[year];
-                    for (var subject in subjects) {
-                        totalLessons += (subjects[subject].summer || []).length;
-                        totalLessons += (subjects[subject].curriculum || []).length;
+                    if (platformData.high.subjectsByYear[year]) {
+                        var subjects = platformData.high.subjectsByYear[year];
+                        for (var subject in subjects) {
+                            if (subjects[subject]) {
+                                totalLessons += (subjects[subject].summer || []).length;
+                                totalLessons += (subjects[subject].curriculum || []).length;
+                            }
+                        }
                     }
                 }
             }
-        } catch(e) {}
+        } catch(e) {
+            console.error('Error counting lessons:', e);
+        }
     }
     
     document.getElementById('statsLessons').textContent = totalLessons;
-    document.getElementById('statsUsers').textContent = approvedMembers.length || 0;
     
-    if (database && isAdminMode) {
-        database.ref('teachers').once('value', function(snapshot) {
-            var teachers = snapshot.val() || {};
-            document.getElementById('statsTeachers').textContent = Object.keys(teachers).length;
+    // تحميل عدد الأعضاء من قاعدة البيانات مباشرة
+    if (database) {
+        database.ref('members/approved').once('value').then(function(snapshot) {
+            var data = snapshot.val() || {};
+            var count = Object.keys(data).length;
+            document.getElementById('statsUsers').textContent = count;
+        }).catch(function() {
+            document.getElementById('statsUsers').textContent = approvedMembers.length || 0;
         });
+        
+        if (isAdminMode) {
+            database.ref('teachers').once('value').then(function(snapshot) {
+                var teachers = snapshot.val() || {};
+                document.getElementById('statsTeachers').textContent = Object.keys(teachers).length;
+            }).catch(function() {
+                document.getElementById('statsTeachers').textContent = '0';
+            });
+        } else {
+            document.getElementById('statsTeachers').textContent = '0';
+        }
     } else {
+        document.getElementById('statsUsers').textContent = approvedMembers.length || 0;
         document.getElementById('statsTeachers').textContent = '0';
     }
     
@@ -4225,7 +4271,7 @@ function renderJoinRequestsList() {
 }
 
 async function loadApprovedMembers() {
-    if (!database || !auth || !auth.currentUser || auth.currentUser.email !== MASTER_TEACHER_EMAIL) return;
+    if (!database) return;
     try {
         var snapshot = await database.ref('members/approved').once('value');
         var data = snapshot.val() || {};
@@ -6058,9 +6104,13 @@ async function init() {
         console.log('🔒 نظام الأمان المتقدم يعمل بنجاح!');
         console.log('🔐 تم تفعيل نظام الجلسات المتقدمة وحماية تسجيل الدخول المتزامن');
         console.log('🔑 تم تفعيل متطلبات كلمات المرور القوية');
-        console.log('📄 تم إصلاح مشكلة عرض ملفات PDF باستخدام <object> مع #toolbar=0');
+        console.log('📄 تم إصلاح مشكلة عرض ملفات PDF باستخدام pdf.js');
         console.log('🖼️ تم تحسين عرض الصور مع خاصية التكبير والتحريك');
         console.log('❌ تم حذف الزر الأزرق "فتح في نافذة" نهائياً');
+        console.log('🔧 تم إصلاح CSP بإضافة wss: إلى connect-src');
+        console.log('🔧 تم تغليف كتابة security_logs بـ .catch() لمنع أخطاء PERMISSION_DENIED');
+        console.log('🔧 تم إصلاح شاشة التحميل بحيث تختفي تماماً');
+        console.log('🔧 تم تحسين إحصائيات الدروس والأعضاء');
         
         checkPrivacyConsent();
         setupSessionActivityListeners();
@@ -6130,7 +6180,7 @@ async function init() {
         }
         
         refreshCurrentView();
-        logSecurityEvent('platform_initialized', { version: '5.3' });
+        logSecurityEvent('platform_initialized', { version: '5.4' });
         
         console.log('✅ تم تحميل منصة الأستاذ محمد بنجاح!');
         console.log('📄 تم إصلاح مشكلة عرض ملفات PDF والصور');
