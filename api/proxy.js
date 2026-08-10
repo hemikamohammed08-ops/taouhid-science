@@ -1,50 +1,41 @@
-// api/proxy.js
-// التوكن يُقرأ الآن من متغير بيئة على Vercel (Settings → Environment Variables)
-// ولم يعد مكتوبًا في الكود إطلاقًا — لا يظهر أبدًا في GitHub أو للمتصفح.
-
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
   if (req.method !== 'POST') {
-    return res.status(405).json({ ok: false, error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const defaultChatId = process.env.TELEGRAM_CHAT_ID;
-
   if (!token) {
-    return res.status(500).json({ ok: false, error: 'Server not configured (missing TELEGRAM_BOT_TOKEN)' });
+    return res.status(500).json({ error: 'TELEGRAM_BOT_TOKEN not set' });
   }
 
   try {
-    const { chat_id, caption, file_base64, file_name, file_type } = req.body;
+    const { caption, file_base64, file_name, file_type } = req.body;
 
     if (!file_base64) {
-      return res.status(400).json({ ok: false, error: 'لا يوجد ملف' });
+      return res.status(400).json({ error: 'file_base64 is required' });
     }
 
     const buffer = Buffer.from(file_base64, 'base64');
     const formData = new FormData();
-    formData.append('chat_id', chat_id || defaultChatId);
-    formData.append('caption', caption || '📚 منصة الأستاذ محمد للتعليم');
-    formData.append('document', new Blob([buffer], { type: file_type || 'application/octet-stream' }), file_name || 'file.pdf');
+    const blob = new Blob([buffer], { type: file_type || 'application/octet-stream' });
+    formData.append('document', blob, file_name || 'file.pdf');
+    if (caption) formData.append('caption', caption);
 
     const response = await fetch(`https://api.telegram.org/bot${token}/sendDocument`, {
       method: 'POST',
       body: formData,
     });
 
-    const result = await response.json();
-    return res.status(200).json(result);
+    const data = await response.json();
+
+    if (!data.ok) {
+      return res.status(500).json({ error: data.description || 'Telegram API error' });
+    }
+
+    return res.status(200).json({ ok: true, result: data.result });
 
   } catch (error) {
     console.error('Proxy error:', error);
-    return res.status(500).json({ ok: false, error: error.message });
+    return res.status(500).json({ error: error.message || 'Internal server error' });
   }
 }
