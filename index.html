@@ -2969,7 +2969,16 @@ async function renderPdfDocument(boxId, url, title, downloadUrl) {
     }
 
     try {
-        var pdf = await window['pdfjsLib'].getDocument({ data: data }).promise;
+        var pdf = await window['pdfjsLib'].getDocument({
+            data: data,
+            // ضروري لعرض الخطوط العربية/CID بشكل صحيح
+            cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+            cMapPacked: true,
+            standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/',
+            useSystemFonts: false,
+            disableFontFace: false,
+            isEvalSupported: true
+        }).promise;
         box.innerHTML = '';
         box.style.overflowY = 'auto';
         box.style.maxHeight = '75vh';
