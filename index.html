@@ -4151,39 +4151,75 @@ function renderJoinRequestsList() {
     var approveBtns = document.querySelectorAll('.approve-btn');
     for (var i = 0; i < approveBtns.length; i++) {
         approveBtns[i].addEventListener('click', async function() {
-            var id = this.getAttribute('data-id');
-            var email = this.getAttribute('data-email');
-            var userType = this.getAttribute('data-type');
-            var stage = this.getAttribute('data-stage') || 'primary';
-            
-            await database.ref('members/approved/' + emailToKey(email)).set({
-                email: email, approvedAt: Date.now(), userType: userType, userStage: stage
-            });
-            if (userType === 'أستاذ') {
-                await database.ref('teachers/' + emailToKey(email)).set({
-                    email: email, addedAt: Date.now(), addedBy: currentUser.email, userStage: stage
-                });
+            if (!isAdminMode || !currentUser || currentUser.email !== MASTER_TEACHER_EMAIL) {
+                showError('غير مصرح لك - هذه الصلاحية للمسؤول فقط');
+                return;
             }
-            await database.ref('members/joinRequests/' + id).remove();
-            var stageNames = { 'primary': 'الابتدائية', 'middle': 'المتوسط', 'high': 'الثانوي', 'all': 'جميع المراحل' };
-            logSecurityEvent('member_approved', { email: email, userType: userType, stage: stage });
-            showSuccess('تم قبول طلب ' + email + ' كـ ' + userType + ' في ' + (stageNames[stage] || stage));
-            await loadJoinRequests();
-            await loadApprovedMembers();
-            if (userType === 'أستاذ') await loadTeachersList();
-            updateStats();
+            if (!await validateSession()) return;
+
+            var btn = this;
+            if (btn.disabled) return;
+            var id = btn.getAttribute('data-id');
+            var email = btn.getAttribute('data-email');
+            var userType = btn.getAttribute('data-type');
+            var stage = btn.getAttribute('data-stage') || 'primary';
+
+            btn.disabled = true;
+            var originalText = btn.innerHTML;
+            btn.innerHTML = '...';
+
+            try {
+                await database.ref('members/approved/' + emailToKey(email)).set({
+                    email: email, approvedAt: Date.now(), userType: userType, userStage: stage
+                });
+                if (userType === 'أستاذ') {
+                    await database.ref('teachers/' + emailToKey(email)).set({
+                        email: email, addedAt: Date.now(), addedBy: currentUser.email, userStage: stage
+                    });
+                }
+                await database.ref('members/joinRequests/' + id).remove();
+                var stageNames = { 'primary': 'الابتدائية', 'middle': 'المتوسط', 'high': 'الثانوي', 'all': 'جميع المراحل' };
+                logSecurityEvent('member_approved', { email: email, userType: userType, stage: stage });
+                showSuccess('تم قبول طلب ' + email + ' كـ ' + userType + ' في ' + (stageNames[stage] || stage));
+                await loadJoinRequests();
+                await loadApprovedMembers();
+                if (userType === 'أستاذ') await loadTeachersList();
+                updateStats();
+            } catch (e) {
+                console.error('Error approving request:', e);
+                logSecurityEvent('member_approve_failed', { email: email, error: e && e.message });
+                showError('❌ تعذر قبول الطلب: ' + (e && e.message ? e.message : 'خطأ غير معروف'));
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
         });
     }
 
     var rejectBtns = document.querySelectorAll('.reject-btn');
     for (var i = 0; i < rejectBtns.length; i++) {
         rejectBtns[i].addEventListener('click', async function() {
-            var id = this.getAttribute('data-id');
-            await database.ref('members/joinRequests/' + id).remove();
-            logSecurityEvent('member_rejected', { requestId: id });
-            showWarning('تم رفض الطلب');
-            await loadJoinRequests();
-            updateStats();
+            if (!isAdminMode || !currentUser || currentUser.email !== MASTER_TEACHER_EMAIL) {
+                showError('غير مصرح لك - هذه الصلاحية للمسؤول فقط');
+                return;
+            }
+            if (!await validateSession()) return;
+
+            var btn = this;
+            if (btn.disabled) return;
+            var id = btn.getAttribute('data-id');
+
+            btn.disabled = true;
+            try {
+                await database.ref('members/joinRequests/' + id).remove();
+                logSecurityEvent('member_rejected', { requestId: id });
+                showWarning('تم رفض الطلب');
+                await loadJoinRequests();
+                updateStats();
+            } catch (e) {
+                console.error('Error rejecting request:', e);
+                showError('❌ تعذر رفض الطلب: ' + (e && e.message ? e.message : 'خطأ غير معروف'));
+                btn.disabled = false;
+            }
         });
     }
 }
