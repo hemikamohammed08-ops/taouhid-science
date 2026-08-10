@@ -1,9 +1,7 @@
-// api/telegram-file.js
 export default async function handler(req, res) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const { file_id, filename, dl } = req.query;
 
-  // مهم: dl=1 للتحميل، بدونها للعرض
   const disposition = dl === '1' ? 'attachment' : 'inline';
 
   if (!token) {
@@ -33,7 +31,6 @@ export default async function handler(req, res) {
 
     const buffer = Buffer.from(await fileRes.arrayBuffer());
 
-    // تحديد نوع المحتوى
     let contentType = 'application/pdf';
     if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) contentType = 'image/jpeg';
     else if (filePath.endsWith('.png')) contentType = 'image/png';
@@ -43,7 +40,6 @@ export default async function handler(req, res) {
     res.setHeader('Content-Type', contentType);
     res.setHeader('Cache-Control', 'public, max-age=3600');
     
-    // اسم الملف
     const safeName = filename ? filename.replace(/[^a-zA-Z0-9._-]/g, '_') : 'file.pdf';
     res.setHeader(
       'Content-Disposition',
