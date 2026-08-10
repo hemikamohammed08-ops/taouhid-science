@@ -1299,6 +1299,10 @@
         </div>
     </div>
 
+    <div id="statsImagePlaceholder" style="display:none; margin:16px 0; text-align:center;">
+        <img src="stats-placeholder.jpg" alt="منصة الأستاذ محمد للتعليم" style="max-width:100%; border-radius:var(--radius-lg); box-shadow:var(--shadow-md);">
+    </div>
+
     <div id="dynamicArea">
         <div class="welcome-new">
             <span class="emoji">👨‍🏫📚</span>
@@ -3668,7 +3672,17 @@ window.filterLessons = filterLessons;
 // المشكلة 5: إصلاح الإحصائيات - تحسين عد الدروس وتحميل الأعضاء بشكل صحيح
 function updateStats() {
     var container = document.getElementById('statsContainer');
+    var imagePlaceholder = document.getElementById('statsImagePlaceholder');
     if (!container) return;
+    
+    // الإحصائيات الحقيقية تظهر فقط للمسؤول والأساتذة (isAdminMode)
+    // الأعضاء والزوار يظهر لهم بديل بصري بدلاً من الإحصائيات، دون التأثير على باقي وظائف الموقع
+    if (!isAdminMode) {
+        container.style.display = 'none';
+        if (imagePlaceholder) imagePlaceholder.style.display = 'block';
+        return;
+    }
+    if (imagePlaceholder) imagePlaceholder.style.display = 'none';
     
     var totalLessons = 0;
     if (platformData) {
