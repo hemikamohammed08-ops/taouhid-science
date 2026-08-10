@@ -2969,7 +2969,16 @@ async function renderPdfDocument(boxId, url, title, downloadUrl) {
     }
 
     try {
-        var pdf = await window['pdfjsLib'].getDocument({ data: data }).promise;
+        var pdf = await window['pdfjsLib'].getDocument({
+            data: data,
+            // ضروري لعرض الخطوط العربية/CID بشكل صحيح
+            cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+            cMapPacked: true,
+            standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/',
+            useSystemFonts: false,
+            disableFontFace: false,
+            isEvalSupported: true
+        }).promise;
         box.innerHTML = '';
         box.style.overflowY = 'auto';
         box.style.maxHeight = '75vh';
@@ -3011,6 +3020,62 @@ async function renderPdfDocument(boxId, url, title, downloadUrl) {
     }
 }
 window.renderPdfDocument = renderPdfDocument;
+
+// ===== عارض PDF يعتمد على محرك المتصفح المدمج مع تحكم بالتكبير/التصغير =====
+// ملاحظة: التكبير هنا يعمل بتوسيع عرض الـ iframe نفسه (وليس عبر باراميتر #zoom
+// في الرابط، لأن المتصفحات لا تلتزم به بشكل موحّد) — وهذه طريقة تعمل في كل
+// المتصفحات لأنها لا تعتمد على دعم داخلي من عارض PDF المدمج.
+var _pdfZoomStates = {};
+function renderPdfNative(boxId, url, title, downloadUrl) {
+    var box = document.getElementById(boxId);
+    if (!box) return;
+    var frameId = boxId + '_frame';
+    var wrapId = boxId + '_wrap';
+    var viewHeight = 600;
+
+    box.innerHTML =
+        '<div id="' + wrapId + '" style="overflow-x:auto; overflow-y:hidden; background:#525659; border-radius:12px 12px 0 0; height:' + viewHeight + 'px;">' +
+            '<iframe id="' + frameId + '" src="' + escAttr(url) + '#toolbar=0" style="height:' + viewHeight + 'px; border:none; background:#fff; display:block;"></iframe>' +
+        '</div>' +
+        '<div style="display:flex; justify-content:center; align-items:center; gap:10px; padding:10px; background:#3a3a3a; border-radius:0 0 12px 12px;">' +
+            '<button type="button" onclick="adjustPdfZoom(\'' + boxId + '\', -25)" style="width:34px; height:34px; border:none; border-radius:50%; background:var(--secondary); color:#1a4a8a; font-weight:900; font-size:1.2rem; cursor:pointer; line-height:1;">−</button>' +
+            '<span id="' + boxId + '_zoomLabel" style="color:#fff; font-size:0.85rem; font-weight:700; min-width:48px; text-align:center;">100%</span>' +
+            '<button type="button" onclick="adjustPdfZoom(\'' + boxId + '\', 25)" style="width:34px; height:34px; border:none; border-radius:50%; background:var(--secondary); color:#1a4a8a; font-weight:900; font-size:1.2rem; cursor:pointer; line-height:1;">+</button>' +
+        '</div>';
+
+    var note = document.createElement('div');
+    note.style.cssText = 'text-align:center; padding:8px; font-size:0.7rem; color:var(--text-muted);';
+    note.innerHTML = 'إذا لم يظهر الملف، ';
+    var a = document.createElement('a');
+    a.href = url; a.target = '_blank'; a.rel = 'noopener';
+    a.style.color = 'var(--primary)';
+    a.textContent = 'افتحه في نافذة جديدة';
+    note.appendChild(a);
+    box.appendChild(note);
+
+    // نقيس عرض الحاوية بعد أن يُرسم العنصر فعليًا في الصفحة
+    setTimeout(function() {
+        var wrap = document.getElementById(wrapId);
+        var frame = document.getElementById(frameId);
+        var baseWidth = (wrap && wrap.clientWidth) ? wrap.clientWidth : 320;
+        if (frame) frame.style.width = baseWidth + 'px';
+        _pdfZoomStates[boxId] = { zoom: 100, baseWidth: baseWidth };
+    }, 0);
+}
+window.renderPdfNative = renderPdfNative;
+
+function adjustPdfZoom(boxId, delta) {
+    var state = _pdfZoomStates[boxId];
+    if (!state) return;
+    var newZoom = Math.max(50, Math.min(300, state.zoom + delta));
+    if (newZoom === state.zoom) return;
+    state.zoom = newZoom;
+    var label = document.getElementById(boxId + '_zoomLabel');
+    if (label) label.textContent = newZoom + '%';
+    var frame = document.getElementById(boxId + '_frame');
+    if (frame) frame.style.width = Math.round(state.baseWidth * newZoom / 100) + 'px';
+}
+window.adjustPdfZoom = adjustPdfZoom;
 
 async function showLessonContent(id, title, url, download, type, fileId) {
     var container = document.getElementById('lessonsContainer');
@@ -3095,7 +3160,7 @@ async function showLessonContent(id, title, url, download, type, fileId) {
         }
         contentHtml += '</div></div>';
         if (isLinkValid) {
-            setTimeout(function() { renderPdfDocument(pdfBoxId, viewerUrl, title, freshDownload || viewerUrl); }, 50);
+            setTimeout(function() { renderPdfNative(pdfBoxId, viewerUrl, title, freshDownload || viewerUrl); }, 50);
         }
     } else if (isImage) {
         var isValidImageUrl = freshUrl && freshUrl !== '' && freshUrl !== '#' && freshUrl !== 'undefined';
