@@ -31,17 +31,54 @@
             --text-secondary: #475569;
             --text-muted: #94a3b8;
             --border-color: #e2e8f0;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
             --shadow-md: 0 4px 20px rgba(0,0,0,0.08);
+            --shadow-lg: 0 16px 48px rgba(0,0,0,0.14);
             --radius-lg: 20px;
             --radius-full: 9999px;
             --gradient-hero: linear-gradient(135deg, #0d2b5c, #1a4a8a, #2a6ab8);
+
+            /* نظام مسافات موحّد */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --space-7: 48px;
+            --space-8: 64px;
+
+            /* سلّم تايبوغرافي موحّد */
+            --text-xs: clamp(0.72rem, 0.7rem + 0.1vw, 0.78rem);
+            --text-sm: clamp(0.85rem, 0.82rem + 0.15vw, 0.92rem);
+            --text-base: clamp(0.95rem, 0.92rem + 0.15vw, 1rem);
+            --text-lg: clamp(1.1rem, 1.05rem + 0.3vw, 1.3rem);
+            --text-xl: clamp(1.35rem, 1.2rem + 0.6vw, 1.75rem);
+            --text-2xl: clamp(1.7rem, 1.4rem + 1.2vw, 2.4rem);
+            --text-3xl: clamp(2.1rem, 1.7rem + 1.8vw, 3rem);
+
+            /* انتقال موحّد لكل الحركة في الموقع */
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
         [data-theme="dark"] {
             --bg-body: #0a0f1a;
             --bg-white: #141d2b;
             --text-primary: #f0f4ff;
-            --text-secondary: #c8d0e0;
+            --text-secondary: #d7deed;
+            --text-muted: #97a3bb;
             --border-color: #2a3a50;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.25);
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.35);
+            --shadow-lg: 0 16px 48px rgba(0,0,0,0.5);
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.001ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.001ms !important;
+                scroll-behavior: auto !important;
+            }
         }
         
         /* المشكلة 4: تم إصلاح شاشة التحميل - إخفاء كامل بدلاً من opacity فقط */
@@ -1157,12 +1194,93 @@
             }
         }
         
+        /* ============================================================
+           طبقة تحسينات التصميم العامة (لا تمسّ منطق الإحصائيات أو أي JS)
+           ============================================================ */
+
+        html { scroll-behavior: smooth; }
+
+        /* حالة تركيز واضحة لإمكانية الوصول عبر لوحة المفاتيح */
+        a:focus-visible, button:focus-visible, input:focus-visible,
+        textarea:focus-visible, select:focus-visible, [tabindex]:focus-visible {
+            outline: 3px solid var(--secondary);
+            outline-offset: 2px;
+            border-radius: 6px;
+        }
+
+        /* سلّم تايبوغرافي موحّد للعناوين */
+        h1 { font-size: var(--text-2xl); line-height: 1.15; }
+        h2 { font-size: var(--text-xl); line-height: 1.2; }
+        h3 { font-size: var(--text-lg); line-height: 1.25; }
+        .logo-text-new h1 { font-size: var(--text-xl); letter-spacing: -0.01em; }
+
+        /* توحيد سرعة الانتقال عبر عناصر التفاعل الأساسية */
+        .btn, .file-upload-btn, .filter-btn, .stage-btn-new,
+        .sub-stage-card-new, .year-card-new, .subject-card-new {
+            transition: transform var(--transition), box-shadow var(--transition),
+                        background var(--transition), border-color var(--transition), color var(--transition);
+        }
+
+        /* ارتفاع بصري خفيف للبطاقات عند المرور، لإحساس أعمق بالتفاعل */
+        .sub-stage-card-new:hover, .year-card-new:hover, .subject-card-new:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* لمسة زخرفية هادئة خلف الهيدر (هيرو) بدل الخلفية المسطحة */
+        .header-new { position: relative; overflow: hidden; }
+        .header-new::before {
+            content: "";
+            position: absolute;
+            top: -60%;
+            inset-inline-end: -10%;
+            width: 320px;
+            height: 320px;
+            background: radial-gradient(circle, rgba(245,200,74,0.25), transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: heroDrift 12s ease-in-out infinite alternate;
+        }
+        @keyframes heroDrift {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(-24px, 24px) scale(1.15); }
+        }
+        .logo-new, .header-actions { position: relative; z-index: 1; }
+
+        /* هيكل تحميل نابض (Skeleton) لاستخدامه أثناء جلب المحتوى */
+        .skeleton {
+            position: relative;
+            overflow: hidden;
+            background: var(--border-color);
+            border-radius: var(--radius-lg);
+        }
+        .skeleton::after {
+            content: "";
+            position: absolute; inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+            animation: skeletonShine 1.4s ease-in-out infinite;
+        }
+        @keyframes skeletonShine { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+        /* قوائم أفقية قابلة للانزلاق بسلاسة على الشاشات الضيقة بدل الالتفاف المزدحم */
+        @media (max-width: 640px) {
+            .filter-buttons {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                scroll-snap-type: x proximity;
+                -webkit-overflow-scrolling: touch;
+                justify-content: flex-start;
+                padding-bottom: var(--space-2);
+            }
+            .filter-buttons::-webkit-scrollbar { height: 4px; }
+            .filter-btn { scroll-snap-align: start; flex-shrink: 0; }
+        }
+
     </style>
 </head>
 <body>
 
 <!-- خلفية الموقع للأعضاء والزوار (بديل حقل الإحصائيات) -->
-<div id="statsImageBackground" style="display:none; position:fixed; inset:0; top:0; left:0; right:0; bottom:0; width:100vw; height:100vh; z-index:-1; pointer-events:none; background-image:url('stats-placeholder.jpg'); background-size:cover; background-position:center; background-repeat:no-repeat;"></div>
 
 <!-- شاشة التحميل -->
 <div id="app-loading">
@@ -3621,23 +3739,9 @@ function canUserAccessStage(stage) {
 }
 
 function showAccessDeniedMessage(requestedStage) {
-    var stageNames = { 
-        'primary': 'المرحلة الابتدائية', 
-        'middle': 'مرحلة المتوسط', 
-        'high': 'مرحلة الثانوي' 
-    };
-    var requestedStageName = stageNames[requestedStage] || requestedStage;
-    var userStageName = stageNames[currentUserStage] || currentUserStage || 'غير محددة';
-    
     return '<div style="text-align:center; padding:40px 20px; background:#fef2f2; border-radius:20px; border:2px solid #dc2626; max-width:500px; margin:0 auto;">' +
-        '<i class="fas fa-lock" style="font-size:3rem; color:#dc2626; display:block; margin-bottom:12px;"></i>' +
         '<h3 style="color:#dc2626; font-size:1.2rem;">⚠️ غير مصرح لك</h3>' +
-        '<div style="background:#fff5f5; padding:16px; border-radius:12px; margin:12px 0; border-right:4px solid #dc2626;">' +
-        '<p style="color:#64748b; font-size:1rem; margin:0;">📌 أنت مسجل في <strong style="color:#1a4a8a;">' + userStageName + '</strong></p>' +
-        '<p style="color:#64748b; font-size:1rem; margin:8px 0 0 0;">🚫 لا يمكنك الوصول إلى محتوى <strong style="color:#dc2626;">' + requestedStageName + '</strong></p>' +
-        '</div>' +
-        '<p style="color:#94a3b8; font-size:0.85rem;">💡 يمكنك فقط مشاهدة الدروس الخاصة بمرحلتك التعليمية</p>' +
-        '<button onclick="goHome()" style="background:var(--primary); color:white; border:none; padding:10px 28px; border-radius:9999px; cursor:pointer; font-weight:700; font-size:1rem; margin-top:12px;">🏠 العودة للرئيسية</button>' +
+        '<button onclick="goHome()" style="background:var(--primary); color:white; border:none; padding:10px 28px; border-radius:9999px; cursor:pointer; font-weight:700; font-size:1rem; margin-top:16px;">🏠 العودة للرئيسية</button>' +
         '</div>';
 }
 
@@ -3673,19 +3777,14 @@ window.filterLessons = filterLessons;
 // المشكلة 5: إصلاح الإحصائيات - تحسين عد الدروس وتحميل الأعضاء بشكل صحيح
 function updateStats() {
     var container = document.getElementById('statsContainer');
-    var imageBackground = document.getElementById('statsImageBackground');
     if (!container) return;
     
     // الإحصائيات الحقيقية تظهر فقط للمسؤول والأساتذة (isAdminMode)
-    // الأعضاء والزوار يظهر لهم بديل بصري كخلفية للموقع بدلاً من الإحصائيات
-    // الخلفية ثابتة (position:fixed) بطبقة z-index أدنى من كل شيء آخر، لذا كل علب الحوار
-    // ومحتوى الموقع والوظائف الأخرى تبقى تظهر فوقها دون أي تأثير على عملها
+    // الأعضاء والزوار لا يظهر لهم هذا الحقل إطلاقاً
     if (!isAdminMode) {
         container.style.display = 'none';
-        if (imageBackground) imageBackground.style.display = 'block';
         return;
     }
-    if (imageBackground) imageBackground.style.display = 'none';
     
     var totalLessons = 0;
     if (platformData) {
