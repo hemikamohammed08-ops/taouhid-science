@@ -2370,6 +2370,9 @@ function attachNotificationsListener() {
         notif.id = snapshot.key;
         if (!notificationMatchesCurrentUser(notif)) return;
 
+        // تجنب تكرار نفس الإشعار إذا وصل أكثر من مرة (مثلاً بعد إعادة الاتصال)
+        if (lessonNotifications.some(function(n) { return n.id === notif.id; })) return;
+
         lessonNotifications.unshift(notif);
         if (lessonNotifications.length > 30) lessonNotifications.pop();
         renderNotificationsPanel();
@@ -2382,10 +2385,21 @@ function attachNotificationsListener() {
             showLessonNotificationToast(notif);
             triggerBrowserNotification(notif);
         }
+    }, function(error) {
+        // فشل قراءة الإشعارات (غالباً بسبب صلاحيات قاعدة البيانات) - نُظهر ذلك بدل الفشل الصامت
+        console.error('❌ فشل تحميل الإشعارات:', error);
+        logSecurityEvent('notifications_read_denied', { error: error && error.message });
+        var list = document.getElementById('notificationsList');
+        if (list) {
+            list.innerHTML = '<div class="notif-empty"><i class="fas fa-triangle-exclamation" style="font-size:1.5rem; display:block; margin-bottom:6px; color:#ef4444;"></i>تعذر تحميل الإشعارات (تحقق من صلاحيات الوصول)</div>';
+        }
     });
 
     notificationsRef.once('value', function() {
         notificationsLoadedOnce = true;
+    }, function(error) {
+        notificationsLoadedOnce = true;
+        console.error('❌ فشل تحميل الإشعارات (once):', error);
     });
 }
 
