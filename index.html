@@ -234,56 +234,49 @@
         }
         .news-ticker-new .label i { animation: blink 1.5s ease-in-out infinite; }
         .news-ticker-new .content {
-            flex: 1;
+            flex: 1 1 0%;
             overflow: hidden;
             min-width: 0;
             position: relative;
-            width: 100%;
-            max-width: 100%;
         }
         .news-ticker-new .marquee-viewport {
             overflow: hidden;
             width: 100%;
             max-width: 100%;
             position: relative;
+            direction: ltr; /* هندسة ثابتة للحركة مهما كان اتجاه الصفحة */
+            /* تلاشٍ ناعم عصري على الحافتين */
+            -webkit-mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+            mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
         }
         .news-ticker-new .marquee-track {
             display: flex;
-            flex: 0 0 auto;
+            align-items: center;
             width: max-content;
-            min-width: max-content;
             white-space: nowrap;
             will-change: transform;
-            animation: newsMarqueeScroll linear infinite;
+            transform: translate3d(0,0,0);
         }
-        .news-ticker-new .marquee-half {
+        .news-ticker-new .marquee-group {
             display: flex;
-            flex: 0 0 auto;
-            width: max-content;
-            min-width: max-content;
-            white-space: nowrap;
             align-items: center;
-        }
-        .news-ticker-new .marquee-viewport:hover .marquee-track {
-            animation-play-state: paused;
+            flex: 0 0 auto;
+            white-space: nowrap;
         }
         .news-ticker-new .marquee-item {
             font-size: 0.8rem;
             color: var(--text-secondary);
             direction: rtl;
+            unicode-bidi: isolate;
             white-space: nowrap;
             padding: 2px 0;
-            flex-shrink: 0;
+            flex: 0 0 auto;
         }
         .news-ticker-new .marquee-sep {
-            flex-shrink: 0;
-            padding: 0 18px;
+            flex: 0 0 auto;
+            padding: 0 16px;
             color: var(--secondary);
             font-weight: 700;
-        }
-        @keyframes newsMarqueeScroll {
-            from { transform: translateX(calc(-1 * var(--marquee-shift, 50%))); }
-            to { transform: translateX(0px); }
         }
         @media (max-width: 480px) {
             .news-ticker-new {
@@ -5127,87 +5120,112 @@ window.deleteTeacher = deleteTeacher;
 // ===== دوال شريط الأخبار =====
 // ============================================================
 
+// ===== محرك الشريط: حركة بالـ requestAnimationFrame (مستقل تماماً عن عرض الشاشة والاتجاه) =====
 var NEWS_MARQUEE_SPEED_PX_PER_SEC = 55;
+var _newsMarquee = { raf: null, offset: 0, groupWidth: 0, last: 0, paused: false, track: null, viewport: null };
 
 function renderNewsTicker() {
-    var viewport = document.querySelector('#newsTickerContent .marquee-viewport');
     var container = document.getElementById('newsTickerContent');
     if (!container) return;
-    if (!viewport) {
-        container.innerHTML = '<div class="marquee-viewport"><div class="marquee-track"></div></div>';
-        viewport = container.querySelector('.marquee-viewport');
-    }
-    var track = viewport.querySelector('.marquee-track');
-    track.style.animation = 'none';
 
-    // لا يوجد أي حد أقصى لعدد الأخبار هنا - يتم عرض كل عناصر newsItems مهما كان عددها
+    // لا يوجد أي حد أقصى لعدد الأخبار — كل عناصر newsItems تُعرض
     var items = (newsItems && newsItems.length) ? newsItems : ['📢 مرحباً بكم في منصة الأستاذ محمد التعليمية'];
     console.log('📰 عدد أخبار شريط المستجدات المعروضة:', items.length);
     var itemsHtml = items.map(function(item) {
         return '<span class="marquee-item">' + sanitizeHtml(item) + '</span><span class="marquee-sep">•</span>';
     }).join('');
-    // نكرر القائمة كاملة مرتين لضمان تمرير سلس بلا فجوة، بغض النظر عن عدد الأخبار
-    track.innerHTML = '<span class="marquee-half">' + itemsHtml + '</span><span class="marquee-half">' + itemsHtml + '</span>';
-    track.dataset.lastWidth = '0';
 
-    applyNewsMarqueeTiming(track, true);
+    container.innerHTML = '<div class="marquee-viewport"><div class="marquee-track">' +
+        '<span class="marquee-group">' + itemsHtml + '</span>' +
+        '</div></div>';
+
+    var viewport = container.querySelector('.marquee-viewport');
+    var track = container.querySelector('.marquee-track');
+    _newsMarquee.viewport = viewport;
+    _newsMarquee.track = track;
+    _newsMarquee.offset = 0;
+    _newsMarquee.groupWidth = 0;
+
+    // إيقاف/استئناف عند اللمس أو المرور
+    viewport.onmouseenter = function() { _newsMarquee.paused = true; };
+    viewport.onmouseleave = function() { _newsMarquee.paused = false; };
+    viewport.ontouchstart = function() { _newsMarquee.paused = true; };
+    viewport.ontouchend = function() { _newsMarquee.paused = false; };
+
+    setupNewsMarquee(itemsHtml);
 }
 
-// fresh=true عند إعادة بناء المحتوى (تشغيل من الصفر) — تُعاد الحسابات القليلة الأولى فقط لضبط العرض الصحيح
-// fresh=false عند تغيّر حجم النافذة فقط — لا تُعاد الحركة من الصفر إلا إذا تغيّر العرض فعلياً (حتى لا يتوقف الشريط ويعيد البدء باستمرار على الهاتف بسبب اختفاء/ظهور شريط العنوان أثناء التمرير)
-function applyNewsMarqueeTiming(track, fresh) {
-    if (!track) return;
-    var recalc = function() {
-        // نقيس عرض النصف الأول فعلياً (أدق من scrollWidth على الهواتف)
-        var half = track.querySelector('.marquee-half');
-        var trackWidth = half ? half.getBoundingClientRect().width : (track.scrollWidth / 2);
-        if (!trackWidth) return; // لم يُحسب العرض بعد، سيُعاد الحساب لاحقاً
+// يكرّر مجموعة الأخبار حتى تفوق ضِعف عرض الشاشة، فلا تبقى فجوة على أي حجم شاشة
+function setupNewsMarquee(itemsHtml) {
+    var track = _newsMarquee.track;
+    var viewport = _newsMarquee.viewport;
+    if (!track || !viewport) return;
 
-        // إذا لم يتغيّر العرض فعلياً (فرق أقل من 4px) لا نعيد تشغيل الحركة من البداية أبداً
-        var lastWidth = parseFloat(track.dataset.lastWidth || '0');
-        if (!fresh && Math.abs(trackWidth - lastWidth) < 4) return;
-        track.dataset.lastWidth = String(trackWidth);
+    var measure = function() {
+        var group = track.querySelector('.marquee-group');
+        if (!group) return;
+        var groupWidth = group.getBoundingClientRect().width;
+        if (!groupWidth) { requestAnimationFrame(measure); return; }
 
-        // سرعة ثابتة لكل عنصر بحيث يظهر كل خبر بوضوح مهما كان عدد الأخبار الإجمالي
-        var duration = Math.max(trackWidth / NEWS_MARQUEE_SPEED_PX_PER_SEC, 8);
-        // إزاحة بالبكسل بدل النسبة المئوية: تضمن مرور كل الأخبار على الشاشات الصغيرة
-        track.style.setProperty('--marquee-shift', trackWidth + 'px');
-        track.style.animation = 'none';
-        void track.offsetWidth;
-        track.style.animationDuration = duration + 's';
-        track.style.animation = 'newsMarqueeScroll ' + duration + 's linear infinite';
-    };
-    if (fresh) {
-        // عند البناء الأول فقط: نعيد الحساب بضع مرات لضبط العرض الصحيح (تحميل الخطوط قد يغيّر عرض النص)
-        requestAnimationFrame(recalc);
-        if (document.fonts && document.fonts.ready) {
-            document.fonts.ready.then(recalc).catch(function() {});
+        var viewWidth = viewport.getBoundingClientRect().width || window.innerWidth;
+        var needed = Math.max(2, Math.ceil((viewWidth * 2) / groupWidth) + 1);
+        var current = track.querySelectorAll('.marquee-group').length;
+        if (current !== needed) {
+            var html = '';
+            for (var i = 0; i < needed; i++) html += '<span class="marquee-group">' + itemsHtml + '</span>';
+            track.innerHTML = html;
         }
-        setTimeout(recalc, 600);
-    } else {
-        recalc();
-    }
+        _newsMarquee.groupWidth = groupWidth;
+        if (_newsMarquee.offset > groupWidth) _newsMarquee.offset = _newsMarquee.offset % groupWidth;
+        startNewsMarquee();
+    };
+
+    requestAnimationFrame(measure);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure).catch(function() {});
+    setTimeout(measure, 700);
 }
 
-// نتجاهل تغيّر الارتفاع فقط (شائع على الهاتف عند إخفاء/إظهار شريط العنوان أثناء التمرير)
-// ولا نعيد ضبط الشريط إلا إذا تغيّر عرض النافذة فعلياً، لضمان عدم انقطاع/إعادة تشغيل الشريط باستمرار
+function startNewsMarquee() {
+    if (_newsMarquee.raf) cancelAnimationFrame(_newsMarquee.raf);
+    _newsMarquee.last = 0;
+    var step = function(ts) {
+        var m = _newsMarquee;
+        if (!m.track || !m.track.isConnected) { m.raf = null; return; }
+        if (!m.last) m.last = ts;
+        var dt = Math.min((ts - m.last) / 1000, 0.05); // حماية من القفزات بعد رجوع التطبيق للواجهة
+        m.last = ts;
+        if (!m.paused && m.groupWidth > 0) {
+            m.offset += NEWS_MARQUEE_SPEED_PX_PER_SEC * dt;
+            if (m.offset >= m.groupWidth) m.offset -= m.groupWidth;
+            m.track.style.transform = 'translate3d(' + (-m.offset).toFixed(2) + 'px,0,0)';
+        }
+        m.raf = requestAnimationFrame(step);
+    };
+    _newsMarquee.raf = requestAnimationFrame(step);
+}
+
+// إعادة القياس فقط عند تغيّر العرض الفعلي (تجاهل تغيّر الارتفاع على الهاتف أثناء التمرير)
 var _newsTickerLastWinWidth = window.innerWidth;
 var _newsTickerResizeTimer = null;
+function remeasureNewsMarquee() {
+    var group = _newsMarquee.track && _newsMarquee.track.querySelector('.marquee-group');
+    if (!group) return;
+    renderNewsTicker();
+}
 window.addEventListener('resize', function() {
     if (window.innerWidth === _newsTickerLastWinWidth) return;
     _newsTickerLastWinWidth = window.innerWidth;
     clearTimeout(_newsTickerResizeTimer);
-    _newsTickerResizeTimer = setTimeout(function() {
-        var track = document.querySelector('#newsTickerContent .marquee-track');
-        applyNewsMarqueeTiming(track, false);
-    }, 300);
+    _newsTickerResizeTimer = setTimeout(remeasureNewsMarquee, 300);
 });
 window.addEventListener('orientationchange', function() {
-    var track = document.querySelector('#newsTickerContent .marquee-track');
     setTimeout(function() {
         _newsTickerLastWinWidth = window.innerWidth;
-        applyNewsMarqueeTiming(track, true);
+        remeasureNewsMarquee();
     }, 300);
+});
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) { _newsMarquee.last = 0; startNewsMarquee(); }
 });
 
 async function loadNews() {
