@@ -441,11 +441,13 @@
         }
         @media (max-width: 600px) {
             .notif-panel {
-                width: 100%; max-width: 100%; left: 0 !important; right: 0 !important;
-                bottom: 0; top: auto !important; max-height: 78vh !important;
-                border-radius: 20px 20px 0 0; transform: translateY(100%);
+                width: calc(100% - 20px); max-width: 380px;
+                left: 10px !important; right: 10px !important;
+                bottom: 10px; top: auto !important; max-height: min(52vh, 420px) !important;
+                border-radius: 18px; transform: translateY(16px);
             }
             .notif-panel.active { transform: translateY(0); }
+            .notif-item { padding: 10px 12px; }
         }
 
         .file-upload-wrapper { position: relative; overflow: hidden; display: inline-block; }
@@ -5127,30 +5129,44 @@ function renderNewsTicker() {
     var track = viewport.querySelector('.marquee-track');
     track.style.animation = 'none';
 
+    // لا يوجد أي حد أقصى لعدد الأخبار هنا - يتم عرض كل عناصر newsItems مهما كان عددها
     var items = (newsItems && newsItems.length) ? newsItems : ['📢 مرحباً بكم في منصة الأستاذ محمد التعليمية'];
+    console.log('📰 عدد أخبار شريط المستجدات المعروضة:', items.length);
     var itemsHtml = items.map(function(item) {
         return '<span class="marquee-item">' + sanitizeHtml(item) + '</span><span class="marquee-sep">•</span>';
     }).join('');
+    // نكرر القائمة كاملة مرتين لضمان تمرير سلس بلا فجوة، بغض النظر عن عدد الأخبار
     track.innerHTML = itemsHtml + itemsHtml;
 
-    applyNewsMarqueeTiming(track);
+    applyNewsMarqueeTiming(track, items.length);
 }
 
-function applyNewsMarqueeTiming(track) {
+function applyNewsMarqueeTiming(track, itemCount) {
     if (!track) return;
     var recalc = function() {
         var trackWidth = track.scrollWidth / 2;
+        if (!trackWidth) return; // لم يُحسب العرض بعد، سيُعاد الحساب لاحقاً
+        // سرعة ثابتة لكل عنصر بحيث يظهر كل خبر بوضوح مهما كان عدد الأخبار الإجمالي
         var duration = Math.max(trackWidth / NEWS_MARQUEE_SPEED_PX_PER_SEC, 8);
         track.style.animation = 'none';
         void track.offsetWidth;
         track.style.animationDuration = duration + 's';
         track.style.animation = 'newsMarqueeScroll ' + duration + 's linear infinite';
     };
+    // نعيد الحساب عدة مرات لضمان قياس العرض الصحيح حتى مع قوائم أخبار طويلة
+    // أو تأخر تحميل الخطوط/الصور التي قد تغيّر عرض المحتوى
     requestAnimationFrame(recalc);
     if (document.fonts && document.fonts.ready) {
         document.fonts.ready.then(recalc).catch(function() {});
     }
-    setTimeout(recalc, 600);
+    [300, 700, 1200, 2000].forEach(function(delay) { setTimeout(recalc, delay); });
+
+    if (typeof ResizeObserver !== 'undefined') {
+        if (track._newsResizeObserver) track._newsResizeObserver.disconnect();
+        var ro = new ResizeObserver(function() { recalc(); });
+        ro.observe(track);
+        track._newsResizeObserver = ro;
+    }
 }
 
 var _newsTickerResizeTimer = null;
@@ -5158,12 +5174,12 @@ window.addEventListener('resize', function() {
     clearTimeout(_newsTickerResizeTimer);
     _newsTickerResizeTimer = setTimeout(function() {
         var track = document.querySelector('#newsTickerContent .marquee-track');
-        applyNewsMarqueeTiming(track);
+        applyNewsMarqueeTiming(track, newsItems ? newsItems.length : 0);
     }, 250);
 });
 window.addEventListener('orientationchange', function() {
     var track = document.querySelector('#newsTickerContent .marquee-track');
-    setTimeout(function() { applyNewsMarqueeTiming(track); }, 300);
+    setTimeout(function() { applyNewsMarqueeTiming(track, newsItems ? newsItems.length : 0); }, 300);
 });
 
 async function loadNews() {
