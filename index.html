@@ -5121,7 +5121,7 @@ window.deleteTeacher = deleteTeacher;
 // ============================================================
 
 // ===== محرك الشريط: حركة بالـ requestAnimationFrame (مستقل تماماً عن عرض الشاشة والاتجاه) =====
-var NEWS_MARQUEE_SPEED_PX_PER_SEC = 55;
+var NEWS_MARQUEE_SPEED_PX_PER_SEC = 35;
 var _newsMarquee = { raf: null, offset: 0, groupWidth: 0, last: 0, paused: false, track: null, viewport: null };
 
 function renderNewsTicker() {
@@ -5197,7 +5197,7 @@ function startNewsMarquee() {
         if (!m.paused && m.groupWidth > 0) {
             m.offset += NEWS_MARQUEE_SPEED_PX_PER_SEC * dt;
             if (m.offset >= m.groupWidth) m.offset -= m.groupWidth;
-            m.track.style.transform = 'translate3d(' + (-m.offset).toFixed(2) + 'px,0,0)';
+            m.track.style.transform = 'translate3d(' + (m.offset - m.groupWidth).toFixed(2) + 'px,0,0)';
         }
         m.raf = requestAnimationFrame(step);
     };
