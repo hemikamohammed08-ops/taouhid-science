@@ -5137,15 +5137,24 @@ function renderNewsTicker() {
     }).join('');
     // نكرر القائمة كاملة مرتين لضمان تمرير سلس بلا فجوة، بغض النظر عن عدد الأخبار
     track.innerHTML = itemsHtml + itemsHtml;
+    track.dataset.lastWidth = '0';
 
-    applyNewsMarqueeTiming(track, items.length);
+    applyNewsMarqueeTiming(track, true);
 }
 
-function applyNewsMarqueeTiming(track, itemCount) {
+// fresh=true عند إعادة بناء المحتوى (تشغيل من الصفر) — تُعاد الحسابات القليلة الأولى فقط لضبط العرض الصحيح
+// fresh=false عند تغيّر حجم النافذة فقط — لا تُعاد الحركة من الصفر إلا إذا تغيّر العرض فعلياً (حتى لا يتوقف الشريط ويعيد البدء باستمرار على الهاتف بسبب اختفاء/ظهور شريط العنوان أثناء التمرير)
+function applyNewsMarqueeTiming(track, fresh) {
     if (!track) return;
     var recalc = function() {
         var trackWidth = track.scrollWidth / 2;
         if (!trackWidth) return; // لم يُحسب العرض بعد، سيُعاد الحساب لاحقاً
+
+        // إذا لم يتغيّر العرض فعلياً (فرق أقل من 4px) لا نعيد تشغيل الحركة من البداية أبداً
+        var lastWidth = parseFloat(track.dataset.lastWidth || '0');
+        if (!fresh && Math.abs(trackWidth - lastWidth) < 4) return;
+        track.dataset.lastWidth = String(trackWidth);
+
         // سرعة ثابتة لكل عنصر بحيث يظهر كل خبر بوضوح مهما كان عدد الأخبار الإجمالي
         var duration = Math.max(trackWidth / NEWS_MARQUEE_SPEED_PX_PER_SEC, 8);
         track.style.animation = 'none';
@@ -5153,33 +5162,37 @@ function applyNewsMarqueeTiming(track, itemCount) {
         track.style.animationDuration = duration + 's';
         track.style.animation = 'newsMarqueeScroll ' + duration + 's linear infinite';
     };
-    // نعيد الحساب عدة مرات لضمان قياس العرض الصحيح حتى مع قوائم أخبار طويلة
-    // أو تأخر تحميل الخطوط/الصور التي قد تغيّر عرض المحتوى
-    requestAnimationFrame(recalc);
-    if (document.fonts && document.fonts.ready) {
-        document.fonts.ready.then(recalc).catch(function() {});
-    }
-    [300, 700, 1200, 2000].forEach(function(delay) { setTimeout(recalc, delay); });
-
-    if (typeof ResizeObserver !== 'undefined') {
-        if (track._newsResizeObserver) track._newsResizeObserver.disconnect();
-        var ro = new ResizeObserver(function() { recalc(); });
-        ro.observe(track);
-        track._newsResizeObserver = ro;
+    if (fresh) {
+        // عند البناء الأول فقط: نعيد الحساب بضع مرات لضبط العرض الصحيح (تحميل الخطوط قد يغيّر عرض النص)
+        requestAnimationFrame(recalc);
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(recalc).catch(function() {});
+        }
+        setTimeout(recalc, 600);
+    } else {
+        recalc();
     }
 }
 
+// نتجاهل تغيّر الارتفاع فقط (شائع على الهاتف عند إخفاء/إظهار شريط العنوان أثناء التمرير)
+// ولا نعيد ضبط الشريط إلا إذا تغيّر عرض النافذة فعلياً، لضمان عدم انقطاع/إعادة تشغيل الشريط باستمرار
+var _newsTickerLastWinWidth = window.innerWidth;
 var _newsTickerResizeTimer = null;
 window.addEventListener('resize', function() {
+    if (window.innerWidth === _newsTickerLastWinWidth) return;
+    _newsTickerLastWinWidth = window.innerWidth;
     clearTimeout(_newsTickerResizeTimer);
     _newsTickerResizeTimer = setTimeout(function() {
         var track = document.querySelector('#newsTickerContent .marquee-track');
-        applyNewsMarqueeTiming(track, newsItems ? newsItems.length : 0);
-    }, 250);
+        applyNewsMarqueeTiming(track, false);
+    }, 300);
 });
 window.addEventListener('orientationchange', function() {
     var track = document.querySelector('#newsTickerContent .marquee-track');
-    setTimeout(function() { applyNewsMarqueeTiming(track, newsItems ? newsItems.length : 0); }, 300);
+    setTimeout(function() {
+        _newsTickerLastWinWidth = window.innerWidth;
+        applyNewsMarqueeTiming(track, true);
+    }, 300);
 });
 
 async function loadNews() {
