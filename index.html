@@ -351,10 +351,10 @@
             95% { transform: rotate(-10deg); } 96% { transform: rotate(8deg); } 97% { transform: rotate(0); }
         }
         .notif-panel {
-            position: absolute; top: calc(100% + 12px); left: 0;
+            position: fixed;
             width: 340px; max-width: 88vw; max-height: 420px; overflow-y: auto;
             background: var(--bg-white); border-radius: 16px; box-shadow: var(--shadow-lg);
-            border: 1px solid var(--border-color); z-index: 400; display: none;
+            border: 1px solid var(--border-color); z-index: 100000; display: none;
             font-family: 'Tajawal', sans-serif; direction: rtl;
         }
         .notif-panel.active { display: block; animation: notifPanelIn 0.2s ease; }
@@ -2484,11 +2484,44 @@ function renderNotificationsPanel() {
     list.innerHTML = html;
 }
 
+function positionNotificationsPanel() {
+    var panel = document.getElementById('notificationsPanel');
+    var bellBtn = document.getElementById('notificationBellBtn');
+    if (!panel || !bellBtn) return;
+    var rect = bellBtn.getBoundingClientRect();
+    var margin = 12;
+    var panelWidth = Math.min(340, window.innerWidth * 0.88);
+
+    // نحسب الموقع بالنسبة للنافذة (viewport) وليس بالنسبة للهيدر
+    var top = rect.bottom + margin;
+    var left = rect.left; // محاذاة مع الحافة اليسرى للزر (كما في التصميم الأصلي RTL)
+
+    // نمنع خروج العلبة من حدود الشاشة يمينًا أو يسارًا
+    if (left + panelWidth > window.innerWidth - 8) {
+        left = window.innerWidth - panelWidth - 8;
+    }
+    if (left < 8) left = 8;
+
+    // نمنع خروجها أسفل الشاشة (نعرضها فوق الزر بدل تحته عند الحاجة)
+    var maxHeight = Math.min(420, window.innerHeight - top - 8);
+    if (maxHeight < 200) {
+        maxHeight = Math.min(420, rect.top - margin - 8);
+        top = Math.max(8, rect.top - margin - maxHeight);
+    }
+
+    panel.style.top = top + 'px';
+    panel.style.left = left + 'px';
+    panel.style.maxHeight = maxHeight + 'px';
+}
+
 function toggleNotificationsPanel(event) {
     if (event) event.stopPropagation();
     var panel = document.getElementById('notificationsPanel');
     if (!panel) return;
     var willOpen = !panel.classList.contains('active');
+    if (willOpen) {
+        positionNotificationsPanel();
+    }
     panel.classList.toggle('active', willOpen);
     if (willOpen) {
         renderNotificationsPanel();
@@ -2496,6 +2529,12 @@ function toggleNotificationsPanel(event) {
     }
 }
 window.toggleNotificationsPanel = toggleNotificationsPanel;
+
+// إعادة حساب موقع العلبة عند تغيير حجم النافذة أو التمرير أثناء فتحها
+window.addEventListener('resize', function() {
+    var panel = document.getElementById('notificationsPanel');
+    if (panel && panel.classList.contains('active')) positionNotificationsPanel();
+});
 
 function markNotificationsRead() {
     setNotificationsLastSeen(Date.now());
