@@ -333,7 +333,7 @@
         .btn-ghost { background: rgba(255,255,255,0.06); color: white; width: 40px; height: 40px; padding: 0; border-radius: 50%; }
         .btn-ghost:hover:not(.btn-loading) { background: rgba(255,255,255,0.15); }
 
-        /* ===== إشعارات الدروس الجديدة ===== */
+        /* ===== مركز الإشعارات العصري ===== */
         .notif-wrapper { position: relative; }
         .notif-badge {
             position: absolute; top: -2px; left: -2px;
@@ -350,41 +350,103 @@
             93% { transform: rotate(-14deg); } 94% { transform: rotate(12deg); }
             95% { transform: rotate(-10deg); } 96% { transform: rotate(8deg); } 97% { transform: rotate(0); }
         }
+        .notif-overlay {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(2px); z-index: 99998; opacity: 0; pointer-events: none;
+            transition: opacity 0.22s ease;
+        }
+        .notif-overlay.active { opacity: 1; pointer-events: auto; }
         .notif-panel {
             position: fixed;
-            width: 340px; max-width: 88vw; max-height: 420px; overflow-y: auto;
-            background: var(--bg-white); border-radius: 16px; box-shadow: var(--shadow-lg);
-            border: 1px solid var(--border-color); z-index: 100000; display: none;
+            width: 360px; max-width: 92vw; max-height: 460px;
+            display: flex; flex-direction: column; overflow: hidden;
+            background: var(--bg-white); border-radius: 18px; box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color); z-index: 100000;
             font-family: 'Tajawal', sans-serif; direction: rtl;
+            opacity: 0; transform: translateY(-10px) scale(0.98); pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
         }
-        .notif-panel.active { display: block; animation: notifPanelIn 0.2s ease; }
-        @keyframes notifPanelIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        .notif-panel.active { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
         .notif-panel-header {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 12px 16px; border-bottom: 1px solid var(--border-color);
-            position: sticky; top: 0; background: var(--bg-white);
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+            padding: 14px 16px 10px; background: var(--gradient-hero); color: #fff; flex-shrink: 0;
         }
-        .notif-panel-header strong { color: var(--text-primary); font-size: 0.9rem; }
-        .notif-panel-header button {
-            background: none; border: none; color: var(--primary); font-weight: 700;
-            font-size: 0.72rem; cursor: pointer;
+        .notif-panel-header .notif-head-title { display: flex; align-items: center; gap: 8px; font-weight: 900; font-size: 0.95rem; }
+        .notif-head-count {
+            background: rgba(255,255,255,0.2); border-radius: var(--radius-full);
+            font-size: 0.65rem; font-weight: 800; padding: 2px 8px;
         }
+        .notif-close-btn {
+            background: rgba(255,255,255,0.14); border: none; color: #fff; cursor: pointer;
+            width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-size: 0.85rem; transition: background 0.2s ease, transform 0.2s ease;
+        }
+        .notif-close-btn:hover { background: rgba(255,255,255,0.3); transform: rotate(90deg); }
+        .notif-toolbar {
+            display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+            padding: 8px 12px; border-bottom: 1px solid var(--border-color);
+            background: var(--bg-white); flex-shrink: 0;
+        }
+        .notif-tab {
+            background: var(--bg-body); border: 1px solid transparent; color: var(--text-secondary);
+            font-family: inherit; font-weight: 800; font-size: 0.7rem; cursor: pointer;
+            padding: 5px 12px; border-radius: var(--radius-full); transition: all 0.2s ease;
+        }
+        .notif-tab:hover { border-color: var(--border-color); }
+        .notif-tab.active { background: var(--primary); color: #fff; }
+        .notif-action-btn {
+            background: none; border: none; color: var(--primary); font-family: inherit;
+            font-weight: 800; font-size: 0.7rem; cursor: pointer; padding: 5px 6px; border-radius: 8px;
+            display: inline-flex; align-items: center; gap: 4px; transition: background 0.2s ease, color 0.2s ease;
+        }
+        .notif-action-btn:hover { background: var(--bg-body); }
+        .notif-action-btn.danger { color: #ef4444; }
+        .notif-action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .notif-spacer { flex: 1; }
+        .notif-list { overflow-y: auto; overscroll-behavior: contain; flex: 1; }
         .notif-item {
-            display: flex; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--border-color);
-            cursor: pointer; transition: background 0.2s ease;
+            position: relative; display: flex; gap: 10px; padding: 12px 14px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer; transition: background 0.2s ease, opacity 0.25s ease, transform 0.25s ease;
+            animation: notifItemIn 0.25s ease both;
         }
+        @keyframes notifItemIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
         .notif-item:hover { background: var(--bg-body); }
         .notif-item:last-child { border-bottom: none; }
-        .notif-item.unread { background: rgba(232, 168, 56, 0.08); }
+        .notif-item.unread { background: rgba(232, 168, 56, 0.10); }
+        .notif-item.unread::before {
+            content: ''; position: absolute; top: 0; bottom: 0; right: 0; width: 3px; background: var(--secondary);
+        }
+        .notif-item.removing { opacity: 0; transform: translateX(-24px); }
         .notif-item .notif-icon {
-            width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
-            background: var(--primary); color: white; display: flex; align-items: center; justify-content: center;
+            width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0;
+            background: var(--gradient-hero); color: white; display: flex; align-items: center; justify-content: center;
             font-size: 0.9rem;
         }
         .notif-item .notif-text { flex: 1; min-width: 0; }
-        .notif-item .notif-text .title { font-size: 0.8rem; font-weight: 800; color: var(--text-primary); }
-        .notif-item .notif-text .meta { font-size: 0.68rem; color: var(--text-muted); margin-top: 2px; }
-        .notif-empty { padding: 30px 16px; text-align: center; color: var(--text-muted); font-size: 0.8rem; }
+        .notif-item .notif-text .title { font-size: 0.8rem; font-weight: 800; color: var(--text-primary); line-height: 1.5; }
+        .notif-item .notif-text .meta { font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; }
+        .notif-item-actions { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+        .notif-item-btn {
+            background: none; border: none; color: var(--text-muted); cursor: pointer;
+            width: 26px; height: 26px; border-radius: 50%; font-size: 0.72rem;
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;
+        }
+        .notif-item-btn:hover { background: var(--bg-body); color: var(--text-primary); }
+        .notif-item-btn.delete:hover { background: rgba(239,68,68,0.12); color: #ef4444; }
+        .notif-empty { padding: 34px 16px; text-align: center; color: var(--text-muted); font-size: 0.8rem; }
+        .notif-footer {
+            padding: 8px 14px; border-top: 1px solid var(--border-color);
+            text-align: center; font-size: 0.65rem; color: var(--text-muted); background: var(--bg-white); flex-shrink: 0;
+        }
+        @media (max-width: 600px) {
+            .notif-panel {
+                width: 100%; max-width: 100%; left: 0 !important; right: 0 !important;
+                bottom: 0; top: auto !important; max-height: 78vh !important;
+                border-radius: 20px 20px 0 0; transform: translateY(100%);
+            }
+            .notif-panel.active { transform: translateY(0); }
+        }
 
         .file-upload-wrapper { position: relative; overflow: hidden; display: inline-block; }
         .file-upload-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
@@ -1421,12 +1483,21 @@
                     <i class="fas fa-bell"></i>
                     <span id="notifBadge" class="notif-badge" style="display:none;">0</span>
                 </button>
-                <div id="notificationsPanel" class="notif-panel">
+                <div id="notifOverlay" class="notif-overlay" onclick="closeNotificationsPanel()"></div>
+                <div id="notificationsPanel" class="notif-panel" role="dialog" aria-label="مركز الإشعارات" aria-modal="false">
                     <div class="notif-panel-header">
-                        <strong><i class="fas fa-bell"></i> الإشعارات</strong>
-                        <button onclick="markNotificationsRead()"><i class="fas fa-check-double"></i> تعليم الكل كمقروء</button>
+                        <span class="notif-head-title"><i class="fas fa-bell"></i> مركز الإشعارات <span id="notifHeadCount" class="notif-head-count">0</span></span>
+                        <button class="notif-close-btn" onclick="closeNotificationsPanel()" title="إغلاق" aria-label="إغلاق"><i class="fas fa-times"></i></button>
                     </div>
-                    <div id="notificationsList"><div class="notif-empty">لا توجد إشعارات بعد</div></div>
+                    <div class="notif-toolbar">
+                        <button id="notifTabAll" class="notif-tab active" onclick="setNotificationsFilter('all')">الكل</button>
+                        <button id="notifTabUnread" class="notif-tab" onclick="setNotificationsFilter('unread')">غير المقروءة</button>
+                        <span class="notif-spacer"></span>
+                        <button id="notifMarkAllBtn" class="notif-action-btn" onclick="markNotificationsRead()" title="تعليم الكل كمقروء"><i class="fas fa-check-double"></i> تعليم الكل</button>
+                        <button id="notifClearAllBtn" class="notif-action-btn danger" onclick="clearAllNotifications()" title="حذف كل الإشعارات"><i class="fas fa-trash-can"></i> حذف الكل</button>
+                    </div>
+                    <div id="notificationsList" class="notif-list"><div class="notif-empty">لا توجد إشعارات بعد</div></div>
+                    <div class="notif-footer">تُحفظ حالة الإشعارات على جهازك فقط</div>
                 </div>
             </div>
             <button class="btn btn-ghost" onclick="toggleTheme()"><i class="fas fa-moon"></i></button>
@@ -2351,7 +2422,63 @@ function setNotificationsLastSeen(ts) {
     setSecurePersistentData('notifLastSeen_' + currentUser.email, String(ts));
 }
 
-// يُستدعى بعد نجاح تسجيل الدخول وتحديد صلاحيات المستخدم
+// ===== حالة محلية: الإشعارات المحذوفة والمقروءة يدوياً (خاصة بكل مستخدم على جهازه) =====
+var notificationsFilter = 'all';
+var hiddenNotificationIds = [];
+var readNotificationIds = [];
+
+function notifStoreKey(prefix) {
+    return prefix + (currentUser?.email || 'guest');
+}
+
+function loadNotificationsLocalState() {
+    hiddenNotificationIds = [];
+    readNotificationIds = [];
+    try {
+        var h = getSecurePersistentData(notifStoreKey('notifHidden_'));
+        if (h) hiddenNotificationIds = JSON.parse(h) || [];
+    } catch (e) { hiddenNotificationIds = []; }
+    try {
+        var r = getSecurePersistentData(notifStoreKey('notifRead_'));
+        if (r) readNotificationIds = JSON.parse(r) || [];
+    } catch (e) { readNotificationIds = []; }
+}
+
+function saveNotificationsLocalState() {
+    if (!currentUser) return;
+    try {
+        // نحتفظ بآخر 200 معرّف فقط حتى لا يكبر التخزين
+        setSecurePersistentData(notifStoreKey('notifHidden_'), JSON.stringify(hiddenNotificationIds.slice(-200)));
+        setSecurePersistentData(notifStoreKey('notifRead_'), JSON.stringify(readNotificationIds.slice(-200)));
+    } catch (e) { /* تجاهل */ }
+}
+
+function getVisibleNotifications() {
+    return lessonNotifications.filter(function(n) {
+        return hiddenNotificationIds.indexOf(n.id) === -1;
+    });
+}
+
+function isNotificationUnread(n) {
+    if (readNotificationIds.indexOf(n.id) !== -1) return false;
+    return n.createdAt > getNotificationsLastSeen();
+}
+
+function formatNotificationTime(ts) {
+    if (!ts) return '';
+    var diff = Date.now() - ts;
+    if (diff < 60000) return 'الآن';
+    var mins = Math.floor(diff / 60000);
+    if (mins < 60) return 'منذ ' + mins + ' دقيقة';
+    var hours = Math.floor(mins / 60);
+    if (hours < 24) return 'منذ ' + hours + ' ساعة';
+    var days = Math.floor(hours / 24);
+    if (days < 7) return 'منذ ' + days + ' يوم';
+    try {
+        return new Date(ts).toLocaleString('ar-DZ', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' });
+    } catch (e) { return ''; }
+}
+
 function attachNotificationsListener() {
     if (!database || !currentUser) return;
     if (!currentUserIsApproved && !isAdminMode) return;
@@ -2362,6 +2489,7 @@ function attachNotificationsListener() {
 
     notificationsLoadedOnce = false;
     lessonNotifications = [];
+    loadNotificationsLocalState();
     notificationsRef = database.ref('notifications').orderByChild('createdAt').limitToLast(30);
 
     notificationsRef.on('child_added', function(snapshot) {
@@ -2412,8 +2540,10 @@ function detachNotificationsListener() {
     unreadNotificationsCount = 0;
     var wrapper = document.getElementById('notifWrapper');
     if (wrapper) wrapper.style.display = 'none';
-    var panel = document.getElementById('notificationsPanel');
-    if (panel) panel.classList.remove('active');
+    hiddenNotificationIds = [];
+    readNotificationIds = [];
+    notificationsFilter = 'all';
+    closeNotificationsPanel();
 }
 
 function showLessonNotificationToast(notif) {
@@ -2444,8 +2574,8 @@ function requestBrowserNotificationPermission() {
 }
 
 function updateNotificationsBadge() {
-    var lastSeen = getNotificationsLastSeen();
-    unreadNotificationsCount = lessonNotifications.filter(function(n) { return n.createdAt > lastSeen; }).length;
+    var visible = getVisibleNotifications();
+    unreadNotificationsCount = visible.filter(isNotificationUnread).length;
     var badge = document.getElementById('notifBadge');
     var bellBtn = document.getElementById('notificationBellBtn');
     if (badge) {
@@ -2457,32 +2587,97 @@ function updateNotificationsBadge() {
         }
     }
     if (bellBtn) bellBtn.classList.toggle('has-unread', unreadNotificationsCount > 0);
+    var headCount = document.getElementById('notifHeadCount');
+    if (headCount) headCount.textContent = String(visible.length);
+    var markBtn = document.getElementById('notifMarkAllBtn');
+    if (markBtn) markBtn.disabled = unreadNotificationsCount === 0;
+    var clearBtn = document.getElementById('notifClearAllBtn');
+    if (clearBtn) clearBtn.disabled = visible.length === 0;
 }
+
+function setNotificationsFilter(filter) {
+    notificationsFilter = filter === 'unread' ? 'unread' : 'all';
+    var tabAll = document.getElementById('notifTabAll');
+    var tabUnread = document.getElementById('notifTabUnread');
+    if (tabAll) tabAll.classList.toggle('active', notificationsFilter === 'all');
+    if (tabUnread) tabUnread.classList.toggle('active', notificationsFilter === 'unread');
+    renderNotificationsPanel();
+}
+window.setNotificationsFilter = setNotificationsFilter;
 
 function renderNotificationsPanel() {
     var list = document.getElementById('notificationsList');
     if (!list) return;
-    if (!lessonNotifications.length) {
-        list.innerHTML = '<div class="notif-empty"><i class="fas fa-bell-slash" style="font-size:1.5rem; display:block; margin-bottom:6px;"></i>لا توجد إشعارات بعد</div>';
+    var visible = getVisibleNotifications();
+    var items = notificationsFilter === 'unread' ? visible.filter(isNotificationUnread) : visible;
+
+    if (!items.length) {
+        var emptyMsg = notificationsFilter === 'unread'
+            ? '<i class="fas fa-circle-check" style="font-size:1.6rem; display:block; margin-bottom:8px; color:#10b981;"></i>لا توجد إشعارات غير مقروءة'
+            : '<i class="fas fa-bell-slash" style="font-size:1.6rem; display:block; margin-bottom:8px;"></i>لا توجد إشعارات بعد';
+        list.innerHTML = '<div class="notif-empty">' + emptyMsg + '</div>';
         return;
     }
-    var lastSeen = getNotificationsLastSeen();
+
     var html = '';
-    lessonNotifications.forEach(function(n) {
-        var isUnread = n.createdAt > lastSeen;
-        var timeStr = '';
-        try { timeStr = new Date(n.createdAt).toLocaleString('ar-DZ', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }); } catch(e) {}
-        html += '<div class="notif-item' + (isUnread ? ' unread' : '') + '" onclick="goToNotificationLesson(\'' + sanitizeHtml(n.lessonId || '') + '\')">' +
+    items.forEach(function(n) {
+        var isUnread = isNotificationUnread(n);
+        var id = sanitizeHtml(n.id || '');
+        html += '<div class="notif-item' + (isUnread ? ' unread' : '') + '" data-notif-id="' + id + '" onclick="goToNotificationLesson(\'' + sanitizeHtml(n.lessonId || '') + '\', \'' + id + '\')">' +
             '<div class="notif-icon"><i class="fas fa-book"></i></div>' +
             '<div class="notif-text">' +
                 '<div class="title">📚 تم إضافة درس: ' + sanitizeHtml(n.title || '') + '</div>' +
                 '<div class="meta">المرحلة: ' + sanitizeHtml(getNotificationStageLabel(n.stage)) + (n.subject ? ' • ' + sanitizeHtml(n.subject) : '') + '</div>' +
-                '<div class="meta">' + timeStr + '</div>' +
+                '<div class="meta"><i class="fas fa-clock"></i> ' + formatNotificationTime(n.createdAt) + '</div>' +
+            '</div>' +
+            '<div class="notif-item-actions">' +
+                '<button class="notif-item-btn delete" title="حذف الإشعار" aria-label="حذف الإشعار" onclick="event.stopPropagation(); dismissNotification(\'' + id + '\')"><i class="fas fa-xmark"></i></button>' +
+                (isUnread ? '<button class="notif-item-btn" title="تعليم كمقروء" aria-label="تعليم كمقروء" onclick="event.stopPropagation(); markSingleNotificationRead(\'' + id + '\')"><i class="fas fa-check"></i></button>' : '') +
             '</div>' +
         '</div>';
     });
     list.innerHTML = html;
 }
+
+function markSingleNotificationRead(id) {
+    if (!id) return;
+    if (readNotificationIds.indexOf(id) === -1) readNotificationIds.push(id);
+    saveNotificationsLocalState();
+    updateNotificationsBadge();
+    renderNotificationsPanel();
+}
+window.markSingleNotificationRead = markSingleNotificationRead;
+
+function dismissNotification(id) {
+    if (!id) return;
+    var el = document.querySelector('.notif-item[data-notif-id="' + id + '"]');
+    if (hiddenNotificationIds.indexOf(id) === -1) hiddenNotificationIds.push(id);
+    if (readNotificationIds.indexOf(id) === -1) readNotificationIds.push(id);
+    saveNotificationsLocalState();
+    if (el) {
+        el.classList.add('removing');
+        setTimeout(function() { renderNotificationsPanel(); updateNotificationsBadge(); }, 220);
+    } else {
+        renderNotificationsPanel();
+        updateNotificationsBadge();
+    }
+}
+window.dismissNotification = dismissNotification;
+
+function clearAllNotifications() {
+    var visible = getVisibleNotifications();
+    if (!visible.length) return;
+    visible.forEach(function(n) {
+        if (hiddenNotificationIds.indexOf(n.id) === -1) hiddenNotificationIds.push(n.id);
+        if (readNotificationIds.indexOf(n.id) === -1) readNotificationIds.push(n.id);
+    });
+    setNotificationsLastSeen(Date.now());
+    saveNotificationsLocalState();
+    renderNotificationsPanel();
+    updateNotificationsBadge();
+    if (typeof showInfo === 'function') showInfo('تم مسح كل الإشعارات من قائمتك.');
+}
+window.clearAllNotifications = clearAllNotifications;
 
 function positionNotificationsPanel() {
     var panel = document.getElementById('notificationsPanel');
@@ -2514,21 +2709,46 @@ function positionNotificationsPanel() {
     panel.style.maxHeight = maxHeight + 'px';
 }
 
+function openNotificationsPanel() {
+    var panel = document.getElementById('notificationsPanel');
+    if (!panel) return;
+    positionNotificationsPanel();
+    panel.classList.add('active');
+    var overlay = document.getElementById('notifOverlay');
+    if (overlay) overlay.classList.add('active');
+    renderNotificationsPanel();
+    updateNotificationsBadge();
+    requestBrowserNotificationPermission();
+}
+window.openNotificationsPanel = openNotificationsPanel;
+
+function closeNotificationsPanel() {
+    var panel = document.getElementById('notificationsPanel');
+    if (panel) panel.classList.remove('active');
+    var overlay = document.getElementById('notifOverlay');
+    if (overlay) overlay.classList.remove('active');
+}
+window.closeNotificationsPanel = closeNotificationsPanel;
+
 function toggleNotificationsPanel(event) {
     if (event) event.stopPropagation();
     var panel = document.getElementById('notificationsPanel');
     if (!panel) return;
-    var willOpen = !panel.classList.contains('active');
-    if (willOpen) {
-        positionNotificationsPanel();
-    }
-    panel.classList.toggle('active', willOpen);
-    if (willOpen) {
-        renderNotificationsPanel();
-        requestBrowserNotificationPermission();
+    if (panel.classList.contains('active')) {
+        closeNotificationsPanel();
+    } else {
+        openNotificationsPanel();
     }
 }
 window.toggleNotificationsPanel = toggleNotificationsPanel;
+
+// إغلاق العلبة بمفتاح Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        var panel = document.getElementById('notificationsPanel');
+        if (panel && panel.classList.contains('active')) closeNotificationsPanel();
+    }
+});
 
 // إعادة حساب موقع العلبة عند تغيير حجم النافذة أو التمرير أثناء فتحها
 window.addEventListener('resize', function() {
@@ -2538,14 +2758,18 @@ window.addEventListener('resize', function() {
 
 function markNotificationsRead() {
     setNotificationsLastSeen(Date.now());
+    getVisibleNotifications().forEach(function(n) {
+        if (readNotificationIds.indexOf(n.id) === -1) readNotificationIds.push(n.id);
+    });
+    saveNotificationsLocalState();
     updateNotificationsBadge();
     renderNotificationsPanel();
 }
 window.markNotificationsRead = markNotificationsRead;
 
-function goToNotificationLesson(lessonId) {
-    document.getElementById('notificationsPanel')?.classList.remove('active');
-    markNotificationsRead();
+function goToNotificationLesson(lessonId, notifId) {
+    if (notifId) markSingleNotificationRead(notifId);
+    closeNotificationsPanel();
     // لا يوجد تفاصيل ملاحية دقيقة هنا، فقط توجيه المستخدم لتصفح الدروس
     if (lessonId) showInfo('يمكنك العثور على الدرس الجديد ضمن قائمة الدروس المتاحة لمرحلتك.');
 }
@@ -2555,7 +2779,7 @@ document.addEventListener('click', function(e) {
     var panel = document.getElementById('notificationsPanel');
     var wrapper = document.getElementById('notifWrapper');
     if (panel && panel.classList.contains('active') && wrapper && !wrapper.contains(e.target)) {
-        panel.classList.remove('active');
+        closeNotificationsPanel();
     }
 });
 
