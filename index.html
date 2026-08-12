@@ -248,10 +248,21 @@
             position: relative;
         }
         .news-ticker-new .marquee-track {
-            display: inline-flex;
+            display: flex;
+            flex: 0 0 auto;
+            width: max-content;
+            min-width: max-content;
             white-space: nowrap;
             will-change: transform;
             animation: newsMarqueeScroll linear infinite;
+        }
+        .news-ticker-new .marquee-half {
+            display: flex;
+            flex: 0 0 auto;
+            width: max-content;
+            min-width: max-content;
+            white-space: nowrap;
+            align-items: center;
         }
         .news-ticker-new .marquee-viewport:hover .marquee-track {
             animation-play-state: paused;
@@ -271,8 +282,8 @@
             font-weight: 700;
         }
         @keyframes newsMarqueeScroll {
-            from { transform: translateX(-50%); }
-            to { transform: translateX(0%); }
+            from { transform: translateX(calc(-1 * var(--marquee-shift, 50%))); }
+            to { transform: translateX(0px); }
         }
         @media (max-width: 480px) {
             .news-ticker-new {
@@ -5136,7 +5147,7 @@ function renderNewsTicker() {
         return '<span class="marquee-item">' + sanitizeHtml(item) + '</span><span class="marquee-sep">•</span>';
     }).join('');
     // نكرر القائمة كاملة مرتين لضمان تمرير سلس بلا فجوة، بغض النظر عن عدد الأخبار
-    track.innerHTML = itemsHtml + itemsHtml;
+    track.innerHTML = '<span class="marquee-half">' + itemsHtml + '</span><span class="marquee-half">' + itemsHtml + '</span>';
     track.dataset.lastWidth = '0';
 
     applyNewsMarqueeTiming(track, true);
@@ -5147,7 +5158,9 @@ function renderNewsTicker() {
 function applyNewsMarqueeTiming(track, fresh) {
     if (!track) return;
     var recalc = function() {
-        var trackWidth = track.scrollWidth / 2;
+        // نقيس عرض النصف الأول فعلياً (أدق من scrollWidth على الهواتف)
+        var half = track.querySelector('.marquee-half');
+        var trackWidth = half ? half.getBoundingClientRect().width : (track.scrollWidth / 2);
         if (!trackWidth) return; // لم يُحسب العرض بعد، سيُعاد الحساب لاحقاً
 
         // إذا لم يتغيّر العرض فعلياً (فرق أقل من 4px) لا نعيد تشغيل الحركة من البداية أبداً
@@ -5157,6 +5170,8 @@ function applyNewsMarqueeTiming(track, fresh) {
 
         // سرعة ثابتة لكل عنصر بحيث يظهر كل خبر بوضوح مهما كان عدد الأخبار الإجمالي
         var duration = Math.max(trackWidth / NEWS_MARQUEE_SPEED_PX_PER_SEC, 8);
+        // إزاحة بالبكسل بدل النسبة المئوية: تضمن مرور كل الأخبار على الشاشات الصغيرة
+        track.style.setProperty('--marquee-shift', trackWidth + 'px');
         track.style.animation = 'none';
         void track.offsetWidth;
         track.style.animationDuration = duration + 's';
