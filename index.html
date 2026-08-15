@@ -4,15 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>الأستاذ محمد للتعليم | منصة تعليم جزائرية</title>
+    <!-- تسريع الاتصال المبكر بالنطاقات الخارجية (تحسين أداء - لا يغيّر أي وظيفة) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- تحميل Font Awesome بشكل غير حاجب للعرض (نفس الملف ونفس الأيقونات، فقط لا يوقف الرندر) -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"></noscript>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/DOMPurify/3.0.6/purify.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- تم نقل تحميل emailjs (email.min.js) و pdf.js إلى تحميل كسول (lazy load) عند الحاجة الفعلية فقط -->
+    <!-- pdf.js يُحمَّل تلقائياً فقط عند فتح معاينة ملف PDF -->
+    <!-- emailjs يُحمَّل تلقائياً فقط عند إرسال نموذج "اتصل بنا" -->
     
     <!-- المشكلة 3: تم إزالة X-Frame-Options و frame-ancestors من meta (غير فعّالة) وتم نقلها إلى HTTP headers عبر .htaccess -->
     <!-- المشكلة 1: تم إصلاح CSP بإضافة wss: إلى connect-src -->
@@ -2000,6 +2008,23 @@ var EMAILJS_SERVICE_ID = 'service_v9v54om';
 var EMAILJS_TEMPLATE_ID = 'template_bzmpqfn';
 var EMAILJS_PUBLIC_KEY = 'mQoCY5duuuVUHjuaj';
 
+// ===== محمّل سكربتات كسول (Lazy Script Loader) =====
+// يحمّل مكتبة خارجية مرة واحدة فقط وعند الحاجة الفعلية (تحسين أداء - نفس الملفات ونفس النتيجة)
+var _lazyScriptPromises = {};
+function _loadScriptOnce(src) {
+    if (_lazyScriptPromises[src]) return _lazyScriptPromises[src];
+    _lazyScriptPromises[src] = new Promise(function(resolve, reject) {
+        var existing = document.querySelector('script[src="' + src + '"]');
+        if (existing) { resolve(); return; }
+        var s = document.createElement('script');
+        s.src = src;
+        s.onload = function() { resolve(); };
+        s.onerror = function() { delete _lazyScriptPromises[src]; reject(new Error('تعذر تحميل ' + src)); };
+        document.head.appendChild(s);
+    });
+    return _lazyScriptPromises[src];
+}
+
 var database = null;
 var auth = null;
 var currentUser = null;
@@ -3415,7 +3440,7 @@ function closeContactModal() {
 }
 window.closeContactModal = closeContactModal;
 
-function sendContactMessage() {
+async function sendContactMessage() {
     if (!checkRateLimit('contact_send')) return;
     
     var name = document.getElementById('contactName').value.trim();
@@ -3449,6 +3474,16 @@ function sendContactMessage() {
         })
     };
     
+    try {
+        if (!window['emailjs']) {
+            await _loadScriptOnce('https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js');
+        }
+    } catch (loadErr) {
+        showWarning('⚠️ تعذر تحميل خدمة الإرسال، يرجى المحاولة مرة أخرى');
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<i class="fas fa-envelope"></i> إرسال الرسالة'; }
+        return;
+    }
+
     emailjs.init(EMAILJS_PUBLIC_KEY);
     emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
         .then(function(response) {
@@ -3756,11 +3791,18 @@ function _ensurePdfWorker() {
     }
 }
 
+async function _ensurePdfLib() {
+    if (!window['pdfjsLib']) {
+        await _loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+    }
+    _ensurePdfWorker();
+}
+
 var _pdfDocCache = {}; // url -> Promise<PDFDocumentProxy>
 function _getPdfDocument(url) {
     if (_pdfDocCache[url]) return _pdfDocCache[url];
     var p = (async function () {
-        _ensurePdfWorker();
+        await _ensurePdfLib();
         if (!window['pdfjsLib']) throw new Error('pdf.js غير متاح');
         var res = await fetch(url, { credentials: 'same-origin', cache: 'no-store' });
         if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -3811,7 +3853,7 @@ async function renderProfessionalPdfViewer(boxId, url, title, downloadUrl) {
 
         box.innerHTML =
             '<div class="pdf-preview-card" onclick="openPdfViewer(\'' + escAttr(url) + '\', \'' + escAttr(title) + '\', \'' + escAttr(downloadUrl || url) + '\')" role="button" tabindex="0" aria-label="فتح عارض PDF">' +
-                '<div class="pdf-preview-thumb"><img src="' + thumbSrc + '" alt="' + escAttr(title) + '" draggable="false"></div>' +
+                '<div class="pdf-preview-thumb"><img src="' + thumbSrc + '" alt="' + escAttr(title) + '" draggable="false" loading="lazy" decoding="async"></div>' +
                 '<div class="pdf-preview-overlay">' +
                     '<div class="pdf-preview-icon"><i class="fas fa-magnifying-glass-plus"></i></div>' +
                     '<div class="pdf-preview-text">اضغط للعرض بالتكبير الكامل</div>' +
@@ -4234,7 +4276,7 @@ async function showLessonContent(id, title, url, download, type, fileId) {
             '<div style="min-height:250px; text-align:center; background:#f5f5f5; border-radius:12px; padding:20px;">';
         
         if (isValidImageUrl) {
-            contentHtml += '<img src="' + escAttr(freshUrl) + '" style="max-width:100%; max-height:55vh; border-radius:12px; display:inline-block; margin:0 auto; cursor:pointer; transition:transform 0.2s ease, box-shadow 0.2s ease; box-shadow:0 4px 12px rgba(0,0,0,0.1);" alt="' + escAttr(title) + '" onclick="openImageViewer(\'' + escAttr(freshUrl) + '\', \'' + escAttr(title) + '\')" onmouseover="this.style.boxShadow=\'0 8px 30px rgba(0,0,0,0.2)\'; this.style.transform=\'scale(1.02)\';" onmouseout="this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.1)\'; this.style.transform=\'scale(1)\';">' +
+            contentHtml += '<img src="' + escAttr(freshUrl) + '" style="max-width:100%; max-height:55vh; border-radius:12px; display:inline-block; margin:0 auto; cursor:pointer; transition:transform 0.2s ease, box-shadow 0.2s ease; box-shadow:0 4px 12px rgba(0,0,0,0.1);" alt="' + escAttr(title) + '" decoding="async" onclick="openImageViewer(\'' + escAttr(freshUrl) + '\', \'' + escAttr(title) + '\')" onmouseover="this.style.boxShadow=\'0 8px 30px rgba(0,0,0,0.2)\'; this.style.transform=\'scale(1.02)\';" onmouseout="this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.1)\'; this.style.transform=\'scale(1)\';">' +
             '<p style="color:var(--text-muted); font-size:0.7rem; margin-top:8px;">👆 اضغط على الصورة للتكبير والتحريك</p>';
         } else {
             contentHtml += '<div style="display:flex; justify-content:center; align-items:center; min-height:250px; flex-direction:column; padding:20px; text-align:center;">' +
