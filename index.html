@@ -2064,7 +2064,9 @@ var lockSettings = null;
 var countdownTargetDate = null;
 var registrationSettings = null;
 var newsItems = ["📢 مرحباً بكم في منصة الأستاذ محمد التعليمية"];
-var MASTER_TEACHER_EMAIL = atob("aGVtaWthbW9oYW1tZWQwOEBnbWFpbC5jb20="); // 🔒 مشفر
+// ⚠️ ملاحظة: Base64 هنا مجرد تعتيم بسيط (obfuscation) وليس تشفيراً حقيقياً — يمكن فك تشفيره فوراً من console المتصفح.
+// الحماية الفعلية ضد الوصول غير المصرح به تعتمد بالكامل على قواعد Firebase Realtime Database (auth.token.email)، وليس على إخفاء هذا النص.
+var MASTER_TEACHER_EMAIL = atob("aGVtaWthbW9oYW1tZWQwOEBnbWFpbC5jb20=");
 
 function emailToKey(email) {
     return (email || '').trim().toLowerCase().replace(/\./g, '_');
@@ -2256,6 +2258,7 @@ async function registerActiveSession(email) {
     sessionId = generateSessionId();
     try {
         await database.ref('activeSessions/' + emailToKey(email)).set({
+            email: email,
             sessionId: sessionId,
             lastActivity: Date.now(),
             userAgent: navigator.userAgent
