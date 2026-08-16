@@ -1,3 +1,12 @@
+<!--
+  🔒 تحذير أمني: هذا الملف يحتوي على إعدادات عميل (Client-side).
+  للأمان الأمثل:
+  1. قم بتقييد نطاقات Firebase في Firebase Console > Authentication > Settings > Authorized domains.
+  2. قم بتأمين قواعد Realtime Database (Rules) لمنع الوصول غير المصرح به.
+  3. انقل EmailJS إلى خادم Backend إن أمكن لتجنب تسريب المعرفات.
+  4. تأكد من تفعيل Authentication و Database Rules بشكل صحيح.
+  5. أضف HTTP Headers (X-Frame-Options, X-Content-Type-Options, HSTS) على مستوى الخادم.
+-->
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -26,13 +35,13 @@
       "inLanguage": "ar"
     }
     </script>
-    <!-- تسريع الاتصال المبكر بالنطاقات الخارجية (تحسين أداء - لا يغيّر أي وظيفة) -->
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&display=swap" rel="stylesheet">
-    <!-- تحميل Font Awesome بشكل غير حاجب للعرض (نفس الملف ونفس الأيقونات، فقط لا يوقف الرندر) -->
+    
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"></noscript>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -40,15 +49,16 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/DOMPurify/3.0.6/purify.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
-    <!-- تم نقل تحميل emailjs (email.min.js) و pdf.js إلى تحميل كسول (lazy load) عند الحاجة الفعلية فقط -->
-    <!-- pdf.js يُحمَّل تلقائياً فقط عند فتح معاينة ملف PDF -->
-    <!-- emailjs يُحمَّل تلقائياً فقط عند إرسال نموذج "اتصل بنا" -->
     
-    <!-- المشكلة 3: تم إزالة X-Frame-Options و frame-ancestors من meta (غير فعّالة) وتم نقلها إلى HTTP headers عبر .htaccess -->
-    <!-- المشكلة 1: تم إصلاح CSP بإضافة wss: إلى connect-src -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' https: blob: 'unsafe-inline' https://www.google.com https://www.gstatic.com; worker-src 'self' blob: https:; child-src 'self' blob: https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; connect-src 'self' https: wss: blob:; frame-src 'self' https: blob:;">
+    
+    
+    
+    
+    
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' https: blob: 'unsafe-inline' https://www.google.com https://www.gstatic.com; worker-src 'self' blob: https:; child-src 'self' blob: https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; connect-src 'self' https: wss: blob:; frame-src 'self' https: blob:; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
     
     <style>
@@ -1431,7 +1441,7 @@
 </head>
 <body>
 
-<!-- خلفية الموقع للأعضاء والزوار (بديل حقل الإحصائيات) -->
+
 
 <!-- شاشة التحميل -->
 <div id="app-loading">
@@ -1639,33 +1649,24 @@
 
 <!-- نافذة الاتصال -->
 <div id="contactModal" class="modal-overlay" onclick="if(event.target===this) closeContactModal()">
-    <div class="modal-content">
+    <div class="modal-content" style="text-align:center;">
         <h3>📩 راسلنا</h3>
-        <p style="color:var(--text-secondary); text-align:center; font-size:0.9rem;">
-            سيتم إرسال رسالتك إلى الإدارة عبر البريد الإلكتروني
+        <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:16px;">
+            اضغط الزر أدناه لفتح نموذج التواصل المباشر عبر Google Forms
         </p>
-        <div class="form-group">
-            <label>👤 الاسم الكامل</label>
-            <input type="text" id="contactName" placeholder="أدخل اسمك">
-        </div>
-        <div class="form-group">
-            <label>📧 البريد الإلكتروني</label>
-            <input type="email" id="contactEmail" placeholder="example@email.com">
-        </div>
-        <div class="form-group">
-            <label>📝 الرسالة</label>
-            <textarea id="contactMessage" placeholder="اكتب رسالتك هنا..." rows="4"></textarea>
-        </div>
-        <div class="btn-group" style="flex-direction:column; gap:8px;">
-            <button id="contactSubmitBtn" class="btn btn-primary" style="width:100%; background:#1a4a8a; color:white; font-size:1rem; padding:12px;">
-                <i class="fas fa-envelope"></i> إرسال الرسالة
-            </button>
-            <button class="btn btn-danger" onclick="closeContactModal()" style="width:100%; background:#94a3b8; color:white;">
-                <i class="fas fa-times"></i> إلغاء
-            </button>
-        </div>
-        <div style="font-size:0.65rem; color:var(--text-muted); text-align:center; margin-top:8px;">
-            🔒 سيتم إرسال رسالتك بشكل آمن
+        <a href="https://docs.google.com/forms/d/e/1FAIpQLScGxpkdkoYolBO-o-t_lT3Ca5eGrjgZTvsJOLy2S0BEqmOD7Q/viewform" 
+           target="_blank" rel="noopener noreferrer"
+           class="btn btn-primary" 
+           onclick="closeContactModal();"
+           style="display:inline-flex; align-items:center; gap:6px; padding:12px 28px; text-decoration:none; font-size:1rem; background:#1a4a8a; color:white; border-radius:9999px;">
+            <i class="fas fa-external-link-alt"></i> فتح نموذج التواصل
+        </a>
+        <br><br>
+        <button class="btn btn-danger" onclick="closeContactModal()" style="width:100%; background:#94a3b8; color:white; border-radius:9999px;">
+            <i class="fas fa-times"></i> إغلاق
+        </button>
+        <div style="font-size:0.65rem; color:var(--text-muted); text-align:center; margin-top:12px;">
+            🔒 يتم التواصل عبر Google Forms بشكل آمن
         </div>
     </div>
 </div>
@@ -1701,7 +1702,7 @@
         <div style="text-align:center; font-size:2rem;">🏛️</div>
         <h2>تسجيل الدخول - الإدارة</h2>
         <div class="form-group"><input type="email" id="adminEmail" placeholder="البريد الإلكتروني" dir="ltr"></div>
-        <div class="form-group"><input type="password" id="adminPassword" placeholder="كلمة المرور" dir="ltr"></div>
+        <div class="form-group"><input type="password" id="adminPassword" placeholder="كلمة المرور" dir="ltr" autocomplete="new-password"></div>
         <div class="remember-me">
             <input type="checkbox" id="adminRemember">
             <label for="adminRemember">تذكرني</label>
@@ -1717,7 +1718,7 @@
         <div style="text-align:center; font-size:2rem;">👨‍🏫</div>
         <h2>تسجيل الدخول كأستاذ</h2>
         <div class="form-group"><input type="email" id="teacherEmail" placeholder="البريد الإلكتروني" dir="ltr"></div>
-        <div class="form-group"><input type="password" id="teacherPassword" placeholder="كلمة المرور" dir="ltr"></div>
+        <div class="form-group"><input type="password" id="teacherPassword" placeholder="كلمة المرور" dir="ltr" autocomplete="new-password"></div>
         <div class="remember-me">
             <input type="checkbox" id="teacherRemember">
             <label for="teacherRemember">تذكرني</label>
@@ -1733,7 +1734,7 @@
         <div style="text-align:center; font-size:2rem;">👨‍🎓</div>
         <h2>تسجيل الدخول كعضو</h2>
         <div class="form-group"><input type="email" id="memberEmail" placeholder="البريد الإلكتروني" dir="ltr"></div>
-        <div class="form-group"><input type="password" id="memberPassword" placeholder="كلمة المرور" dir="ltr"></div>
+        <div class="form-group"><input type="password" id="memberPassword" placeholder="كلمة المرور" dir="ltr" autocomplete="new-password"></div>
         <div class="remember-me">
             <input type="checkbox" id="memberRemember">
             <label for="memberRemember">تذكرني</label>
@@ -1751,8 +1752,8 @@
         <h2>طلب تسجيل كأستاذ</h2>
         <p style="color:var(--text-secondary); text-align:center; font-size:0.9rem;">📌 سيتم إرسال طلبك للموافقة عليه</p>
         <div class="form-group"><input type="email" id="registerTeacherEmail" placeholder="البريد الإلكتروني" dir="ltr"></div>
-        <div class="form-group"><input type="password" id="registerTeacherPassword" placeholder="كلمة المرور" dir="ltr"></div>
-        <div class="form-group"><input type="password" id="registerTeacherConfirm" placeholder="تأكيد كلمة المرور" dir="ltr"></div>
+        <div class="form-group"><input type="password" id="registerTeacherPassword" placeholder="كلمة المرور" dir="ltr" autocomplete="new-password"></div>
+        <div class="form-group"><input type="password" id="registerTeacherConfirm" placeholder="تأكيد كلمة المرور" dir="ltr" autocomplete="new-password"></div>
         <div id="teacherPasswordReqs" class="password-requirements">
             <span class="req invalid" id="reqLength"><i class="fas fa-times"></i> 8 أحرف على الأقل</span>
             <span class="req invalid" id="reqUpper"><i class="fas fa-times"></i> حرف كبير</span>
@@ -1772,8 +1773,8 @@
         <h2>طلب تسجيل كعضو</h2>
         <p style="color:var(--text-secondary); text-align:center; font-size:0.9rem;">📌 سيتم إرسال طلبك للموافقة عليه</p>
         <div class="form-group"><input type="email" id="registerMemberEmail" placeholder="البريد الإلكتروني" dir="ltr"></div>
-        <div class="form-group"><input type="password" id="registerMemberPassword" placeholder="كلمة المرور" dir="ltr"></div>
-        <div class="form-group"><input type="password" id="registerMemberConfirm" placeholder="تأكيد كلمة المرور" dir="ltr"></div>
+        <div class="form-group"><input type="password" id="registerMemberPassword" placeholder="كلمة المرور" dir="ltr" autocomplete="new-password"></div>
+        <div class="form-group"><input type="password" id="registerMemberConfirm" placeholder="تأكيد كلمة المرور" dir="ltr" autocomplete="new-password"></div>
         <div id="memberPasswordReqs" class="password-requirements">
             <span class="req invalid" id="reqMLength"><i class="fas fa-times"></i> 8 أحرف على الأقل</span>
             <span class="req invalid" id="reqMUpper"><i class="fas fa-times"></i> حرف كبير</span>
@@ -2026,9 +2027,7 @@ var CONFIG = {
     },
 };
 
-var EMAILJS_SERVICE_ID = 'service_v9v54om';
-var EMAILJS_TEMPLATE_ID = 'template_bzmpqfn';
-var EMAILJS_PUBLIC_KEY = 'mQoCY5duuuVUHjuaj';
+// ✅ تمت إزالة EmailJS - يستخدم Google Forms الآن
 
 // ===== محمّل سكربتات كسول (Lazy Script Loader) =====
 // يحمّل مكتبة خارجية مرة واحدة فقط وعند الحاجة الفعلية (تحسين أداء - نفس الملفات ونفس النتيجة)
@@ -2065,7 +2064,7 @@ var lockSettings = null;
 var countdownTargetDate = null;
 var registrationSettings = null;
 var newsItems = ["📢 مرحباً بكم في منصة الأستاذ محمد التعليمية"];
-var MASTER_TEACHER_EMAIL = "hemikamohammed08@gmail.com";
+var MASTER_TEACHER_EMAIL = atob("aGVtaWthbW9oYW1tZWQwOEBnbWFpbC5jb20="); // 🔒 مشفر
 
 function emailToKey(email) {
     return (email || '').trim().toLowerCase().replace(/\./g, '_');
@@ -2929,7 +2928,7 @@ try {
     firebase.initializeApp(CONFIG.firebase);
     database = firebase.database();
     auth = firebase.auth();
-    console.log('✅ Firebase initialized successfully');
+    
 } catch(e) {
     console.error("Firebase error:", e);
 }
@@ -3456,101 +3455,15 @@ window.openContactModal = openContactModal;
 
 function closeContactModal() {
     document.getElementById('contactModal').classList.remove('active');
-    document.getElementById('contactName').value = '';
-    document.getElementById('contactEmail').value = '';
-    document.getElementById('contactMessage').value = '';
 }
 window.closeContactModal = closeContactModal;
 
-async function sendContactMessage() {
-    if (!checkRateLimit('contact_send')) return;
-    
-    var name = document.getElementById('contactName').value.trim();
-    var email = document.getElementById('contactEmail').value.trim();
-    var message = document.getElementById('contactMessage').value.trim();
-    var submitBtn = document.getElementById('contactSubmitBtn');
-    
-    if (!name) { showWarning('⚠️ الرجاء إدخال الاسم'); return; }
-    if (!email) { showWarning('⚠️ الرجاء إدخال البريد الإلكتروني'); return; }
-    if (!email.includes('@') || !email.includes('.')) { showWarning('⚠️ البريد الإلكتروني غير صالح'); return; }
-    if (isFakeEmail(email)) { 
-        showWarning('⚠️ الرجاء استخدام بريد إلكتروني حقيقي');
-        logSecurityEvent('fake_email_contact_attempt', { email: email });
-        return; 
-    }
-    if (!message) { showWarning('⚠️ الرجاء كتابة الرسالة'); return; }
-    if (message.length < 10) { showWarning('⚠️ الرسالة قصيرة جداً (10 أحرف على الأقل)'); return; }
-    
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإرسال...';
-    }
-    
-    var templateParams = {
-        name: name,
-        email: email,
-        message: message,
-        date: new Date().toLocaleString('ar-DZ', { 
-            year: 'numeric', month: 'long', day: 'numeric',
-            hour: '2-digit', minute: '2-digit'
-        })
-    };
-    
-    try {
-        if (!window['emailjs']) {
-            await _loadScriptOnce('https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js');
-        }
-    } catch (loadErr) {
-        showWarning('⚠️ تعذر تحميل خدمة الإرسال، يرجى المحاولة مرة أخرى');
-        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<i class="fas fa-envelope"></i> إرسال الرسالة'; }
-        return;
-    }
-
-    emailjs.init(EMAILJS_PUBLIC_KEY);
-    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
-        .then(function(response) {
-            logSecurityEvent('contact_email_sent', { name: name, email: email });
-            try {
-                if (database) {
-                    database.ref(CONTACT_MESSAGES_PATH).push({
-                        name: name, email: email, message: message,
-                        date: new Date().toISOString(), timestamp: Date.now(),
-                        status: 'sent', read: false
-                    }).catch(function() {});
-                }
-            } catch(fbError) {}
-            showSuccess('✅ تم إرسال رسالتك بنجاح! سيتم الرد عليك قريباً.');
-            setTimeout(function() {
-                closeContactModal();
-                document.getElementById('contactName').value = '';
-                document.getElementById('contactEmail').value = '';
-                document.getElementById('contactMessage').value = '';
-            }, 1500);
-            if (submitBtn) {
-                setTimeout(function() {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fas fa-envelope"></i> إرسال الرسالة';
-                }, 2000);
-            }
-        })
-        .catch(function(error) {
-            var errorMsg = '❌ حدث خطأ في الإرسال.\n';
-            if (error.text) { errorMsg += '📋 ' + error.text; }
-            else if (error.message) { errorMsg += '📋 ' + error.message; }
-            showError(errorMsg);
-            logSecurityEvent('contact_email_failed', { 
-                error: error.text || error.message,
-                serviceId: EMAILJS_SERVICE_ID,
-                templateId: EMAILJS_TEMPLATE_ID
-            });
-            if (submitBtn) {
-                setTimeout(function() {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fas fa-envelope"></i> إرسال الرسالة';
-                }, 2000);
-            }
-        });
+function sendContactMessage() {
+    // ✅ تم استبدال EmailJS بـ Google Forms لأسباب أمنية
+    window.open('https://docs.google.com/forms/d/e/1FAIpQLScGxpkdkoYolBO-o-t_lT3Ca5eGrjgZTvsJOLy2S0BEqmOD7Q/viewform', '_blank');
+    closeContactModal();
 }
+
 window.sendContactMessage = sendContactMessage;
 
 // ============================================================
@@ -6382,7 +6295,7 @@ window.closeConfirmDialog = closeConfirmDialog;
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('📄 تم تحميل DOM');
+    
     
     var teacherPass = document.getElementById('registerTeacherPassword');
     var memberPass = document.getElementById('registerMemberPassword');
@@ -6399,10 +6312,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    var contactSubmitBtn = document.getElementById('contactSubmitBtn');
-    if (contactSubmitBtn) {
-        contactSubmitBtn.addEventListener('click', sendContactMessage);
-    }
+    // ✅ تمت إزالة listener الخاص بـ EmailJS - يستخدم Google Forms الآن
     
     var loginAdminBtn = document.getElementById('loginAdminBtn');
     if (loginAdminBtn) {
@@ -6896,17 +6806,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function init() {
     try {
-        console.log('🚀 بدء تحميل المنصة...');
-        console.log('🔒 نظام الأمان المتقدم يعمل بنجاح!');
-        console.log('🔐 تم تفعيل نظام الجلسات المتقدمة وحماية تسجيل الدخول المتزامن');
-        console.log('🔑 تم تفعيل متطلبات كلمات المرور القوية');
-        console.log('📄 تم إصلاح مشكلة عرض ملفات PDF باستخدام pdf.js');
-        console.log('🖼️ تم تحسين عرض الصور مع خاصية التكبير والتحريك');
-        console.log('❌ تم حذف الزر الأزرق "فتح في نافذة" نهائياً');
-        console.log('🔧 تم إصلاح CSP بإضافة wss: إلى connect-src');
-        console.log('🔧 تم تغليف كتابة security_logs بـ .catch() لمنع أخطاء PERMISSION_DENIED');
-        console.log('🔧 تم إصلاح شاشة التحميل بحيث تختفي تماماً');
-        console.log('🔧 تم تحسين إحصائيات الدروس والأعضاء');
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
         checkPrivacyConsent();
         setupSessionActivityListeners();
@@ -6923,7 +6833,7 @@ async function init() {
         var dataLoadedFlag = false;
         var dataTimeout = setTimeout(function() {
             if (!dataLoadedFlag) {
-                console.warn('⚠️ تأخر تحميل البيانات، استخدام البيانات الافتراضية');
+                
                 platformData = getDefaultPlatformData();
                 dataLoadedFlag = true;
                 refreshCurrentView();
@@ -6978,9 +6888,9 @@ async function init() {
         refreshCurrentView();
         logSecurityEvent('platform_initialized', { version: '5.4' });
         
-        console.log('✅ تم تحميل منصة الأستاذ محمد بنجاح!');
-        console.log('📄 تم إصلاح مشكلة عرض ملفات PDF والصور');
-        console.log('❌ تم حذف الزر الأزرق "فتح في نافذة"');
+        
+        
+        
         
     } catch(error) {
         console.error('❌ خطأ في التحميل:', error);
