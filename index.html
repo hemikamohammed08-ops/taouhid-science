@@ -2233,6 +2233,43 @@ function setupSessionActivityListeners() {
     }
 }
 
+var _sessionConflictActive = false;
+var activeSessionRef = null;
+var activeSessionListenerFn = null;
+
+// يراقب جلسة المستخدم لحظياً: إن كتب جهاز آخر sessionId مختلف، يتم تسجيل الخروج فوراً
+// بدلاً من الانتظار حتى تُستدعى validateSession() قبل إجراء إداري معيّن.
+function attachSessionConflictListener(email) {
+    detachSessionConflictListener();
+    if (!database || !email) return;
+    activeSessionRef = database.ref('activeSessions/' + emailToKey(email));
+    activeSessionListenerFn = function(snapshot) {
+        var data = snapshot.val();
+        if (data && sessionId && data.sessionId && data.sessionId !== sessionId) {
+            logSecurityEvent('session_conflict', {
+                user: email,
+                currentSession: sessionId,
+                otherSession: data.sessionId
+            });
+            showWarning('⚠️ تم تسجيل الدخول من جهاز آخر، سيتم تسجيل الخروج');
+            // نمنع حذف سجل الجلسة من قاعدة البيانات هنا، لأنه أصبح يخص الجهاز الآخر الآن وليس هذا الجهاز
+            _sessionConflictActive = true;
+            detachSessionConflictListener();
+            if (auth) auth.signOut().catch(function() {});
+            updateUIAfterLogout();
+        }
+    };
+    activeSessionRef.on('value', activeSessionListenerFn);
+}
+
+function detachSessionConflictListener() {
+    if (activeSessionRef && activeSessionListenerFn) {
+        try { activeSessionRef.off('value', activeSessionListenerFn); } catch(e) {}
+    }
+    activeSessionRef = null;
+    activeSessionListenerFn = null;
+}
+
 async function validateSession() {
     if (!currentUser || !sessionId) return true;
     try {
@@ -2245,6 +2282,8 @@ async function validateSession() {
                 otherSession: data.sessionId
             });
             showWarning('⚠️ تم تسجيل الدخول من جهاز آخر، سيتم تسجيل الخروج');
+            _sessionConflictActive = true;
+            detachSessionConflictListener();
             await auth.signOut();
             updateUIAfterLogout();
             return false;
@@ -4502,7 +4541,9 @@ function updateAdminPanel() {
 }
 
 function updateUIAfterLogout() {
-    if (currentUser) { removeActiveSession(currentUser.email); }
+    if (currentUser && !_sessionConflictActive) { removeActiveSession(currentUser.email); }
+    _sessionConflictActive = false;
+    detachSessionConflictListener();
     currentUser = null; 
     isAdminMode = false; 
     currentUserIsApproved = false; 
@@ -6778,6 +6819,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 await registerActiveSession(email);
+                attachSessionConflictListener(email);
                 
                 updateUserInterface();
                 if (isAdminMode && currentUser?.email === MASTER_TEACHER_EMAIL) {
