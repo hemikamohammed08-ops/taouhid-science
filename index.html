@@ -6172,13 +6172,12 @@ function renderLessonsList() {
             var lesson = paginated[i];
             var isLocked = !isLessonAccessible(currentLessonType);
             var canView = isAdminMode || (currentUser && currentUserIsApproved && !isLocked);
-            var badge = getLessonBadge(lesson);
             
             var fileId = lesson.file_info?.file_id || lesson.telegram_file_id || null;
             var createdDate = lesson.created_at ? new Date(lesson.created_at).toLocaleDateString('ar') : '';
             
             html += '<div class="lesson-item-new">' +
-                '<div class="title">' + badge + ' <span>📌 ' + sanitizeHtml(lesson.title) + '</span>' +
+                '<div class="title"><span>📌 ' + sanitizeHtml(lesson.title) + '</span>' +
                 (createdDate ? '<span style="font-size:0.6rem; color:var(--text-muted); margin-right:6px;">📅 ' + createdDate + '</span>' : '') +
                 '</div><div class="actions">';
             
