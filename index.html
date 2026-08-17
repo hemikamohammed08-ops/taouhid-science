@@ -4295,7 +4295,9 @@ window.closeFileViewer = closeFileViewer;
 
 function canUserAccessStage(stage) {
     if (isAdminMode) return true;
-    if (!currentUser) return false;
+    // الزوار (غير المسجلين) يمكنهم تصفح المحتوى العام لأي مرحلة دون تسجيل دخول.
+    // تسجيل الدخول مطلوب فقط لعرض/تحميل الدرس نفسه (انظر isLessonAccessible و showLessonContent).
+    if (!currentUser) return true;
     if (currentUserIsApproved) {
         if (!currentUserStage || currentUserStage === 'غير معروفة') {
             showWarning('يرجى التواصل مع الإدارة لتحديد مرحلتك');
@@ -5586,8 +5588,36 @@ function renderCommunityLinks() {
         '</div>';
 }
 
+function showCommunityGuestPreview() {
+    hideMainStages();
+    isInCommunity = true;
+    var html = '<div style="background:linear-gradient(135deg,#ede9fe,#ddd6fe); border-radius:20px; padding:28px; margin:20px 0; border:2px solid #7c3aed; text-align:center;">' +
+        '<button class="back-btn-new" id="communityGuestBackBtn"><i class="fas fa-arrow-right"></i> رجوع</button>' +
+        '<i class="fas fa-globe" style="font-size:2.4rem; color:#7c3aed; display:block; margin-bottom:10px;"></i>' +
+        '<h3 style="color:#5b21b6; font-size:1.2rem; margin-bottom:10px;">مجتمع الأستاذ محمد</h3>' +
+        '<p style="color:#5b21b6; max-width:480px; margin:0 auto 18px;">' +
+        'انضم إلى مجتمعنا على تلجرام والفيسبوك للتواصل مع بقية الطلاب ومتابعة كل جديد. ' +
+        'روابط المجتمع الخاصة بكل مرحلة متاحة للأعضاء المسجَّلين والمقبولين فقط.</p>' +
+        '<div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">' +
+        '<button class="btn btn-primary" onclick="showLoginChoice()" style="padding:8px 24px;"><i class="fas fa-sign-in-alt"></i> تسجيل الدخول</button>' +
+        '<button class="btn btn-success" onclick="showRegisterChoice()" style="padding:8px 24px;"><i class="fas fa-user-plus"></i> طلب تسجيل</button>' +
+        '</div></div>';
+    document.getElementById('dynamicArea').innerHTML = html;
+    var backBtn = document.getElementById('communityGuestBackBtn');
+    if (backBtn) {
+        backBtn.addEventListener('click', function() {
+            isInCommunity = false;
+            showMainStages();
+            currentStage = null;
+            clearNavigationState();
+        });
+    }
+    saveNavigationState();
+}
+window.showCommunityGuestPreview = showCommunityGuestPreview;
+
 function showCommunitySection() {
-    if (!currentUser) { showLoginChoice(); return; }
+    if (!currentUser) { showCommunityGuestPreview(); return; }
     if (!currentUserIsApproved && !isAdminMode) { 
         showWarning('لم يتم قبول عضويتك بعد'); 
         return; 
