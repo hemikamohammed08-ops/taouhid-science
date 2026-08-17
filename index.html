@@ -1624,8 +1624,8 @@
 <div id="loginRequiredPopup" class="visitor-popup-new">
     <div class="content">
         <span class="emoji">🔐</span>
-        <h3>⚠️ يرجى تسجيل الدخول</h3>
-        <p>📍 لمشاهدة هذا الدرس، يجب أن تكون <strong>مسجلاً دخولاً</strong><br><br>
+        <h3>⚠️ أنت غير مسجل</h3>
+        <p><strong>لا يمكنك مشاهدة المحتوى، تقبل اعتذارنا 🙏</strong><br><br>
         ✅ إذا كنت تملك حساباً، فضلاً <strong>تسجيل الدخول</strong><br>
         📝 إذا لم تكن مسجلاً، يمكنك <strong>تقديم طلب تسجيل</strong></p>
         <button onclick="closeLoginRequiredPopup(); showLoginChoice();">🔑 تسجيل الدخول</button>
@@ -2938,6 +2938,12 @@ function closeAdminPanel() {
 }
 window.closeAdminPanel = closeAdminPanel;
 
+function showLoginRequiredPopup() {
+    var modal = document.getElementById('loginRequiredPopup');
+    if (modal) modal.classList.add('active');
+}
+window.showLoginRequiredPopup = showLoginRequiredPopup;
+
 function closeLoginRequiredPopup() {
     document.getElementById('loginRequiredPopup').classList.remove('active');
 }
@@ -4164,7 +4170,11 @@ async function showLessonContent(id, title, url, download, type, fileId) {
     var canView = isAdminMode || (currentUser && currentUserIsApproved && isLessonAccessible(currentLessonType));
     if (!canView) { 
         if (backBtn) backBtn.style.display = 'inline-flex'; 
-        showUnavailableModal();
+        if (!currentUser) {
+            showLoginRequiredPopup();
+        } else {
+            showUnavailableModal();
+        }
         return; 
     }
     
@@ -6224,7 +6234,11 @@ function renderLessonsList() {
             if (action === 'view-internal') {
                 showLessonContent(this.getAttribute('data-id'), this.getAttribute('data-title'), this.getAttribute('data-file-url'), this.getAttribute('data-download-url'), this.getAttribute('data-content-type'), this.getAttribute('data-file-id'));
             } else if (action === 'unavailable') {
-                showUnavailableModal();
+                if (!currentUser) {
+                    showLoginRequiredPopup();
+                } else {
+                    showUnavailableModal();
+                }
             } else if (action === 'watch') {
                 window.open(this.getAttribute('data-external-url'), '_blank');
             } else if (action === 'edit-internal') {
