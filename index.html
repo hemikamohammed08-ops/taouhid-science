@@ -1951,6 +1951,10 @@
                 <button id="directAddMemberBtn" style="background:#10b981; color:white; border:none; padding:8px 20px; border-radius:20px; cursor:pointer; font-weight:700; min-height:40px;">➕ إضافة عضو</button>
             </div>
             <div id="directAddMemberResult" style="font-size:0.75rem; margin-top:6px; color:var(--text-secondary);"></div>
+            <div style="margin-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <button id="repairLegacyKeysBtn" style="background:#6366f1; color:white; border:none; padding:8px 18px; border-radius:20px; cursor:pointer; font-weight:700; min-height:40px;">🛠️ إصلاح حسابات الأعضاء القدامى</button>
+                <span id="repairLegacyKeysResult" style="font-size:0.75rem; color:var(--text-secondary);"></span>
+            </div>
         </div>
     </div>
 
@@ -3114,10 +3118,18 @@ async function handleMemberLogin() {
             return;
         }
         if (!isApproved) {
+            // إعادة محاولة واحدة بعد تحديث الرمز ومسح الذاكرة المؤقتة (حالة الموافقة الحديثة)
+            try {
+                clearPermissionCache(email);
+                await auth.currentUser.getIdToken(true);
+                await new Promise(function(r) { setTimeout(r, 600); });
+                isApproved = await checkMemberApproval(email);
+            } catch (retryError) {}
+        }
+        if (!isApproved) {
             logSecurityEvent('unapproved_member_login_attempt', { email: email });
             await auth.signOut();
-            errorDiv.innerText = '⏳ لم يتم الموافقة على طلبك بعد. يرجى الانتظار حتى يوافق المسؤول.';
-            recordFailedLogin(email);
+            errorDiv.innerText = '⏳ لم يتم الموافقة على طلبك بعد. إذا كنت عضواً قديماً يرجى إبلاغ الإدارة لتشغيل "إصلاح حسابات الأعضاء القدامى".';
             return;
         }
         if (isTeacher || email === MASTER_TEACHER_EMAIL) {
@@ -3262,10 +3274,204 @@ var PERMISSION_CACHE_TTL_MS = 8000;
 
 function getCachedPermission(cacheKey) {
     var entry = permissionCache[cacheKey];
-    if (entry && (Date.now() - entry.timestamp) < PERMISSION_CACHE_TTL_MS) {
+    // لا نعتمد على النتائج السلبية المخزّنة: الموافقة قد تكون سُجّلت للتو
+    if (entry && entry.result === true && (Date.now() - entry.timestamp) < PERMISSION_CACHE_TTL_MS) {
         return entry;
     }
     return null;
+}
+
+function clearPermissionCache(email) {
+    if (!email) { permissionCache = {}; return; }
+    var e = normalizeEmail(email);
+    delete permissionCache['member:' + e];
+    delete permissionCache['teacher:' + e];
+}
+
+function emailKeyVariants(email) {
+    var raw = (email || '').trim();
+    var low = raw.toLowerCase();
+    var variants = [
+        low.replace(/\./g, '_'),
+        low,
+        raw.replace(/\./g, '_'),
+        raw,
+        low.replace(/[.#$\[\]]/g, '_'),
+        low.replace(/@/g, '_at_').replace(/\./g, '_'),
+        low.replace(/@/g, '_at_'),
+        low.replace(/@/g, '_'),
+        low.replace(/[@.]/g, '_'),
+        low.replace(/\./g, ','),
+        low.replace(/\./g, '-'),
+        raw.replace(/@/g, '_at_').replace(/\./g, '_'),
+        raw.replace(/[@.]/g, '_'),
+        low.split('@')[0],
+        low.split('@')[0].replace(/\./g, '_')
+    ];
+    var seen = {}, out = [];
+    for (var i = 0; i < variants.length; i++) {
+        var v = variants[i];
+        if (v && !seen[v]) { seen[v] = true; out.push(v); }
+    }
+    return out;
+}
+
+// يوحّد أي صيغة مفتاح/بريد قديمة (أحرف كبيرة، نقاط غير مستبدلة، @ محوّل) لمقارنة موثوقة
+function canonicalEmailToken(value) {
+    return (value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/_at_/g, '@')
+        .replace(/[.\-]/g, '_')
+        .replace(/_+/g, '_');
+}
+
+// يقرأ سجلاً من مسار: أولاً بالمفتاح القياسي، ثم بمسح كامل للمسار لمطابقة أي صيغة قديمة.
+// ثم ينسخه إلى المفتاح القياسي حتى يعمل تسجيل الدخول لاحقاً بدون بحث.
+async function readRecordByEmailKeys(basePath, email) {
+    var canonical = emailToKey(email);
+    var target = canonicalEmailToken(email);
+    var directError = null;
+    var anyDirectReadSucceeded = false;
+
+    // قراءة مباشرة بكل صيغ المفاتيح المحتملة (لا تحتاج صلاحية قراءة القائمة كاملة)
+    var variants = emailKeyVariants(email);
+    for (var vi = 0; vi < variants.length; vi++) {
+        try {
+            var direct = await database.ref(basePath + '/' + variants[vi]).once('value');
+            anyDirectReadSucceeded = true;
+            var dv = direct.val();
+            if (dv) {
+                if (variants[vi] !== canonical && typeof dv === 'object') {
+                    try {
+                        await database.ref(basePath + '/' + canonical).set({
+                            email: normalizeEmail(email),
+                            approvedAt: dv.approvedAt || dv.addedAt || Date.now(),
+                            userType: dv.userType || 'member',
+                            userStage: dv.userStage || 'primary'
+                        });
+                    } catch (e2) {}
+                }
+                return dv;
+            }
+        } catch (e) { directError = e; }
+    }
+
+    // مسح كامل للمسار: يطابق المفتاح أو حقل email بأي صيغة قديمة
+    var listSnapshot;
+    try {
+        listSnapshot = await database.ref(basePath).once('value');
+    } catch (e) {
+        // إذا نجحت القراءة المباشرة فالسجل غير موجود فعلاً؛ فشل قراءة القائمة هنا مجرد قيود صلاحيات
+        if (anyDirectReadSucceeded) return null;
+        // فشل كل القراءات (صلاحيات/شبكة) ليس معناه "غير معتمد" — نرفع الخطأ ليتم التعامل معه
+        throw (directError || e);
+    }
+
+    var found = null, foundKey = null;
+    listSnapshot.forEach(function(child) {
+        if (found) return;
+        var val = child.val() || {};
+        var keyToken = canonicalEmailToken(child.key);
+        var emailToken = canonicalEmailToken(typeof val === 'object' ? val.email : '');
+        if (keyToken === target || (emailToken && emailToken === target)) {
+            found = val;
+            foundKey = child.key;
+        }
+    });
+
+    if (found && foundKey !== canonical && typeof found === 'object') {
+        try {
+            await database.ref(basePath + '/' + canonical).set({
+                email: normalizeEmail(email),
+                approvedAt: found.approvedAt || found.addedAt || Date.now(),
+                userType: found.userType || 'member',
+                userStage: found.userStage || 'primary'
+            });
+        } catch (e) {}
+    }
+
+    return found;
+}
+
+// ============================================================
+// ===== إصلاح جذري: توحيد مفاتيح الأعضاء/الأساتذة القدامى =====
+// أصل المشكلة: الأعضاء القدامى مسجّلون بمفاتيح بصيغ قديمة
+// (أحرف كبيرة، @ محوّلة، نقاط غير مستبدلة...) وقواعد قاعدة البيانات
+// تمنع العضو العادي من قراءة القائمة كاملة، فلا يُعثر على سجله أبداً
+// وتظهر رسالة "لم يتم الموافقة على طلبك بعد".
+// الحل: ترحيل نهائي لكل السجلات إلى المفتاح القياسي (يشغّله المسؤول تلقائياً).
+// ============================================================
+
+// يستخرج البريد الحقيقي من سجل قديم قد لا يحتوي حقل email
+function emailFromLegacyRecord(key, value) {
+    if (value && typeof value === 'object' && value.email) return normalizeEmail(value.email);
+    var k = (key || '').trim().toLowerCase().replace(/_at_/g, '@');
+    if (k.indexOf('@') === -1) {
+        // آخر جزئين يمثلان النطاق عادة: name_gmail_com
+        var parts = k.split('_');
+        if (parts.length >= 3) {
+            var domain = parts.slice(-2).join('.');
+            var local = parts.slice(0, -2).join('.');
+            k = local + '@' + domain;
+        } else { return ''; }
+    }
+    var at = k.split('@');
+    if (at.length !== 2) return '';
+    return at[0].replace(/_/g, '.') + '@' + at[1].replace(/_/g, '.');
+}
+
+var legacyKeysRepairDone = false;
+
+async function repairLegacyKeysAtPath(basePath, defaults) {
+    var snapshot = await database.ref(basePath).once('value');
+    var data = snapshot.val() || {};
+    var fixed = 0;
+    for (var key in data) {
+        var value = data[key];
+        var email = emailFromLegacyRecord(key, value);
+        if (!email || email.indexOf('@') === -1) continue;
+        var canonical = emailToKey(email);
+        var record = (value && typeof value === 'object') ? value : {};
+        var payload = {
+            email: email,
+            approvedAt: record.approvedAt || record.addedAt || Date.now(),
+            userType: record.userType || defaults.userType,
+            userStage: record.userStage || defaults.userStage
+        };
+        var needsRewrite = (key !== canonical) ||
+            !record.email || normalizeEmail(record.email) !== email ||
+            !record.userStage || !record.userType;
+        if (!needsRewrite) continue;
+        await database.ref(basePath + '/' + canonical).update(payload);
+        if (key !== canonical) {
+            await database.ref(basePath + '/' + key).remove();
+        }
+        fixed++;
+    }
+    return fixed;
+}
+
+// ترحيل كامل (للمسؤول فقط) — يُنفَّذ مرة واحدة في الجلسة
+async function repairLegacyMemberKeys(options) {
+    options = options || {};
+    if (!database || !currentUser || normalizeEmail(currentUser.email) !== MASTER_TEACHER_EMAIL) return null;
+    if (legacyKeysRepairDone && !options.force) return null;
+    legacyKeysRepairDone = true;
+    try {
+        var members = await repairLegacyKeysAtPath('members/approved', { userType: 'عضو', userStage: 'primary' });
+        var teachers = await repairLegacyKeysAtPath('teachers', { userType: 'أستاذ', userStage: 'all' });
+        permissionCache = {};
+        if (members + teachers > 0) {
+            logSecurityEvent('legacy_keys_repaired', { members: members, teachers: teachers });
+        }
+        return { members: members, teachers: teachers };
+    } catch (e) {
+        legacyKeysRepairDone = false;
+        console.error('Legacy keys repair failed:', e);
+        logSecurityEvent('legacy_keys_repair_failed', { error: e && e.message });
+        return null;
+    }
 }
 
 async function checkTeacherPermissions(email) {
@@ -3275,8 +3481,7 @@ async function checkTeacherPermissions(email) {
     var cacheKey = 'teacher:' + email;
     var cached = getCachedPermission(cacheKey);
     if (cached) { currentUserStage = cached.userStage || currentUserStage; return cached.result; }
-    var snapshot = await database.ref('teachers/' + emailToKey(email)).once('value');
-    var data = snapshot.val();
+    var data = await readRecordByEmailKeys('teachers', email);
     var result = false;
     if (data) { currentUserStage = data.userStage || 'all'; result = true; }
     permissionCache[cacheKey] = { result: result, userStage: currentUserStage, timestamp: Date.now() };
@@ -3289,8 +3494,7 @@ async function checkMemberApproval(email) {
     var cacheKey = 'member:' + email;
     var cached = getCachedPermission(cacheKey);
     if (cached) { currentUserStage = cached.userStage || currentUserStage; return cached.result; }
-    var snapshot = await database.ref('members/approved/' + emailToKey(email)).once('value');
-    var data = snapshot.val();
+    var data = await readRecordByEmailKeys('members/approved', email);
     var result = false;
     if (data) { currentUserStage = data.userStage || 'primary'; result = true; }
     permissionCache[cacheKey] = { result: result, userStage: currentUserStage, timestamp: Date.now() };
@@ -4477,6 +4681,32 @@ function updateUserInterface() {
     var banner = document.getElementById('membershipBanner');
     var bannerSpan = document.getElementById('bannerUserType');
     var revokeBtn = document.getElementById('revokeMembershipBtn');
+    var repairLegacyKeysBtn = document.getElementById('repairLegacyKeysBtn');
+    if (repairLegacyKeysBtn) {
+        repairLegacyKeysBtn.addEventListener('click', async function() {
+            var resultSpan = document.getElementById('repairLegacyKeysResult');
+            if (!isAdminMode || normalizeEmail(currentUser?.email) !== MASTER_TEACHER_EMAIL) {
+                showError('غير مصرح لك - هذه الصلاحية للمسؤول فقط');
+                return;
+            }
+            if (!await validateSession()) return;
+            repairLegacyKeysBtn.disabled = true;
+            if (resultSpan) resultSpan.textContent = '⏳ جاري الإصلاح...';
+            var res = await repairLegacyMemberKeys({ force: true });
+            repairLegacyKeysBtn.disabled = false;
+            if (!res) {
+                if (resultSpan) resultSpan.textContent = '❌ تعذر الإصلاح، حاول مرة أخرى';
+                showError('تعذر إصلاح السجلات القديمة');
+                return;
+            }
+            if (resultSpan) resultSpan.textContent = '✅ تم توحيد ' + res.members + ' عضو و ' + res.teachers + ' أستاذ';
+            showSuccess('✅ تم إصلاح ' + (res.members + res.teachers) + ' سجل قديم');
+            await loadApprovedMembers();
+            await loadTeachersList();
+            updateStats();
+        });
+    }
+
     var teacherGear = document.getElementById('teacherGearIcon');
     var adminGear = document.getElementById('adminGearIcon');
     var adminPanel = document.getElementById('adminPanel');
@@ -4982,7 +5212,7 @@ async function loadApprovedMembers() {
             var value = data[key];
             approvedMembers.push({
                 key: key,
-                email: value.email || key.replace(/_/g, '.'),
+                email: (value && value.email) ? normalizeEmail(value.email) : (emailFromLegacyRecord(key, value) || key),
                 approvedAt: value.approvedAt || Date.now(),
                 userType: value.userType || 'عضو',
                 userStage: value.userStage || 'غير محددة'
@@ -6797,6 +7027,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (user) {
                 var email = normalizeEmail(user.email);
                 currentUserStage = null;
+                clearPermissionCache(email);
                 
                 var isApprovedMember, isTeacher;
                 var permissionCheckAttempts = 0;
@@ -6860,6 +7091,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 updateUserInterface();
                 if (isAdminMode && currentUser?.email === MASTER_TEACHER_EMAIL) {
+                    repairLegacyMemberKeys().then(function(res) {
+                        if (res && (res.members + res.teachers) > 0) {
+                            loadApprovedMembers();
+                            loadTeachersList();
+                        }
+                    });
                     loadJoinRequests(); 
                     loadApprovedMembers(); 
                     loadTeachersList();
