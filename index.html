@@ -3517,6 +3517,47 @@ async function addJoinRequest(email, userType, stage) {
 // ===== دوال معالجة الملفات =====
 // ============================================================
 
+// ===== كشف نوع المحتوى الحقيقي (صورة أم PDF) =====
+function contentTypeFromMime(mime) {
+    mime = (mime || '').toLowerCase();
+    if (mime.indexOf('pdf') > -1) return 'pdf';
+    if (mime.indexOf('image/') > -1) return 'image';
+    return null;
+}
+
+function contentTypeFromName(name) {
+    name = (name || '').toLowerCase().split('?')[0];
+    if (/\.pdf$/.test(name)) return 'pdf';
+    if (/\.(jpe?g|png|gif|webp|bmp|heic)$/.test(name)) return 'image';
+    return null;
+}
+
+function detectContentTypeFromFile(file, fallback) {
+    if (!file) return fallback || 'pdf';
+    return contentTypeFromMime(file.type) || contentTypeFromName(file.name) || fallback || 'pdf';
+}
+
+// يفحص الملف فعلياً عبر الشبكة (Content-Type + التوقيع السحري) لتصحيح النوع المخزَّن
+async function detectRealContentType(url, fallback) {
+    if (!url || url === '#' || url === 'undefined' || url === 'null') return fallback;
+    try {
+        var res = await fetch(url, { credentials: 'same-origin', cache: 'no-store', headers: { 'Range': 'bytes=0-15' } });
+        var ct = (res.headers.get('content-type') || '').toLowerCase();
+        var byHeader = contentTypeFromMime(ct);
+        if (byHeader) return byHeader;
+        var buf = new Uint8Array(await res.arrayBuffer());
+        if (buf.length >= 4 && buf[0] === 0x25 && buf[1] === 0x50 && buf[2] === 0x44 && buf[3] === 0x46) return 'pdf';
+        if (buf.length >= 3 && (
+            (buf[0] === 0xFF && buf[1] === 0xD8) ||
+            (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E) ||
+            (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46) ||
+            (buf[0] === 0x42 && buf[1] === 0x4D) ||
+            (buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46)
+        )) return 'image';
+    } catch (e) {}
+    return contentTypeFromName(url) || fallback;
+}
+
 function handleFileSelect(event, inputId) {
     if (!checkRateLimit('file_select')) return;
     var file = event.target.files[0];
@@ -3550,8 +3591,20 @@ function handleFileSelect(event, inputId) {
         displayEl.style.fontWeight = '700';
     }
     
-    if (inputId === 'newLessonFile') { uploadedFile = file; }
-    else if (inputId === 'editLessonFile') { uploadedFileForEdit = file; }
+    // تصحيح تلقائي لنوع المحتوى حسب الملف المرفوع فعلياً (صورة تبقى صورة، PDF يبقى PDF)
+    var detected = detectContentTypeFromFile(file, null);
+    if (inputId === 'newLessonFile') {
+        uploadedFile = file;
+        var newTypeSel = document.getElementById('newLessonType');
+        if (newTypeSel && detected && (newTypeSel.value === 'pdf' || newTypeSel.value === 'image') && newTypeSel.value !== detected) {
+            newTypeSel.value = detected;
+            if (typeof toggleLessonFields === 'function') toggleLessonFields();
+        }
+    } else if (inputId === 'editLessonFile') {
+        uploadedFileForEdit = file;
+        var editTypeSel = document.getElementById('editInternalType');
+        if (editTypeSel && detected) editTypeSel.value = detected;
+    }
 }
 
 function clearFileUploadFields() {
@@ -4407,6 +4460,16 @@ async function showLessonContent(id, title, url, download, type, fileId) {
     
     await new Promise(resolve => setTimeout(resolve, 300));
     
+    // تحقق فعلي من نوع الملف قبل العرض: صورة محفوظة خطأً كـ PDF تُعرض كصورة والعكس
+    var realType = await detectRealContentType(freshUrl, type);
+    if (realType && realType !== type) {
+        type = realType;
+        if (currentViewingLesson) currentViewingLesson.type = realType;
+        try {
+            if (database && id) database.ref('lessons/' + id + '/content_type').set(realType);
+        } catch (e) {}
+    }
+
     var isPDF = type === 'pdf';
     var isImage = type === 'image';
     
@@ -4998,6 +5061,7 @@ async function addNewLesson() {
                 lessonData.internal_url = fileInfo.url;
                 lessonData.download_url = fileInfo.url;
                 lessonData.telegram_file_id = fileInfo.file_id;
+                lessonData.content_type = detectContentTypeFromFile(uploadedFile, lessonType);
                 showSuccess('✅ تم رفع الملف إلى Telegram بنجاح! 🚀');
             } catch(error) {
                 showError('❌ فشل رفع الملف: ' + error.message);
@@ -5011,6 +5075,7 @@ async function addNewLesson() {
             }
             lessonData.internal_url = internalUrl;
             lessonData.download_url = document.getElementById('newLessonDownloadUrl').value.trim() || internalUrl;
+            lessonData.content_type = contentTypeFromName(internalUrl) || lessonType;
         }
     } else {
         var externalUrl = document.getElementById('newLessonExternalUrl').value.trim();
@@ -6839,6 +6904,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         updateData.internal_url = fileInfo.url;
                         updateData.download_url = fileInfo.url;
                         updateData.telegram_file_id = fileInfo.file_id;
+                        updateData.content_type = detectContentTypeFromFile(uploadedFileForEdit, updateData.content_type);
                         showSuccess('تم رفع الملف الجديد بنجاح');
                     } catch(error) {
                         showError('فشل رفع الملف: ' + error.message);
@@ -6850,6 +6916,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (internalUrl) {
                         updateData.internal_url = internalUrl;
                         updateData.download_url = downloadUrl || internalUrl;
+                        updateData.content_type = contentTypeFromName(internalUrl) || updateData.content_type;
                     }
                 }
                 
