@@ -1,3 +1,13 @@
+// إعدادات مهمة: تعطيل حد الاستجابة الداخلي لـ Next.js (لا يلغي حد Vercel، لكنه ضروري)
+// ورفع مدة التنفيذ للملفات الكبيرة/الاتصال البطيء (متاح على Pro، وعلى Hobby الحد الأقصى 60 ثانية أيضاً منذ التحديثات الأخيرة - تحقق من خطتك)
+export const config = {
+  api: {
+    responseLimit: false,
+  },
+};
+
+export const maxDuration = 30;
+
 export default async function handler(req, res) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const { file_id, filename, dl } = req.query;
@@ -14,16 +24,15 @@ export default async function handler(req, res) {
     );
     const getFileData = await getFileRes.json();
     if (!getFileData.ok) {
-      return res.status(404).json({ error: 'File not found' });
+      return res.status(404).json({ error: 'File not found', details: getFileData.description || null });
     }
     const filePath = getFileData.result.file_path || '';
     const fileRes = await fetch(`https://api.telegram.org/file/bot${token}/${filePath}`);
-    if (!fileRes.ok) {
-      return res.status(502).json({ error: 'Failed to fetch file' });
+    if (!fileRes.ok || !fileRes.body) {
+      return res.status(502).json({ error: 'Failed to fetch file from Telegram' });
     }
-    const buffer = Buffer.from(await fileRes.arrayBuffer());
 
-    // --- خريطة الامتداد -> نوع المحتوى (موسّعة لتغطي كل الأنواع المدعومة في الواجهة) ---
+    // --- خريطة الامتداد -> نوع المحتوى ---
     const extToType = {
       '.jpg': 'image/jpeg',
       '.jpeg': 'image/jpeg',
@@ -32,60 +41,93 @@ export default async function handler(req, res) {
       '.webp': 'image/webp',
       '.bmp': 'image/bmp',
       '.heic': 'image/heic',
-      '.pdf': 'application/pdf'
+      '.pdf': 'application/pdf',
     };
 
-    var extMatch = filePath.match(/\.[a-zA-Z0-9]+$/);
-    var extLower = extMatch ? extMatch[0].toLowerCase() : '';
+    const extMatch = filePath.match(/\.[a-zA-Z0-9]+$/);
+    const extLower = extMatch ? extMatch[0].toLowerCase() : '';
 
-    // 1) الأولوية لرأس Content-Type القادم فعلياً من خادم تيليجرام (الأكثر موثوقية)
-    var telegramContentType = (fileRes.headers.get('content-type') || '').toLowerCase().split(';')[0].trim();
-    var contentType = null;
-    if (telegramContentType && (telegramContentType.startsWith('image/') || telegramContentType === 'application/pdf')) {
+    const telegramContentType = (fileRes.headers.get('content-type') || '')
+      .toLowerCase()
+      .split(';')[0]
+      .trim();
+
+    let contentType = null;
+    if (
+      telegramContentType &&
+      (telegramContentType.startsWith('image/') || telegramContentType === 'application/pdf')
+    ) {
       contentType = telegramContentType;
     }
-
-    // 2) إن لم يتوفر رأس موثوق، استخدم امتداد المسار عبر الخريطة الموسّعة
     if (!contentType && extLower && extToType[extLower]) {
       contentType = extToType[extLower];
     }
-
-    // 3) لا تفترض PDF افتراضياً بعد الآن — استخدم نوعاً عاماً بدل الإيهام بأنه PDF
     if (!contentType) {
       contentType = 'application/octet-stream';
     }
 
-    var ext = extLower || (contentType === 'application/pdf' ? '.pdf' : (extToType[Object.keys(extToType).find(function(k){return extToType[k] === contentType;})] ? extMatch[0] : ''));
-    // حساب امتداد بديل بناءً على contentType إن لم يوجد في المسار
+    let ext = extLower;
     if (!ext) {
-      var typeToExt = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/gif': '.gif', 'image/webp': '.webp', 'image/bmp': '.bmp', 'image/heic': '.heic', 'application/pdf': '.pdf' };
+      const typeToExt = {
+        'image/jpeg': '.jpg',
+        'image/png': '.png',
+        'image/gif': '.gif',
+        'image/webp': '.webp',
+        'image/bmp': '.bmp',
+        'image/heic': '.heic',
+        'application/pdf': '.pdf',
+      };
       ext = typeToExt[contentType] || '';
     }
 
-    res.setHeader('Content-Type', contentType);
-    res.setHeader('Cache-Control', 'public, max-age=3600');
-
-    // --- الاسم الأصلي (قد يحتوي عربية) مع ضمان وجود الامتداد ---
-    var rawName = (filename && String(filename).trim()) ? String(filename).trim() : ('file' + ext);
+    // --- بناء اسم الملف مع الامتداد ---
+    let rawName = filename && String(filename).trim() ? String(filename).trim() : 'file' + ext;
     if (ext && !rawName.toLowerCase().endsWith(ext.toLowerCase())) {
       rawName += ext;
     }
-    // إزالة أي علامات اقتباس قد تكسر رأس الـ HTTP
     rawName = rawName.replace(/["\r\n]/g, '');
-    // --- اسم احتياطي بالإنجليزية فقط (للمتصفحات القديمة التي لا تدعم filename*) ---
-    var asciiFallback = rawName.replace(/[^\x20-\x7E]/g, '_').replace(/_+/g, '_').trim();
+
+    let asciiFallback = rawName.replace(/[^\x20-\x7E]/g, '_').replace(/_+/g, '_').trim();
     if (!asciiFallback || asciiFallback === ext) asciiFallback = 'file' + ext;
     if (ext && !asciiFallback.toLowerCase().endsWith(ext.toLowerCase())) {
       asciiFallback += ext;
     }
-    // المتصفحات الحديثة تعتمد على filename* (وتحافظ على الاسم العربي كاملاً)
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=3600');
     res.setHeader(
       'Content-Disposition',
       `${disposition}; filename="${asciiFallback}"; filename*=UTF-8''${encodeURIComponent(rawName)}`
     );
-    return res.status(200).send(buffer);
+
+    // مرّر طول المحتوى إن كان متوفراً من تيليجرام (يساعد المتصفح/pdf.js على معرفة التقدم)
+    const contentLength = fileRes.headers.get('content-length');
+    if (contentLength) {
+      res.setHeader('Content-Length', contentLength);
+    }
+
+    // ===== الإصلاح الجوهري: بث الملف مباشرة بدل تجميعه في Buffer =====
+    // تجميع الملف بالكامل في الذاكرة قبل الإرسال (buffer.send) يجعل الاستجابة
+    // "غير مبثوثة" فيصطدم بحد Vercel الصارم 4.5MB على أي رد. البث المباشر
+    // (streaming) هو الحل الرسمي الذي توصي به Vercel لتفادي هذا الحد.
+    const { Readable } = await import('node:stream');
+    const nodeStream = Readable.fromWeb(fileRes.body);
+
+    nodeStream.on('error', (streamErr) => {
+      console.error('telegram-file stream error:', streamErr);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Stream error' });
+      } else {
+        res.end();
+      }
+    });
+
+    nodeStream.pipe(res);
   } catch (err) {
     console.error('telegram-file error:', err);
-    return res.status(500).json({ error: 'Internal server error' });
+    if (!res.headersSent) {
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+    res.end();
   }
 }
