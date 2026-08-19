@@ -10,7 +10,7 @@ export const maxDuration = 30;
 
 export default async function handler(req, res) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const { file_id, filename, dl } = req.query;
+  const { file_id, filename, dl, type: typeHint } = req.query;
   const disposition = dl === '1' ? 'attachment' : 'inline';
   if (!token) {
     return res.status(500).json({ error: 'TELEGRAM_BOT_TOKEN not set' });
@@ -52,8 +52,17 @@ export default async function handler(req, res) {
       .split(';')[0]
       .trim();
 
+    // ===== إصلاح جوهري: تلميح النوع القادم من الواجهة له الأولوية القصوى =====
+    // مسار الملف (file_path) القادم من تيليجرام لا يحتوي دائماً على الامتداد
+    // الصحيح لملفات sendDocument، وContent-Type القادم من خادم تيليجرام قد
+    // يكون غير موثوق أيضاً. الواجهة الأمامية تعرف مسبقاً (من نوع الدرس نفسه:
+    // 'pdf' أو 'image') ما هو الملف فعلياً، لذا هذا التلميح هو المصدر الأكثر
+    // موثوقية ويجب أن يُغلّب على أي استنتاج آخر لتفادي تنزيل ملف بلا امتداد
+    // (وهو ما كان يسبب ظهور نافذة "تعذّر إيجاد برنامج لفتح هذا الملف" في ويندوز).
     let contentType = null;
-    if (
+    if (typeHint === 'pdf') {
+      contentType = 'application/pdf';
+    } else if (
       telegramContentType &&
       (telegramContentType.startsWith('image/') || telegramContentType === 'application/pdf')
     ) {
@@ -61,6 +70,9 @@ export default async function handler(req, res) {
     }
     if (!contentType && extLower && extToType[extLower]) {
       contentType = extToType[extLower];
+    }
+    if (!contentType && typeHint === 'image') {
+      contentType = 'image/jpeg'; // افتراض معقول لصورة عند تعذّر أي استنتاج آخر
     }
     if (!contentType) {
       contentType = 'application/octet-stream';
@@ -100,11 +112,16 @@ export default async function handler(req, res) {
       `${disposition}; filename="${asciiFallback}"; filename*=UTF-8''${encodeURIComponent(rawName)}`
     );
 
-    // مرّر طول المحتوى إن كان متوفراً من تيليجرام (يساعد المتصفح/pdf.js على معرفة التقدم)
-    const contentLength = fileRes.headers.get('content-length');
-    if (contentLength) {
-      res.setHeader('Content-Length', contentLength);
-    }
+    // ملاحظة مهمة: تعمّدنا عدم تعيين Content-Length يدوياً هنا. إن قامت طبقة
+    // الشبكة/Vercel بضغط الاستجابة (gzip/br) أثناء البث، يصبح الحجم الفعلي
+    // المُرسل مختلفاً عن القيمة المُعلَنة من تيليجرام، فيتوقف المتصفح عند الرقم
+    // الخاطئ وينتج ملف PDF تالف/ناقص عند التحميل عبر <a download> — رغم أن
+    // العرض المباشر عبر pdf.js قد يبدو يعمل لأنه يقرأ البيانات بمنطق مختلف
+    // (لا يعتمد على تطابق Content-Length). البث المجزأ (chunked) يتولى تحديد
+    // الحجم تلقائياً عند عدم تحديده يدوياً.
+    // كما نمنع أي ضغط إضافي على ملف PDF (مضغوط أصلاً بصيغته) لتفادي أي تلاعب
+    // بالبايتات أثناء النقل.
+    res.setHeader('Content-Encoding', 'identity');
 
     // ===== الإصلاح الجوهري: بث الملف مباشرة بدل تجميعه في Buffer =====
     // تجميع الملف بالكامل في الذاكرة قبل الإرسال (buffer.send) يجعل الاستجابة
