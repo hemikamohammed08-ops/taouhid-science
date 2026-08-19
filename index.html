@@ -2073,7 +2073,10 @@ function normalizeEmail(email) {
     return (email || '').trim().toLowerCase();
 }
 var LESSONS_PER_PAGE = 10;
-var MAX_FILE_SIZE = 10 * 1024 * 1024;
+// ملاحظة: الحد مضبوط على 4MB لأن استضافة Vercel تفرض حداً بنيوياً صارماً 4.5MB
+// على حجم أي طلب/رد لدالة Serverless، ولا يمكن تجاوزه من الكود. لدعم ملفات أكبر
+// يلزم تغيير معماري (رفع مباشر لتخزين خارجي مثل Vercel Blob بدل تمرير الملف عبر الدالة).
+var MAX_FILE_SIZE = 4 * 1024 * 1024;
 var CONTACT_MESSAGES_PATH = 'contact_messages';
 var sortOrder = 'desc';
 var sessionId = null;
@@ -3534,7 +3537,7 @@ function handleFileSelect(event, inputId) {
     }
     
     if (file.size > MAX_FILE_SIZE) {
-        showWarning('⚠️ حجم الملف كبير جداً. الحد الأقصى هو 10 ميجابايت');
+        showWarning('⚠️ حجم الملف كبير جداً. الحد الأقصى هو 4 ميجابايت');
         event.target.value = '';
         return;
     }
@@ -3607,16 +3610,18 @@ async function uploadFileToTelegram(file, caption) {
     }
     
     try {
-        var base64 = await fileToBase64(file);
+        // إرسال الملف كبيانات خام (raw binary) بدل JSON+Base64:
+        // يلغي تضخيم Base64 (~37%) ويتفادى حد bodyParser الافتراضي لـ Next.js (1MB)،
+        // مما يرفع السقف الفعلي لحجم الملف المدعوم قرب حد Vercel البنيوي (4.5MB).
         var response = await fetch('/api/proxy', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                caption: caption,
-                file_base64: base64,
-                file_name: file.name,
-                file_type: file.type
-            })
+            headers: {
+                'Content-Type': file.type || 'application/octet-stream',
+                'X-File-Name': encodeURIComponent(file.name || 'file'),
+                'X-File-Type': file.type || 'application/octet-stream',
+                'X-Caption': encodeURIComponent(caption || '')
+            },
+            body: file
         });
         
         if (progressEl) progressEl.classList.remove('active');
