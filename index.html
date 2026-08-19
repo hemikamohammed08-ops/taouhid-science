@@ -3639,7 +3639,7 @@ async function uploadFileToTelegram(file, caption) {
         } else { throw new Error('لم يتم العثور على الملف في الرد'); }
         
         return {
-            url: getFreshTelegramUrl(fileId, fileName),
+            url: getFreshTelegramUrl(fileId, fileName, false, file.type === 'application/pdf' ? 'pdf' : 'image'),
             file_id: fileId,
             name: fileName,
             size: fileSize,
@@ -3672,11 +3672,14 @@ function forceDownload(url, filename) {
 }
 window.forceDownload = forceDownload;
 
-function getFreshTelegramUrl(file_id, filename, forceDownload) {
+function getFreshTelegramUrl(file_id, filename, forceDownload, type) {
     if (!file_id) return null;
     var u = window.location.origin + '/api/telegram-file?file_id=' + encodeURIComponent(file_id);
     if (filename) u += '&filename=' + encodeURIComponent(filename);
     if (forceDownload) u += '&dl=1';
+    // تلميح موثوق بنوع الملف (pdf/image) معروف من سياق الدرس نفسه في الواجهة،
+    // يُستخدم كأولوية على الخادم عند تعذّر استنتاج الامتداد من مسار تيليجرام
+    if (type === 'pdf' || type === 'image') u += '&type=' + type;
     return u;
 }
 
@@ -4401,8 +4404,8 @@ async function showLessonContent(id, title, url, download, type, fileId) {
     var freshDownload = download;
     if (fileId) {
         try {
-            freshUrl = getFreshTelegramUrl(fileId, title, false);
-            freshDownload = getFreshTelegramUrl(fileId, title, true);
+            freshUrl = getFreshTelegramUrl(fileId, title, false, type);
+            freshDownload = getFreshTelegramUrl(fileId, title, true, type);
             if (!freshUrl) {
                 freshUrl = url;
                 freshDownload = download;
