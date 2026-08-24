@@ -2067,7 +2067,7 @@ var lessonsLoadRequestId = 0;
 // يصبح true فقط بعد أول تحميل ناجح فعلي من Firebase (وليس بيانات افتراضية) — يُستخدم لمنع أي مسار خطأ من محو دروس محمّلة فعلاً
 var lessonsEverLoadedFromServer = false;
 // رقم إصدار المنصة — يُستخدم لإشعار المستخدمين المتصلين بوجود تحديث جديد مباشرة (بدون الحاجة لإعادة زيارة الموقع يدوياً)
-var CURRENT_APP_VERSION = '5.5';
+var CURRENT_APP_VERSION = '5.6';
 var lockSettings = null;
 var countdownTargetDate = null;
 var registrationSettings = null;
@@ -4970,6 +4970,14 @@ async function loadDataFromFirebase() {
             secureLessons = secureSnapshot.val() || {};
         } catch (secureError) {
             secureLessons = {};
+        }
+
+        // فحص ثانٍ للرقم التسلسلي: قد يصل طلب أحدث ويكتمل بالكامل أثناء انتظارنا لـ lessons_secure
+        // أعلاه (لأنه await ثانٍ ومنفصل). بدون هذا الفحص الثاني، نتيجة قديمة وربما غير مكتملة
+        // قد تصل متأخرة فتكتب فوق بيانات أحدث وصحيحة، فتظهر الدروس/الروابط أحياناً وتختفي أحياناً
+        // أخرى بشكل عشوائي حسب توقيت الشبكة — وهو تحديداً العرض الذي كان يظهر.
+        if (myRequestId !== lessonsLoadRequestId) {
+            return true;
         }
 
         var newPlatformData = getDefaultPlatformData();
