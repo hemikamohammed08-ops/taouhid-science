@@ -1955,6 +1955,10 @@
                 <button id="repairLegacyKeysBtn" style="background:#6366f1; color:white; border:none; padding:8px 18px; border-radius:20px; cursor:pointer; font-weight:700; min-height:40px;">🛠️ إصلاح حسابات الأعضاء القدامى</button>
                 <span id="repairLegacyKeysResult" style="font-size:0.75rem; color:var(--text-secondary);"></span>
             </div>
+            <div style="margin-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <button id="announceUpdateBtn" style="background:var(--secondary); color:#1a4a8a; border:none; padding:8px 18px; border-radius:20px; cursor:pointer; font-weight:800; min-height:40px;">🚀 نشر إشعار تحديث للمستخدمين</button>
+                <span style="font-size:0.7rem; color:var(--text-secondary);">يظهر فوراً لكل من هو متصل بالمنصة الآن</span>
+            </div>
         </div>
     </div>
 
@@ -2058,6 +2062,12 @@ var lessonNotifications = [];
 var unreadNotificationsCount = 0;
 var dataLoaded = false;
 var platformData = null;
+// حارس السباق (race guard): يمنع استجابة قديمة متأخرة من الكتابة فوق بيانات أحدث منها
+var lessonsLoadRequestId = 0;
+// يصبح true فقط بعد أول تحميل ناجح فعلي من Firebase (وليس بيانات افتراضية) — يُستخدم لمنع أي مسار خطأ من محو دروس محمّلة فعلاً
+var lessonsEverLoadedFromServer = false;
+// رقم إصدار المنصة — يُستخدم لإشعار المستخدمين المتصلين بوجود تحديث جديد مباشرة (بدون الحاجة لإعادة زيارة الموقع يدوياً)
+var CURRENT_APP_VERSION = '5.5';
 var lockSettings = null;
 var countdownTargetDate = null;
 var registrationSettings = null;
@@ -4738,6 +4748,13 @@ function updateUserInterface() {
             updateStats();
         });
     }
+    
+    var announceUpdateBtn = document.getElementById('announceUpdateBtn');
+    if (announceUpdateBtn) {
+        // onclick بدل addEventListener هنا عمداً لأن updateUserInterface() قد تُستدعى عدة مرات،
+        // فنتجنب تراكم أكثر من مستمع على نفس الزر يتسبب في نشر الإشعار عدة مرات بضغطة واحدة
+        announceUpdateBtn.onclick = announcePlatformUpdate;
+    }
 
     var teacherGear = document.getElementById('teacherGearIcon');
     var adminGear = document.getElementById('adminGearIcon');
@@ -4921,50 +4938,97 @@ async function loadDataFromFirebase() {
         return; 
     }
     
+    // المشكلة 6: إصلاح اختفاء الدروس — كانت هناك عدة مصادر تُطلق إعادة تحميل الدروس في نفس
+    // الوقت (المستمع الفوري database.ref('lessons').on('value') + النداءات اليدوية بعد
+    // إضافة/تعديل/حذف درس). عند تداخل طلبين، كان الطلب الذي يصل متأخراً (بسبب شبكة أبطأ)
+    // يكتب فوق بيانات أحدث منه فتظهر المنصة وكأن الدروس اختفت فجأة رغم وجودها في القاعدة.
+    // الحل: نمنح كل طلب رقماً تسلسلياً، ونتجاهل أي نتيجة لا تحمل آخر رقم صادر عند وصولها.
+    var myRequestId = ++lessonsLoadRequestId;
+    
     try {
         var snapshot = await database.ref('lessons').once('value');
+
+        if (myRequestId !== lessonsLoadRequestId) {
+            // وصل طلب أحدث واستُخدمت نتيجته بالفعل — نتجاهل هذه النتيجة القديمة بدل أن تمحو البيانات الصحيحة
+            return true;
+        }
+
         var lessons = snapshot.val() || {};
-        platformData = getDefaultPlatformData();
+
+        // إصلاح جذري لمشكلة عدم ظهور الدروس: قواعد قاعدة البيانات (Firebase Rules) لا تسمح
+        // بقراءة عقدة 'lessons' كاملة إلا لمن يملك صلاحية '.read' على العقدة نفسها أو على عقدة
+        // أعلى منها. منح '.read' على حقول فرعية فقط (title, stage, ...) لا يفيد إطلاقاً عند
+        // القراءة الجماعية عبر database.ref('lessons').once('value')، لأن قواعد Firebase لا
+        // "تُصفّي" النتائج — إما أن تُمنح القراءة على المسار المطلوب بالكامل أو تُرفض بالكامل.
+        // لذلك تم فصل البيانات الحساسة (روابط الملفات) إلى عقدة منفصلة 'lessons_secure' يُسمح
+        // بقراءتها فقط للأعضاء المعتمدين والأساتذة، بينما تبقى عقدة 'lessons' عامة القراءة.
+        // هنا نحاول تحميل 'lessons_secure' ودمجها؛ إن رُفض الإذن (زائر غير مسجّل) نتجاهل الخطأ
+        // بصمت ونعرض الدروس بدون أزرار المشاهدة/التحميل بدل أن تختفي القائمة كلها.
+        var secureLessons = {};
+        try {
+            var secureSnapshot = await database.ref('lessons_secure').once('value');
+            secureLessons = secureSnapshot.val() || {};
+        } catch (secureError) {
+            secureLessons = {};
+        }
+
+        var newPlatformData = getDefaultPlatformData();
         
         for (var lessonId in lessons) {
             var lesson = lessons[lessonId];
+            var secure = secureLessons[lessonId] || {};
             if (lesson && lesson.stage && lesson.subject && lesson.lesson_type) {
                 var lessonData = { 
                     id: lessonId, 
                     title: lesson.title, 
                     platform: lesson.platform,
                     external_url: lesson.external_url, 
-                    internal_url: lesson.internal_url || '',
-                    download_url: lesson.download_url || '', 
+                    internal_url: secure.internal_url || '',
+                    download_url: secure.download_url || '', 
                     content_type: lesson.content_type,
-                    file_info: lesson.file_info || null,
-                    telegram_file_id: lesson.telegram_file_id || null,
+                    file_info: secure.file_info || null,
+                    telegram_file_id: secure.telegram_file_id || null,
                     created_at: lesson.created_at || new Date().toISOString()
                 };
                 
-                if (lesson.stage === 'primary' && lesson.substage && platformData.primary[lesson.substage] &&
-                    platformData.primary[lesson.substage].subjects[lesson.subject]) {
-                    if (platformData.primary[lesson.substage].subjects[lesson.subject][lesson.lesson_type])
-                        platformData.primary[lesson.substage].subjects[lesson.subject][lesson.lesson_type].push(lessonData);
-                } else if (lesson.stage === 'middle' && lesson.year && platformData.middle.subjectsByYear[lesson.year] &&
-                    platformData.middle.subjectsByYear[lesson.year][lesson.subject]) {
-                    if (platformData.middle.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type])
-                        platformData.middle.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type].push(lessonData);
-                } else if (lesson.stage === 'high' && lesson.year && platformData.high.subjectsByYear[lesson.year] &&
-                    platformData.high.subjectsByYear[lesson.year][lesson.subject]) {
-                    if (platformData.high.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type])
-                        platformData.high.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type].push(lessonData);
+                if (lesson.stage === 'primary' && lesson.substage && newPlatformData.primary[lesson.substage] &&
+                    newPlatformData.primary[lesson.substage].subjects[lesson.subject]) {
+                    if (newPlatformData.primary[lesson.substage].subjects[lesson.subject][lesson.lesson_type])
+                        newPlatformData.primary[lesson.substage].subjects[lesson.subject][lesson.lesson_type].push(lessonData);
+                } else if (lesson.stage === 'middle' && lesson.year && newPlatformData.middle.subjectsByYear[lesson.year] &&
+                    newPlatformData.middle.subjectsByYear[lesson.year][lesson.subject]) {
+                    if (newPlatformData.middle.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type])
+                        newPlatformData.middle.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type].push(lessonData);
+                } else if (lesson.stage === 'high' && lesson.year && newPlatformData.high.subjectsByYear[lesson.year] &&
+                    newPlatformData.high.subjectsByYear[lesson.year][lesson.subject]) {
+                    if (newPlatformData.high.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type])
+                        newPlatformData.high.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type].push(lessonData);
+                } else {
+                    // درس بحقول غير مطابقة للبنية المتوقعة (مثلاً مادة/مرحلة جديدة أُضيفت يدوياً في القاعدة) —
+                    // نسجّل تحذيراً بدل تجاهله بصمت، لأن هذا كان سبباً خفياً لظهور "دروس مفقودة" دون أي رسالة خطأ
+                    console.warn('⚠️ درس لم يتم إدراجه في القائمة لعدم تطابق بنيته المتوقعة:', lessonId, lesson);
                 }
             }
         }
         
+        // لا نستبدل platformData إلا بعد اكتمال بناء النسخة الجديدة بالكامل بنجاح
+        platformData = newPlatformData;
         dataLoaded = true;
+        lessonsEverLoadedFromServer = true;
         updateStats();
         return true;
         
     } catch(error) {
         console.error('Error loading lessons:', error);
-        platformData = getDefaultPlatformData();
+        if (myRequestId !== lessonsLoadRequestId) {
+            // نتيجة قديمة فشلت بعد أن نجح طلب أحدث بالفعل — لا نلمس platformData الحالية الصحيحة
+            return false;
+        }
+        // لا نمحو دروساً محمّلة فعلاً من قبل بسبب خطأ عابر في الشبكة (مثل خطأ في تحديث لاحق) —
+        // نحافظ على آخر بيانات ناجحة ونكتفي بالتحذير، بدل استبدالها ببيانات افتراضية فارغة
+        if (!lessonsEverLoadedFromServer) {
+            platformData = getDefaultPlatformData();
+        }
         dataLoaded = true;
         updateStats();
         return false;
@@ -5014,22 +5078,26 @@ async function addNewLesson() {
     };
     if (currentStage === 'primary') lessonData.substage = currentSubStage;
     else lessonData.year = currentYear;
-    
+
+    // بيانات حساسة (روابط الملفات) تُكتب في عقدة منفصلة 'lessons_secure' لأن قواعد القراءة
+    // تمنع أي عضو غير معتمد من الاطلاع عليها، بينما تبقى بيانات الدرس العامة في 'lessons'
+    var secureData = {};
+
     if (lessonType === 'pdf' || lessonType === 'image') {
         if (uploadedFile) {
             try {
                 showInfo('⏳ جاري رفع الملف إلى Telegram...');
                 var fileInfo = await uploadFileToTelegram(uploadedFile, title);
-                lessonData.file_info = {
+                secureData.file_info = {
                     url: fileInfo.url,
                     file_id: fileInfo.file_id,
                     name: fileInfo.name,
                     size: fileInfo.size,
                     type: fileInfo.type
                 };
-                lessonData.internal_url = fileInfo.url;
-                lessonData.download_url = fileInfo.url;
-                lessonData.telegram_file_id = fileInfo.file_id;
+                secureData.internal_url = fileInfo.url;
+                secureData.download_url = fileInfo.url;
+                secureData.telegram_file_id = fileInfo.file_id;
                 showSuccess('✅ تم رفع الملف إلى Telegram بنجاح! 🚀');
             } catch(error) {
                 showError('❌ فشل رفع الملف: ' + error.message);
@@ -5041,8 +5109,8 @@ async function addNewLesson() {
                 showWarning('⚠️ الرجاء إما اختيار ملف للرفع أو إدخال رابط مباشر'); 
                 return; 
             }
-            lessonData.internal_url = internalUrl;
-            lessonData.download_url = document.getElementById('newLessonDownloadUrl').value.trim() || internalUrl;
+            secureData.internal_url = internalUrl;
+            secureData.download_url = document.getElementById('newLessonDownloadUrl').value.trim() || internalUrl;
         }
     } else {
         var externalUrl = document.getElementById('newLessonExternalUrl').value.trim();
@@ -5053,7 +5121,12 @@ async function addNewLesson() {
     
     var lessonId = getLessonId();
     try {
-        await database.ref('lessons/' + lessonId).set(lessonData);
+        var updates = {};
+        updates['lessons/' + lessonId] = lessonData;
+        if (Object.keys(secureData).length > 0) {
+            updates['lessons_secure/' + lessonId] = secureData;
+        }
+        await database.ref().update(updates);
     } catch (error) {
         showError('❌ فشل حفظ الدرس في قاعدة البيانات: ' + error.message);
         return;
@@ -5081,7 +5154,10 @@ async function deleteLesson(id) {
     
     showConfirmDialog('⚠️ هل أنت متأكد من حذف هذا الدرس؟\nلا يمكن استعادة البيانات بعد الحذف!', async function() {
         try {
-            await database.ref('lessons/' + id).remove();
+            var deleteUpdates = {};
+            deleteUpdates['lessons/' + id] = null;
+            deleteUpdates['lessons_secure/' + id] = null;
+            await database.ref().update(deleteUpdates);
             logSecurityEvent('lesson_deleted', { lessonId: id });
             showSuccess('تم حذف الدرس بنجاح');
             await loadDataFromFirebase();
@@ -6539,6 +6615,91 @@ function renderLessonsList() {
 }
 
 // ============================================================
+// ===== دعم لوحة المفاتيح: تسجيل الدخول بزر Enter =====
+// ============================================================
+// يعمل على أي نافذة منبثقة (login/register) تحتوي حقول إدخال — يضغط المستخدم Enter
+// داخل أي حقل نصي فتُنفَّذ نفس عملية زر "تسجيل الدخول / إرسال الطلب" الرئيسي في تلك النافذة،
+// دون الحاجة للمس الفأرة. يعمل بشكل عام على كل النوافذ الحالية والمستقبلية دون ربط يدوي لكل واحدة.
+function setupEnterKeySubmit() {
+    document.addEventListener('keydown', function(e) {
+        if (e.key !== 'Enter') return;
+        var target = e.target;
+        if (!target || target.tagName !== 'INPUT') return;
+        if (target.type === 'checkbox' || target.type === 'radio' || target.type === 'button') return;
+        
+        var modal = target.closest('.modal-overlay');
+        if (!modal || !modal.classList.contains('active')) return;
+        
+        e.preventDefault();
+        
+        // نبحث عن زر "تسجيل الدخول" أو "إرسال الطلب" داخل نفس النافذة، مع استبعاد أزرار الإلغاء/الإغلاق
+        var candidates = modal.querySelectorAll('button[id$="LoginBtn"], button[id$="SubmitBtn"]');
+        var submitBtn = null;
+        for (var i = 0; i < candidates.length; i++) {
+            if (candidates[i].id.indexOf('close') !== 0 && !candidates[i].disabled) {
+                submitBtn = candidates[i];
+                break;
+            }
+        }
+        if (submitBtn) submitBtn.click();
+    });
+}
+
+// ============================================================
+// ===== إشعار التحديثات المباشر (Live Update Notification) =====
+// ============================================================
+// عند نشر تحسينات جديدة على المنصة، يضغط المسؤول زر "نشر إشعار تحديث" من لوحة التحكم — فيتم
+// كتابة رقم/وقت الإصدار في settings/appVersion. جميع المستخدمين المتصلين حالياً يستلمون هذا
+// التحديث فوراً عبر الاستماع اللحظي (realtime) ويظهر لهم شريط علوي لإعادة تحميل الصفحة والحصول
+// على أحدث نسخة، بدل انتظارهم اكتشاف التحسينات بالصدفة.
+function setupLiveUpdateNotifications() {
+    if (!database) return;
+    try {
+        database.ref('settings/appVersion').on('value', function(snap) {
+            var latest = snap.val();
+            if (latest && String(latest) !== CURRENT_APP_VERSION) {
+                showUpdateAvailableBanner();
+            }
+        });
+    } catch(e) { console.error('Error listening for app updates:', e); }
+}
+
+function showUpdateAvailableBanner() {
+    if (document.getElementById('appUpdateBanner')) return;
+    var banner = document.createElement('div');
+    banner.id = 'appUpdateBanner';
+    banner.setAttribute('role', 'status');
+    banner.style.cssText = 'position:fixed; top:0; left:0; right:0; z-index:100000; background:var(--secondary); color:#1a4a8a; padding:10px 16px; text-align:center; font-family:"Tajawal",sans-serif; font-weight:800; font-size:0.85rem; display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap; box-shadow:var(--shadow-md);';
+    banner.innerHTML = '<span>🚀 يتوفر تحديث جديد وتحسينات على المنصة</span>' +
+        '<button id="appUpdateReloadBtn" style="background:#1a4a8a; color:white; border:none; padding:6px 18px; border-radius:20px; cursor:pointer; font-weight:800; font-size:0.8rem;">🔄 تحديث الآن</button>' +
+        '<button id="appUpdateDismissBtn" style="background:transparent; color:#1a4a8a; border:1px solid #1a4a8a; padding:6px 14px; border-radius:20px; cursor:pointer; font-weight:700; font-size:0.8rem;">لاحقاً</button>';
+    document.body.appendChild(banner);
+    document.getElementById('appUpdateReloadBtn').addEventListener('click', function() {
+        location.reload();
+    });
+    document.getElementById('appUpdateDismissBtn').addEventListener('click', function() {
+        banner.remove();
+    });
+}
+
+// يستخدمها المسؤول (الأستاذ محمد) فقط لنشر إشعار تحديث فوري لكل المستخدمين المتصلين حالياً
+async function announcePlatformUpdate() {
+    if (!isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) {
+        showError('غير مصرح لك - هذه الصلاحية للمسؤول فقط');
+        return;
+    }
+    if (!await validateSession()) return;
+    try {
+        await database.ref('settings/appVersion').set(Date.now().toString());
+        showSuccess('✅ تم نشر إشعار التحديث لجميع المستخدمين المتصلين الآن');
+        logSecurityEvent('platform_update_announced', { by: currentUser.email });
+    } catch(e) {
+        showError('❌ تعذر نشر إشعار التحديث: ' + e.message);
+    }
+}
+window.announcePlatformUpdate = announcePlatformUpdate;
+
+// ============================================================
 // ===== دوال ربط الأزرار =====
 // ============================================================
 
@@ -6848,29 +7009,28 @@ document.addEventListener('DOMContentLoaded', function() {
         confirmEditInternalBtn.addEventListener('click', async function() {
             if (!isAdminMode) { showError('غير مصرح لك - هذه الصلاحية للأستاذ فقط'); return; }
             if (editingInternalLessonId) {
-                var snapshot = await database.ref('lessons/' + editingInternalLessonId).once('value');
-                var currentLesson = snapshot.val() || {};
-                
                 var updateData = {
                     title: document.getElementById('editInternalTitle').value,
                     content_type: document.getElementById('editInternalType').value,
                     updated_at: new Date().toISOString(),
                     updated_by: currentUser?.email || 'unknown'
                 };
+                // الحقول الحساسة (روابط الملفات) تُحدَّث في عقدة 'lessons_secure' المنفصلة
+                var secureUpdateData = {};
                 
                 if (uploadedFileForEdit) {
                     try {
                         var fileInfo = await uploadFileToTelegram(uploadedFileForEdit, document.getElementById('editInternalTitle').value);
-                        updateData.file_info = {
+                        secureUpdateData.file_info = {
                             url: fileInfo.url,
                             file_id: fileInfo.file_id,
                             name: fileInfo.name,
                             size: fileInfo.size,
                             type: fileInfo.type
                         };
-                        updateData.internal_url = fileInfo.url;
-                        updateData.download_url = fileInfo.url;
-                        updateData.telegram_file_id = fileInfo.file_id;
+                        secureUpdateData.internal_url = fileInfo.url;
+                        secureUpdateData.download_url = fileInfo.url;
+                        secureUpdateData.telegram_file_id = fileInfo.file_id;
                         showSuccess('تم رفع الملف الجديد بنجاح');
                     } catch(error) {
                         showError('فشل رفع الملف: ' + error.message);
@@ -6880,13 +7040,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     var internalUrl = document.getElementById('editInternalUrl').value.trim();
                     var downloadUrl = document.getElementById('editInternalDownload').value.trim();
                     if (internalUrl) {
-                        updateData.internal_url = internalUrl;
-                        updateData.download_url = downloadUrl || internalUrl;
+                        secureUpdateData.internal_url = internalUrl;
+                        secureUpdateData.download_url = downloadUrl || internalUrl;
                     }
                 }
                 
                 try {
+                    // نستخدم update() (لا set()) كي لا نمحو الحقول الأخرى (stage, subject...)
                     await database.ref('lessons/' + editingInternalLessonId).update(updateData);
+                    if (Object.keys(secureUpdateData).length > 0) {
+                        await database.ref('lessons_secure/' + editingInternalLessonId).update(secureUpdateData);
+                    }
                 } catch (error) {
                     showError('❌ فشل حفظ التعديل في قاعدة البيانات: ' + error.message);
                     return;
@@ -7182,14 +7346,19 @@ async function init() {
         }
         
         var dataLoadedFlag = false;
+        // المشكلة 6 (تتمة): كان هذا المؤقّت يفرض بيانات افتراضية فارغة بعد 8 ثوانٍ فقط إن لم
+        // تكتمل الشبكة بعد — وإذا وصلت البيانات الحقيقية لاحقاً (شبكة بطيئة، لا خطأ فعلي)، كانت
+        // الدروس التي ظهرت قبل قليل "تختفي" أمام المستخدم بلا سبب واضح. الآن: لا نستبدل بيانات
+        // حقيقية سبق تحميلها بنجاح، ونكتفي بعرض تنبيه للانتظار دون تفريغ الشاشة.
         var dataTimeout = setTimeout(function() {
             if (!dataLoadedFlag) {
-                
-                platformData = getDefaultPlatformData();
                 dataLoadedFlag = true;
-                refreshCurrentView();
+                if (!lessonsEverLoadedFromServer) {
+                    platformData = getDefaultPlatformData();
+                    refreshCurrentView();
+                }
                 updateStats();
-                showWarning('تم تحميل البيانات الافتراضية بسبب بطء الاتصال');
+                showWarning('الاتصال بطيء، يتم تحميل البيانات في الخلفية...');
             }
         }, 8000);
         
@@ -7204,19 +7373,27 @@ async function init() {
             dataLoadedFlag = true;
             clearTimeout(dataTimeout);
             console.log('✅ تم تحميل البيانات بنجاح');
+            refreshCurrentView();
+            updateStats();
             setInterval(updateCountdown, 1000);
         } catch(error) {
             console.error('❌ خطأ في تحميل البيانات:', error);
-            platformData = getDefaultPlatformData();
+            // لا نمحو دروساً محمّلة فعلاً بنجاح بسبب فشل عابر في أحد إعدادات الإضافية (news, lockSettings...)
+            if (!lessonsEverLoadedFromServer) {
+                platformData = getDefaultPlatformData();
+            }
             dataLoadedFlag = true;
             clearTimeout(dataTimeout);
-            showWarning('تم تحميل البيانات الافتراضية بسبب خطأ في الاتصال');
+            showWarning(lessonsEverLoadedFromServer ? 'حدث خطأ أثناء تحديث بعض الإعدادات، الدروس المحمّلة لم تتأثر' : 'تم تحميل البيانات الافتراضية بسبب خطأ في الاتصال');
+            refreshCurrentView();
             updateCountdown();
             setInterval(updateCountdown, 1000);
         }
         
         bindMainStageButtons();
         updateAuthButtons();
+        setupEnterKeySubmit();
+        setupLiveUpdateNotifications();
         
         if (database) {
             database.ref('lessons').on('value', async function() { 
@@ -7237,7 +7414,7 @@ async function init() {
         }
         
         refreshCurrentView();
-        logSecurityEvent('platform_initialized', { version: '5.4' });
+        logSecurityEvent('platform_initialized', { version: CURRENT_APP_VERSION });
         
         
         
