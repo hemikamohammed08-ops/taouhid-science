@@ -6665,14 +6665,17 @@ function setupLiveUpdateNotifications() {
     try {
         database.ref('settings/appVersion').on('value', function(snap) {
             var latest = snap.val();
-            if (latest && String(latest) !== CURRENT_APP_VERSION) {
-                showUpdateAvailableBanner();
-            }
+            if (!latest || String(latest) === CURRENT_APP_VERSION) return;
+            // لا تُظهر الإشعار مرة أخرى إذا كان المستخدم قد أغلقه سابقاً لهذا الإصدار بالذات.
+            // يُعاد إظهاره فقط عندما يُنشر إصدار جديد مختلف (المسؤول يقوم بتحديث settings/appVersion).
+            var dismissedVersion = getSecurePersistentData('dismissedUpdateVersion');
+            if (dismissedVersion && dismissedVersion === String(latest)) return;
+            showUpdateAvailableBanner(String(latest));
         });
     } catch(e) { console.error('Error listening for app updates:', e); }
 }
 
-function showUpdateAvailableBanner() {
+function showUpdateAvailableBanner(latestVersion) {
     if (document.getElementById('appUpdateBanner')) return;
     var banner = document.createElement('div');
     banner.id = 'appUpdateBanner';
@@ -6686,6 +6689,9 @@ function showUpdateAvailableBanner() {
         location.reload();
     });
     document.getElementById('appUpdateDismissBtn').addEventListener('click', function() {
+        // نحفظ رقم الإصدار الذي رُفض حتى لا يظهر الإشعار مجدداً لنفس الإصدار،
+        // وسيظهر تلقائياً من جديد فقط عند نشر إصدار أحدث.
+        if (latestVersion) { setSecurePersistentData('dismissedUpdateVersion', latestVersion); }
         banner.remove();
     });
 }
