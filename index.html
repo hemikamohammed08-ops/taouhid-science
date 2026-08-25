@@ -1955,10 +1955,7 @@
                 <button id="repairLegacyKeysBtn" style="background:#6366f1; color:white; border:none; padding:8px 18px; border-radius:20px; cursor:pointer; font-weight:700; min-height:40px;">🛠️ إصلاح حسابات الأعضاء القدامى</button>
                 <span id="repairLegacyKeysResult" style="font-size:0.75rem; color:var(--text-secondary);"></span>
             </div>
-            <div style="margin-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                <button id="announceUpdateBtn" style="background:var(--secondary); color:#1a4a8a; border:none; padding:8px 18px; border-radius:20px; cursor:pointer; font-weight:800; min-height:40px;">🚀 نشر إشعار تحديث للمستخدمين</button>
-                <span style="font-size:0.7rem; color:var(--text-secondary);">يظهر فوراً لكل من هو متصل بالمنصة الآن</span>
-            </div>
+
         </div>
     </div>
 
@@ -2066,7 +2063,6 @@ var platformData = null;
 var lessonsLoadRequestId = 0;
 // يصبح true فقط بعد أول تحميل ناجح فعلي من Firebase (وليس بيانات افتراضية) — يُستخدم لمنع أي مسار خطأ من محو دروس محمّلة فعلاً
 var lessonsEverLoadedFromServer = false;
-// رقم إصدار المنصة — يُستخدم لإشعار المستخدمين المتصلين بوجود تحديث جديد مباشرة (بدون الحاجة لإعادة زيارة الموقع يدوياً)
 var CURRENT_APP_VERSION = '5.6';
 var lockSettings = null;
 var countdownTargetDate = null;
@@ -3371,37 +3367,27 @@ async function readRecordByEmailKeys(basePath, email) {
     var directError = null;
     var anyDirectReadSucceeded = false;
 
-    // قراءة مباشرة بكل صيغ المفاتيح المحتملة (لا تحتاج صلاحية قراءة القائمة كاملة)
-    var variants = emailKeyVariants(email);
-    for (var vi = 0; vi < variants.length; vi++) {
-        try {
-            var direct = await database.ref(basePath + '/' + variants[vi]).once('value');
-            anyDirectReadSucceeded = true;
-            var dv = direct.val();
-            if (dv) {
-                if (variants[vi] !== canonical && typeof dv === 'object') {
-                    try {
-                        await database.ref(basePath + '/' + canonical).set({
-                            email: normalizeEmail(email),
-                            approvedAt: dv.approvedAt || dv.addedAt || Date.now(),
-                            userType: dv.userType || 'member',
-                            userStage: dv.userStage || 'primary'
-                        });
-                    } catch (e2) {}
-                }
-                return dv;
-            }
-        } catch (e) { directError = e; }
+    // قراءة مباشرة بالمفتاح القياسي أولاً (لا تحتاج صلاحية قراءة القائمة كاملة)
+    try {
+        var direct = await database.ref(basePath + '/' + canonical).once('value');
+        anyDirectReadSucceeded = true;
+        var dv = direct.val();
+        if (dv) return dv;
+    } catch (e) { directError = e; }
+
+    // للمسؤول فقط: مسح القائمة كاملة للبحث عن مفاتيح قديمة
+    var isAdmin = currentUser && normalizeEmail(currentUser.email) === MASTER_TEACHER_EMAIL;
+    if (!isAdmin) {
+        if (anyDirectReadSucceeded) return null;
+        throw (directError || new Error('Permission denied'));
     }
 
-    // مسح كامل للمسار: يطابق المفتاح أو حقل email بأي صيغة قديمة
+    // مسح كامل للمسار (للمسؤول فقط): يطابق المفتاح أو حقل email بأي صيغة قديمة
     var listSnapshot;
     try {
         listSnapshot = await database.ref(basePath).once('value');
     } catch (e) {
-        // إذا نجحت القراءة المباشرة فالسجل غير موجود فعلاً؛ فشل قراءة القائمة هنا مجرد قيود صلاحيات
         if (anyDirectReadSucceeded) return null;
-        // فشل كل القراءات (صلاحيات/شبكة) ليس معناه "غير معتمد" — نرفع الخطأ ليتم التعامل معه
         throw (directError || e);
     }
 
@@ -3518,9 +3504,12 @@ async function checkTeacherPermissions(email) {
     var cacheKey = 'teacher:' + email;
     var cached = getCachedPermission(cacheKey);
     if (cached) { currentUserStage = cached.userStage || currentUserStage; return cached.result; }
-    var data = await readRecordByEmailKeys('teachers', email);
     var result = false;
-    if (data) { currentUserStage = data.userStage || 'all'; result = true; }
+    try {
+        var snapshot = await database.ref('teachers/' + emailToKey(email)).once('value');
+        var data = snapshot.val();
+        if (data) { currentUserStage = data.userStage || 'all'; result = true; }
+    } catch (e) {}
     permissionCache[cacheKey] = { result: result, userStage: currentUserStage, timestamp: Date.now() };
     return result;
 }
@@ -3531,9 +3520,12 @@ async function checkMemberApproval(email) {
     var cacheKey = 'member:' + email;
     var cached = getCachedPermission(cacheKey);
     if (cached) { currentUserStage = cached.userStage || currentUserStage; return cached.result; }
-    var data = await readRecordByEmailKeys('members/approved', email);
     var result = false;
-    if (data) { currentUserStage = data.userStage || 'primary'; result = true; }
+    try {
+        var snapshot = await database.ref('members/approved/' + emailToKey(email)).once('value');
+        var data = snapshot.val();
+        if (data) { currentUserStage = data.userStage || 'primary'; result = true; }
+    } catch (e) {}
     permissionCache[cacheKey] = { result: result, userStage: currentUserStage, timestamp: Date.now() };
     return result;
 }
@@ -4749,13 +4741,6 @@ function updateUserInterface() {
         });
     }
     
-    var announceUpdateBtn = document.getElementById('announceUpdateBtn');
-    if (announceUpdateBtn) {
-        // onclick بدل addEventListener هنا عمداً لأن updateUserInterface() قد تُستدعى عدة مرات،
-        // فنتجنب تراكم أكثر من مستمع على نفس الزر يتسبب في نشر الإشعار عدة مرات بضغطة واحدة
-        announceUpdateBtn.onclick = announcePlatformUpdate;
-    }
-
     var teacherGear = document.getElementById('teacherGearIcon');
     var adminGear = document.getElementById('adminGearIcon');
     var adminPanel = document.getElementById('adminPanel');
@@ -6660,58 +6645,12 @@ function setupEnterKeySubmit() {
 // كتابة رقم/وقت الإصدار في settings/appVersion. جميع المستخدمين المتصلين حالياً يستلمون هذا
 // التحديث فوراً عبر الاستماع اللحظي (realtime) ويظهر لهم شريط علوي لإعادة تحميل الصفحة والحصول
 // على أحدث نسخة، بدل انتظارهم اكتشاف التحسينات بالصدفة.
-function setupLiveUpdateNotifications() {
-    if (!database) return;
-    try {
-        database.ref('settings/appVersion').on('value', function(snap) {
-            var latest = snap.val();
-            if (!latest || String(latest) === CURRENT_APP_VERSION) return;
-            // لا تُظهر الإشعار مرة أخرى إذا كان المستخدم قد أغلقه سابقاً لهذا الإصدار بالذات.
-            // يُعاد إظهاره فقط عندما يُنشر إصدار جديد مختلف (المسؤول يقوم بتحديث settings/appVersion).
-            var dismissedVersion = getSecurePersistentData('dismissedUpdateVersion');
-            if (dismissedVersion && dismissedVersion === String(latest)) return;
-            showUpdateAvailableBanner(String(latest));
-        });
-    } catch(e) { console.error('Error listening for app updates:', e); }
-}
 
-function showUpdateAvailableBanner(latestVersion) {
-    if (document.getElementById('appUpdateBanner')) return;
-    var banner = document.createElement('div');
-    banner.id = 'appUpdateBanner';
-    banner.setAttribute('role', 'status');
-    banner.style.cssText = 'position:fixed; top:0; left:0; right:0; z-index:100000; background:var(--secondary); color:#1a4a8a; padding:10px 16px; text-align:center; font-family:"Tajawal",sans-serif; font-weight:800; font-size:0.85rem; display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap; box-shadow:var(--shadow-md);';
-    banner.innerHTML = '<span>🚀 يتوفر تحديث جديد وتحسينات على المنصة</span>' +
-        '<button id="appUpdateReloadBtn" style="background:#1a4a8a; color:white; border:none; padding:6px 18px; border-radius:20px; cursor:pointer; font-weight:800; font-size:0.8rem;">🔄 تحديث الآن</button>' +
-        '<button id="appUpdateDismissBtn" style="background:transparent; color:#1a4a8a; border:1px solid #1a4a8a; padding:6px 14px; border-radius:20px; cursor:pointer; font-weight:700; font-size:0.8rem;">لاحقاً</button>';
-    document.body.appendChild(banner);
-    document.getElementById('appUpdateReloadBtn').addEventListener('click', function() {
-        location.reload();
-    });
-    document.getElementById('appUpdateDismissBtn').addEventListener('click', function() {
-        // نحفظ رقم الإصدار الذي رُفض حتى لا يظهر الإشعار مجدداً لنفس الإصدار،
-        // وسيظهر تلقائياً من جديد فقط عند نشر إصدار أحدث.
-        if (latestVersion) { setSecurePersistentData('dismissedUpdateVersion', latestVersion); }
-        banner.remove();
-    });
-}
+
+
 
 // يستخدمها المسؤول (الأستاذ محمد) فقط لنشر إشعار تحديث فوري لكل المستخدمين المتصلين حالياً
-async function announcePlatformUpdate() {
-    if (!isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) {
-        showError('غير مصرح لك - هذه الصلاحية للمسؤول فقط');
-        return;
-    }
-    if (!await validateSession()) return;
-    try {
-        await database.ref('settings/appVersion').set(Date.now().toString());
-        showSuccess('✅ تم نشر إشعار التحديث لجميع المستخدمين المتصلين الآن');
-        logSecurityEvent('platform_update_announced', { by: currentUser.email });
-    } catch(e) {
-        showError('❌ تعذر نشر إشعار التحديث: ' + e.message);
-    }
-}
-window.announcePlatformUpdate = announcePlatformUpdate;
+
 
 // ============================================================
 // ===== دوال ربط الأزرار =====
@@ -7407,7 +7346,6 @@ async function init() {
         bindMainStageButtons();
         updateAuthButtons();
         setupEnterKeySubmit();
-        setupLiveUpdateNotifications();
         
         if (database) {
             database.ref('lessons').on('value', async function() { 
