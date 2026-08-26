@@ -4815,7 +4815,13 @@ function updateUserInterface() {
     var bannerSpan = document.getElementById('bannerUserType');
     var revokeBtn = document.getElementById('revokeMembershipBtn');
     var repairLegacyKeysBtn = document.getElementById('repairLegacyKeysBtn');
-    if (repairLegacyKeysBtn) {
+    // إصلاح: كانت updateUserInterface() تُستدعى في كل تغيّر لحالة الدخول (بما في ذلك
+    // تجديد التوكن التلقائي من Firebase كل ساعة تقريباً)، وفي كل مرة كانت تُضاف مستمِعة
+    // click جديدة على نفس الزر دون إزالة القديمة. بعد عدة تجديدات كانت الضغطة الواحدة
+    // تُشغّل الإصلاح عدة مرات بالتوازي (نتائج مكررة، رسائل نجاح/خطأ مكررة، تعارض كتابة).
+    // الحل: نمنع إعادة الربط عبر علم على العنصر نفسه.
+    if (repairLegacyKeysBtn && !repairLegacyKeysBtn.dataset.bound) {
+        repairLegacyKeysBtn.dataset.bound = '1';
         repairLegacyKeysBtn.addEventListener('click', async function() {
             var resultSpan = document.getElementById('repairLegacyKeysResult');
             if (!isAdminMode || normalizeEmail(currentUser?.email) !== MASTER_TEACHER_EMAIL) {
