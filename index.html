@@ -380,6 +380,11 @@
             cursor: pointer; transition: all 0.3s ease; min-height: 40px;
         }
         .btn:hover:not(.btn-loading) { transform: translateY(-2px); }
+        /* إصلاح: أزرار الدخول/التسجيل لم تكن تُظهر أي مؤشر انتظار أثناء تنفيذ الطلب (خاصة مع اتصال
+           بطيء)، فتبدو للمستخدم "متجمّدة" وكأن الضغط لم يُسجَّل. هذا النمط يوفر مظهراً موحداً
+           لأي زر يُضاف له class="btn-loading" أثناء العمل (عبر setBtnBusy في السكربت). */
+        .btn-loading { opacity: 0.65; cursor: not-allowed; pointer-events: none; }
+        .btn-loading i.fa-spinner { animation: spin 0.8s linear infinite; }
         .btn-primary { background: linear-gradient(135deg, #e8a838, #f5c84a); color: #1a4a8a; }
         .btn-success { background: #10b981; color: white; }
         .btn-danger { background: #ef4444; color: white; }
@@ -3091,6 +3096,23 @@ async function diagnoseAmbiguousCredentialError(email) {
     }
 }
 
+// إصلاح: توحيد مؤشر "جارٍ التنفيذ..." على أزرار الدخول/التسجيل. قبل هذا الإصلاح كانت هذه
+// الأزرار لا تتغيّر إطلاقاً أثناء انتظار استجابة الخادم (خاصة مع اتصال بطيء)، فتبدو للمستخدم
+// متجمّدة كأن الضغط لم يُسجَّل، فيضغط عدة مرات أو يظن أن الموقع معطوب.
+function setBtnBusy(btn, busy, busyText) {
+    if (!btn) return;
+    if (busy) {
+        if (btn.dataset.originalHtml === undefined) btn.dataset.originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.classList.add('btn-loading');
+        btn.innerHTML = '<i class="fas fa-spinner"></i> ' + (busyText || 'جارٍ التنفيذ...');
+    } else {
+        btn.disabled = false;
+        btn.classList.remove('btn-loading');
+        if (btn.dataset.originalHtml !== undefined) { btn.innerHTML = btn.dataset.originalHtml; }
+    }
+}
+
 async function handleAdminLogin() {
     var email = normalizeEmail(document.getElementById('adminEmail').value);
     var password = document.getElementById('adminPassword').value;
@@ -3113,6 +3135,7 @@ async function handleAdminLogin() {
     }
     
     try {
+        setBtnBusy(document.getElementById('adminLoginBtn'), true, 'جارٍ تسجيل الدخول...');
         await auth.signInWithEmailAndPassword(email, password);
         resetLoginAttempts(email);
         if (remember) { setSecurePersistentData('rememberedEmail', email); }
@@ -3138,6 +3161,8 @@ async function handleAdminLogin() {
         else msg += 'حدث خطأ في المصادقة (' + (error.code || 'غير معروف') + ')';
         errorDiv.innerText = msg;
         logSecurityEvent('admin_login_failed', { email: email, error: error.code });
+    } finally {
+        setBtnBusy(document.getElementById('adminLoginBtn'), false);
     }
 }
 
@@ -3158,6 +3183,7 @@ async function handleTeacherLogin() {
     }
     
     try {
+        setBtnBusy(document.getElementById('teacherLoginBtn'), true, 'جارٍ تسجيل الدخول...');
         await auth.signInWithEmailAndPassword(email, password);
         await auth.currentUser.getIdToken(true);
         var isTeacher;
@@ -3198,6 +3224,8 @@ async function handleTeacherLogin() {
         else msg += 'حدث خطأ في المصادقة (' + (error.code || 'غير معروف') + ')';
         errorDiv.innerText = msg;
         logSecurityEvent('teacher_login_failed', { email: email, error: error.code });
+    } finally {
+        setBtnBusy(document.getElementById('teacherLoginBtn'), false);
     }
 }
 
@@ -3218,9 +3246,8 @@ async function handleMemberLogin() {
     }
     
     try {
+        setBtnBusy(document.getElementById('memberLoginBtn'), true, 'جارٍ تسجيل الدخول...');
         await auth.signInWithEmailAndPassword(email, password);
-        await auth.currentUser.getIdToken(true);
-        var isApproved, isTeacher;
         try {
             isApproved = await checkMemberApproval(email);
             isTeacher = await checkTeacherPermissions(email);
@@ -3274,6 +3301,8 @@ async function handleMemberLogin() {
         else msg += 'حدث خطأ في المصادقة (' + (error.code || 'غير معروف') + ')';
         errorDiv.innerText = msg;
         logSecurityEvent('member_login_failed', { email: email, error: error.code });
+    } finally {
+        setBtnBusy(document.getElementById('memberLoginBtn'), false);
     }
 }
 
@@ -3364,6 +3393,7 @@ async function handleRegisterTeacher() {
     }
     
     try {
+        setBtnBusy(document.getElementById('registerTeacherSubmitBtn'), true, 'جارٍ الإرسال...');
         await auth.createUserWithEmailAndPassword(email, password);
         await addJoinRequest(email, 'أستاذ', 'all');
         await auth.signOut();
@@ -3383,6 +3413,8 @@ async function handleRegisterTeacher() {
         else msg += 'حدث خطأ في إنشاء الحساب';
         errorDiv.innerText = msg;
         logSecurityEvent('teacher_registration_failed', { email: email, error: error.code });
+    } finally {
+        setBtnBusy(document.getElementById('registerTeacherSubmitBtn'), false);
     }
 }
 
@@ -3415,6 +3447,7 @@ async function handleRegisterMember() {
     }
     
     try {
+        setBtnBusy(document.getElementById('registerMemberSubmitBtn'), true, 'جارٍ الإرسال...');
         await auth.createUserWithEmailAndPassword(email, password);
         await addJoinRequest(email, 'عضو', stage);
         await auth.signOut();
@@ -3435,6 +3468,8 @@ async function handleRegisterMember() {
         else msg += 'حدث خطأ في إنشاء الحساب';
         errorDiv.innerText = msg;
         logSecurityEvent('member_registration_failed', { email: email, error: error.code });
+    } finally {
+        setBtnBusy(document.getElementById('registerMemberSubmitBtn'), false);
     }
 }
 
