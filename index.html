@@ -1609,7 +1609,7 @@
         </div>
     </div>
 
-    <div class="countdown-new" id="countdownContainer">
+    <div class="countdown-new" id="countdownContainer" style="display:none;">
         <div class="title"><i class="fas fa-calendar-days"></i> العودة إلى الدراسة</div>
         <div class="timer">
             <div class="box"><div class="number" id="days">00</div><div class="label">يوم</div></div>
@@ -2121,6 +2121,9 @@ var lessonsEverLoadedFromServer = false;
 var CURRENT_APP_VERSION = '5.6';
 var lockSettings = null;
 var countdownTargetDate = null;
+// إصلاح: نفرّق بين "لم تصل بيانات الموعد بعد" و"لا يوجد موعد مضبوط أصلاً" حتى لا يظهر العداد
+// بشكل دائم بأصفار "00:00:00:00" مربكة (توحي بأن الموعد انتهى فعلاً) أثناء انتظار الاتصال البطيء.
+var countdownDataLoaded = false;
 var registrationSettings = null;
 var newsItems = ["📢 مرحباً بكم في منصة الأستاذ محمد التعليمية"];
 // ⚠️ ملاحظة: Base64 هنا مجرد تعتيم بسيط (obfuscation) وليس تشفيراً حقيقياً — يمكن فك تشفيره فوراً من console المتصفح.
@@ -5895,13 +5898,21 @@ async function startLessons(type) {
 function updateCountdown() {
     var dateStr = countdownTargetDate;
     var container = document.getElementById('countdownContainer');
+    // إصلاح: قبل وصول بيانات الموعد من الخادم (مثلاً بسبب اتصال بطيء)، الصندوق يبقى مخفياً بدل
+    // إظهار "00:00:00:00" التي تبدو وكأن العد التنازلي انتهى بالفعل. بمجرد وصول البيانات (نجاحاً
+    // أو فشلاً) يقرر الشرط التالي إن كان هناك موعد فعلي لعرضه أو إبقاء الصندوق مخفياً نهائياً.
+    if (!countdownDataLoaded) {
+        return;
+    }
     if (!dateStr) {
+        if (container) container.style.display = 'none';
         return;
     }
     var parts = dateStr.split('-');
-    if (parts.length !== 3) return;
+    if (parts.length !== 3) { if (container) container.style.display = 'none'; return; }
     var targetDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     var diff = targetDate - new Date();
+    if (container) container.style.display = '';
     if (diff <= 0) {
         if (container) container.innerHTML = '<div class="title">🎉 مرحباً بعودتكم</div>';
         return;
@@ -5920,14 +5931,16 @@ function updateCountdown() {
 }
 
 async function loadCountdownDate() {
-    if (!database) { updateCountdown(); return; }
+    if (!database) { countdownDataLoaded = true; updateCountdown(); return; }
     try {
         var snapshot = await database.ref('settings/publicCountdownDate').once('value');
         var saved = snapshot.val();
         if (saved) { countdownTargetDate = saved; }
+        countdownDataLoaded = true;
         updateCountdown();
     } catch(e) {
         console.error('Error loading public countdown date:', e);
+        countdownDataLoaded = true;
         updateCountdown();
     }
 }
