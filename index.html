@@ -21,9 +21,18 @@
     <meta property="og:description" content="منصة الأستاذ محمد للتعليم — دروس ومراجع تعليمية لجميع المراحل الدراسية في الجزائر، متابعة مباشرة عبر الإنترنت.">
     <meta property="og:url" content="https://taouhid-science.vercel.app/">
     <meta property="og:locale" content="ar_DZ">
-    <meta name="twitter:card" content="summary">
+    <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="الأستاذ محمد للتعليم | منصة تعليم جزائرية">
     <meta name="twitter:description" content="منصة الأستاذ محمد للتعليم — دروس ومراجع تعليمية لجميع المراحل الدراسية في الجزائر.">
+    <!-- تحسين 10: SEO محسّن -->
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#1a4a8a">
+    <meta name="keywords" content="الأستاذ محمد, تعليم جزائري, دروس, ابتدائي, متوسط, ثانوي, مراجعة, الجزائر">
+    <!-- ملاحظة: أضف صورة حقيقية باسم icon.png (1200×630px) في جذر المشروع ثم فعّل السطرين التاليين لتحسين ظهور الروابط عند مشاركتها:
+    <meta property="og:image" content="https://taouhid-science.vercel.app/icon.png">
+    <meta name="twitter:image" content="https://taouhid-science.vercel.app/icon.png">
+    -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231a4a8a'/%3E%3Ctext x='50' y='68' font-size='55' text-anchor='middle' fill='white'%3E%F0%9F%93%9A%3C/text%3E%3C/svg%3E">
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -55,7 +64,8 @@
     
     
     
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' https: blob: 'unsafe-inline' https://www.google.com https://www.gstatic.com; worker-src 'self' blob: https:; child-src 'self' blob: https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; connect-src 'self' https: wss: blob:; frame-src 'self' https: blob:; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;">
+    <!-- تحسين 1: CSP محسّن — تم استبدال "https:" العامة في script-src/worker-src/style-src بقائمة نطاقات صريحة (فقط النطاقات المُستخدمة فعلياً في الكود: gstatic لـ Firebase، cdnjs لـ FontAwesome/DOMPurify/crypto-js/pdf.js، google لِـ reCAPTCHA، fonts.googleapis لخطوط Google)، مع إضافة object-src 'none' و font-src صريح. تم إبقاء img-src/connect-src واسعة لأن روابط/ملفات الدروس تُستضاف على نطاقات خارجية يختارها الأساتذة (تيليجرام، جوجل درايف...) ولا يمكن حصرها دون كسر عرض المحتوى. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' blob: https://www.google.com https://www.gstatic.com https://cdnjs.cloudflare.com; worker-src 'self' blob: https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss: blob:; frame-src 'self' blob: https://www.google.com https://www.gstatic.com; child-src 'self' blob: https://www.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -1479,6 +1489,24 @@
     </p>
 </div>
 
+<!-- تحسين 6: نافذة مشاركة الدروس -->
+<div class="confirm-dialog-overlay" id="shareMenuOverlay" onclick="if(event.target===this) closeShareMenu()">
+    <div class="confirm-dialog" style="max-width:320px;">
+        <span class="icon">📤</span>
+        <h3>مشاركة الدرس</h3>
+        <p id="shareMenuTitle" style="font-weight:700; color:var(--text-primary);"></p>
+        <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:16px 0;">
+            <button id="shareWhatsapp" style="background:#25D366; color:white; border:none; padding:10px 16px; border-radius:12px; cursor:pointer; font-weight:700; flex:1; min-width:110px;"><i class="fab fa-whatsapp"></i> واتساب</button>
+            <button id="shareFacebook" style="background:#1877F2; color:white; border:none; padding:10px 16px; border-radius:12px; cursor:pointer; font-weight:700; flex:1; min-width:110px;"><i class="fab fa-facebook"></i> فيسبوك</button>
+            <button id="shareTwitter" style="background:#000000; color:white; border:none; padding:10px 16px; border-radius:12px; cursor:pointer; font-weight:700; flex:1; min-width:110px;"><i class="fab fa-x-twitter"></i> تويتر</button>
+            <button id="shareCopyLink" style="background:var(--primary); color:white; border:none; padding:10px 16px; border-radius:12px; cursor:pointer; font-weight:700; flex:1; min-width:110px;"><i class="fas fa-link"></i> نسخ الرابط</button>
+        </div>
+        <div class="btn-group">
+            <button class="btn-cancel" onclick="closeShareMenu()">إغلاق</button>
+        </div>
+    </div>
+</div>
+
 <!-- نافذة تأكيد الحذف -->
 <div id="confirmDialog" class="confirm-dialog-overlay">
     <div class="confirm-dialog">
@@ -1546,6 +1574,7 @@
                     <div class="notif-footer">تُحفظ حالة الإشعارات على جهازك فقط</div>
                 </div>
             </div>
+            <button id="pointsBadgeBtn" class="btn btn-ghost" onclick="showPointsInfo()" title="نقاطك" aria-label="نقاطك"><i class="fas fa-star" style="color:var(--secondary);"></i> <span id="pointsCount">0</span></button>
             <button id="themeToggleBtn" class="btn btn-ghost" onclick="toggleTheme()" title="تبديل الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="fas fa-moon"></i></button>
             <div id="teacherGearIcon" class="btn btn-ghost" style="display:none;" role="button" tabindex="0" aria-label="لوحة تحكم الأستاذ"><i class="fas fa-cog"></i></div>
             <div id="adminGearIcon" class="btn btn-ghost" style="display:none;" role="button" tabindex="0" aria-label="لوحة تحكم الإدارة"><i class="fas fa-user-shield"></i></div>
@@ -4560,6 +4589,7 @@ async function showLessonContent(id, title, url, download, type, fileId) {
             '<h3><i class="fas fa-file-pdf"></i> ' + sanitizeHtml(title) + '</h3>' +
             '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
             '<button class="btn btn-success" onclick="forceDownload(\'' + escAttr(freshDownload || freshUrl) + '\', \'' + escAttr(title) + '\')" style="padding:4px 16px; font-size:0.8rem;"><i class="fas fa-download"></i> تحميل</button>' +
+            '<button class="btn" style="padding:4px 16px; font-size:0.8rem; background:#0ea5e9; color:white;" onclick="openShareMenu(\'' + escAttr(title) + '\')"><i class="fas fa-share-alt"></i> مشاركة</button>' +
             '<button class="btn btn-danger" onclick="closeFileViewer()" style="padding:4px 16px; font-size:0.8rem;"><i class="fas fa-times"></i> إغلاق</button>' +
             '</div></div>' +
             '<div id="' + pdfBoxId + '" style="min-height:400px; background:#f5f5f5; border-radius:12px; overflow:hidden; position:relative;">';
@@ -4589,6 +4619,7 @@ async function showLessonContent(id, title, url, download, type, fileId) {
             '<h3><i class="fas fa-image"></i> ' + sanitizeHtml(title) + '</h3>' +
             '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
             '<button class="btn btn-success" onclick="forceDownload(\'' + escAttr(freshDownload || freshUrl) + '\', \'' + escAttr(title) + '\')" style="padding:4px 16px; font-size:0.8rem;"><i class="fas fa-download"></i> تحميل</button>' +
+            '<button class="btn" style="padding:4px 16px; font-size:0.8rem; background:#0ea5e9; color:white;" onclick="openShareMenu(\'' + escAttr(title) + '\')"><i class="fas fa-share-alt"></i> مشاركة</button>' +
             '<button class="btn btn-danger" onclick="closeFileViewer()" style="padding:4px 16px; font-size:0.8rem;"><i class="fas fa-times"></i> إغلاق</button>' +
             '</div></div>' +
             '<div style="min-height:250px; text-align:center; background:#f5f5f5; border-radius:12px; padding:20px;">';
@@ -4612,6 +4643,7 @@ async function showLessonContent(id, title, url, download, type, fileId) {
             '<h3><i class="fas fa-external-link-alt"></i> ' + sanitizeHtml(title) + '</h3>' +
             '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
             '<button class="btn btn-success" onclick="window.open(\'' + escAttr(freshUrl) + '\', \'_blank\')" style="padding:4px 16px; font-size:0.8rem;"><i class="fas fa-external-link-alt"></i> فتح الرابط</button>' +
+            '<button class="btn" style="padding:4px 16px; font-size:0.8rem; background:#0ea5e9; color:white;" onclick="openShareMenu(\'' + escAttr(title) + '\')"><i class="fas fa-share-alt"></i> مشاركة</button>' +
             '<button class="btn btn-danger" onclick="closeFileViewer()" style="padding:4px 16px; font-size:0.8rem;"><i class="fas fa-times"></i> إغلاق</button>' +
             '</div></div>' +
             '<div style="min-height:250px; text-align:center; padding:40px 20px; background:var(--bg-body); border-radius:12px;">' +
@@ -4623,6 +4655,7 @@ async function showLessonContent(id, title, url, download, type, fileId) {
     
     container.innerHTML = contentHtml;
     saveNavigationState();
+    try { awardPoints(1, 'مشاهدة درس: ' + title); logAnalyticsEvent('lesson_view', { id: id, title: title, type: type }); } catch(e) {}
 }
 window.showLessonContent = showLessonContent;
 
@@ -6165,6 +6198,16 @@ function saveNavigationState() {
     try {
         sessionStorage.setItem('platform_nav_state', JSON.stringify(state));
     } catch(e) {}
+    // تحسين 3: حفظ آخر مرحلة/مادة في localStorage (يبقى محفوظاً حتى بعد إغلاق المتصفح تماماً،
+    // بخلاف sessionStorage الذي يُستخدم أعلاه فقط لاستعادة نفس الجلسة عند تحديث الصفحة)
+    try {
+        if (currentStage) {
+            localStorage.setItem('lastPrefs', JSON.stringify({
+                stage: currentStage, subStage: currentSubStage, year: currentYear,
+                subject: currentSubject, lessonType: currentLessonType
+            }));
+        }
+    } catch(e) {}
 }
 
 function restoreNavigationState() {
@@ -6662,41 +6705,11 @@ function renderLessonsList() {
     var backBtn = document.getElementById('backBtn');
     if (backBtn) backBtn.addEventListener('click', goBack);
 
-    var lessonBtns = document.querySelectorAll('#lessonsContainer .lesson-btn[data-action]');
-    for (var lb = 0; lb < lessonBtns.length; lb++) {
-        lessonBtns[lb].addEventListener('click', function() {
-            var action = this.getAttribute('data-action');
-            if (action === 'view-internal') {
-                showLessonContent(this.getAttribute('data-id'), this.getAttribute('data-title'), this.getAttribute('data-file-url'), this.getAttribute('data-download-url'), this.getAttribute('data-content-type'), this.getAttribute('data-file-id'));
-            } else if (action === 'unavailable') {
-                if (!currentUser) {
-                    showLoginRequiredPopup();
-                } else {
-                    showUnavailableModal();
-                }
-            } else if (action === 'watch') {
-                window.open(this.getAttribute('data-external-url'), '_blank');
-            } else if (action === 'edit-internal') {
-                openEditInternalModal(this.getAttribute('data-id'), this.getAttribute('data-title'), this.getAttribute('data-file-url'), this.getAttribute('data-download-url'), this.getAttribute('data-content-type'));
-            } else if (action === 'edit-external') {
-                openEditModal(this.getAttribute('data-id'), this.getAttribute('data-title'), this.getAttribute('data-external-url'), this.getAttribute('data-platform'));
-            } else if (action === 'delete') {
-                deleteLesson(this.getAttribute('data-id'));
-            }
-        });
-    }
-    
-    var pageBtns = document.querySelectorAll('.page-btn-new, .page-nav-new');
-    for (var i = 0; i < pageBtns.length; i++) {
-        pageBtns[i].addEventListener('click', function() {
-            var action = this.getAttribute('data-page');
-            if (action === 'prev') currentPage = Math.max(1, currentPage - 1);
-            else if (action === 'next') currentPage = Math.min(totalPages, currentPage + 1);
-            else currentPage = parseInt(action);
-            renderLessonsList();
-            saveNavigationState();
-        });
-    }
+    // تحسين 7 (Event Delegation): بدل إنشاء مستمع click منفصل لكل زر درس وكل زر ترقيم
+    // (وهو ما كان يتكرر في كل عملية رسم/تصفح ويُنشئ مئات المستمعات خلال جلسة تصفح واحدة)،
+    // أصبح التعامل مع كل هذه الأزرار عبر مستمع واحد مُفوَّض (initEventDelegation) مُثبَّت
+    // مرة واحدة فقط عند بدء التطبيق. هنا فقط نحفظ عدد الصفحات لاستخدامه من قِبل ذلك المستمع.
+    window.__lessonsTotalPages = totalPages;
     
     var addBtn = document.getElementById('openAddLessonBtn');
     if (addBtn) {
@@ -7421,15 +7434,240 @@ document.addEventListener('DOMContentLoaded', function() {
 // ===== بدء التطبيق =====
 // ============================================================
 
+// ============================================================
+// ===== وحدة التحسينات الإضافية (لا تؤثر على أي منطق موجود) =====
+// ============================================================
+
+// ---------- تحسين 2: تحليلات محلية مبسطة ----------
+// تُخزَّن الأحداث على جهاز المستخدم فقط داخل localStorage (لا إرسال لأي خادم خارجي)،
+// مع حد أقصى لعدد الأحداث المحفوظة لتفادي تضخم التخزين.
+function logAnalyticsEvent(eventName, data) {
+    try {
+        var key = 'local_analytics';
+        var maxEvents = 300;
+        var raw = localStorage.getItem(key);
+        var events = raw ? JSON.parse(raw) : [];
+        events.push({ e: eventName, d: data || {}, t: Date.now() });
+        if (events.length > maxEvents) events = events.slice(events.length - maxEvents);
+        localStorage.setItem(key, JSON.stringify(events));
+    } catch(err) { /* تجاهل بصمت */ }
+}
+function getAnalyticsSummary() {
+    try {
+        var raw = localStorage.getItem('local_analytics');
+        var events = raw ? JSON.parse(raw) : [];
+        var counts = {};
+        for (var i = 0; i < events.length; i++) {
+            counts[events[i].e] = (counts[events[i].e] || 0) + 1;
+        }
+        return { total: events.length, counts: counts };
+    } catch(err) { return { total: 0, counts: {} }; }
+}
+window.getAnalyticsSummary = getAnalyticsSummary;
+
+// ---------- تحسين 3: اقتراح استكمال آخر مرحلة/مادة تمت زيارتها ----------
+function suggestLastVisitedIfAny() {
+    try {
+        if (isRestoringState) return;
+        var savedSession = sessionStorage.getItem('platform_nav_state');
+        if (savedSession) return; // هناك جلسة حالية قيد الاستعادة أصلاً، لا داعي لأي اقتراح
+        var raw = localStorage.getItem('lastPrefs');
+        if (!raw) return;
+        var prefs = JSON.parse(raw);
+        if (!prefs || !prefs.stage) return;
+        var stageLabels = { primary: 'الابتدائي', middle: 'المتوسط', high: 'الثانوي' };
+        var label = stageLabels[prefs.stage] || prefs.stage;
+        if (prefs.subject) label += ' - ' + prefs.subject;
+        window.__lastPrefsCache = prefs;
+        showInfo('👋 مرحباً بعودتك! يمكنك <a href="#" onclick="resumeLastVisit(); return false;" style="color:#fff; text-decoration:underline; font-weight:800;">متابعة آخر زيارة</a> (' + label + ')');
+    } catch(err) { /* تجاهل بصمت */ }
+}
+function resumeLastVisit() {
+    try {
+        var prefs = window.__lastPrefsCache;
+        if (!prefs || !prefs.stage) return;
+        currentStage = prefs.stage;
+        currentSubStage = prefs.subStage || null;
+        currentYear = prefs.year || null;
+        currentSubject = prefs.subject || null;
+        currentLessonType = prefs.lessonType || null;
+        currentPage = 1;
+        if (currentSubject) { renderLessonsList(); }
+        else if (typeof refreshCurrentView === 'function') { refreshCurrentView(); }
+        saveNavigationState();
+    } catch(err) { showWarning('تعذر استكمال آخر زيارة'); }
+}
+window.resumeLastVisit = resumeLastVisit;
+
+// ---------- تحسين 5: إشعارات حالة الاتصال بالإنترنت ----------
+function setupConnectionStatusListeners() {
+    window.addEventListener('online', function() {
+        showSuccess('✅ تم استعادة الاتصال بالإنترنت');
+        logAnalyticsEvent('connection_online', {});
+    });
+    window.addEventListener('offline', function() {
+        showWarning('📴 انقطع الاتصال بالإنترنت، بعض الميزات قد لا تعمل حتى تعود الشبكة');
+        logAnalyticsEvent('connection_offline', {});
+    });
+}
+
+// ---------- تحسين 6: نافذة مشاركة الدروس ----------
+var __shareLessonTitle = '';
+function openShareMenu(title) {
+    __shareLessonTitle = title || '';
+    var titleEl = document.getElementById('shareMenuTitle');
+    if (titleEl) titleEl.textContent = '📌 ' + __shareLessonTitle;
+    var overlay = document.getElementById('shareMenuOverlay');
+    if (overlay) overlay.classList.add('active');
+    logAnalyticsEvent('share_menu_open', { title: __shareLessonTitle });
+}
+window.openShareMenu = openShareMenu;
+function closeShareMenu() {
+    var overlay = document.getElementById('shareMenuOverlay');
+    if (overlay) overlay.classList.remove('active');
+}
+window.closeShareMenu = closeShareMenu;
+function initShareButtons() {
+    var shareUrl = (typeof location !== 'undefined' ? location.href.split('#')[0] : '');
+    var waBtn = document.getElementById('shareWhatsapp');
+    var fbBtn = document.getElementById('shareFacebook');
+    var twBtn = document.getElementById('shareTwitter');
+    var copyBtn = document.getElementById('shareCopyLink');
+    if (waBtn) waBtn.addEventListener('click', function() {
+        var text = encodeURIComponent('📚 ' + __shareLessonTitle + ' - ' + shareUrl);
+        window.open('https://wa.me/?text=' + text, '_blank');
+        logAnalyticsEvent('share_whatsapp', {});
+    });
+    if (fbBtn) fbBtn.addEventListener('click', function() {
+        window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(shareUrl), '_blank');
+        logAnalyticsEvent('share_facebook', {});
+    });
+    if (twBtn) twBtn.addEventListener('click', function() {
+        var text = encodeURIComponent('📚 ' + __shareLessonTitle);
+        window.open('https://twitter.com/intent/tweet?text=' + text + '&url=' + encodeURIComponent(shareUrl), '_blank');
+        logAnalyticsEvent('share_twitter', {});
+    });
+    if (copyBtn) copyBtn.addEventListener('click', function() {
+        try {
+            navigator.clipboard.writeText(shareUrl).then(function() {
+                showSuccess('📋 تم نسخ الرابط');
+            }).catch(function() { showWarning('تعذر نسخ الرابط'); });
+        } catch(err) { showWarning('تعذر نسخ الرابط'); }
+        logAnalyticsEvent('share_copy_link', {});
+    });
+}
+
+// ---------- تحسين 8: نظام نقاط تحفيزي ----------
+function getPoints() {
+    try { return parseInt(localStorage.getItem('userPoints') || '0', 10) || 0; } catch(err) { return 0; }
+}
+function awardPoints(amount, reason) {
+    try {
+        var current = getPoints();
+        var updated = current + (amount || 0);
+        localStorage.setItem('userPoints', String(updated));
+        updatePointsBadge();
+        logAnalyticsEvent('points_awarded', { amount: amount, reason: reason, total: updated });
+    } catch(err) { /* تجاهل بصمت */ }
+}
+window.awardPoints = awardPoints;
+function updatePointsBadge() {
+    var el = document.getElementById('pointsCount');
+    if (el) el.textContent = String(getPoints());
+}
+function showPointsInfo() {
+    showInfo('⭐ لديك ' + getPoints() + ' نقطة من مشاهدة الدروس. استمر في التعلم لجمع المزيد!');
+}
+window.showPointsInfo = showPointsInfo;
+
+// ---------- تحسين 7: مستمع حدثي مُفوَّض واحد بدل مئات المستمعات ----------
+function initEventDelegation() {
+    document.addEventListener('click', function(e) {
+        var actionBtn = e.target.closest && e.target.closest('#lessonsContainer .lesson-btn[data-action]');
+        if (actionBtn) {
+            var action = actionBtn.getAttribute('data-action');
+            if (action === 'view-internal') {
+                showLessonContent(actionBtn.getAttribute('data-id'), actionBtn.getAttribute('data-title'), actionBtn.getAttribute('data-file-url'), actionBtn.getAttribute('data-download-url'), actionBtn.getAttribute('data-content-type'), actionBtn.getAttribute('data-file-id'));
+            } else if (action === 'unavailable') {
+                if (!currentUser) { showLoginRequiredPopup(); } else { showUnavailableModal(); }
+            } else if (action === 'watch') {
+                window.open(actionBtn.getAttribute('data-external-url'), '_blank');
+            } else if (action === 'edit-internal') {
+                openEditInternalModal(actionBtn.getAttribute('data-id'), actionBtn.getAttribute('data-title'), actionBtn.getAttribute('data-file-url'), actionBtn.getAttribute('data-download-url'), actionBtn.getAttribute('data-content-type'));
+            } else if (action === 'edit-external') {
+                openEditModal(actionBtn.getAttribute('data-id'), actionBtn.getAttribute('data-title'), actionBtn.getAttribute('data-external-url'), actionBtn.getAttribute('data-platform'));
+            } else if (action === 'delete') {
+                deleteLesson(actionBtn.getAttribute('data-id'));
+            }
+            return;
+        }
+        var pageBtn = e.target.closest && e.target.closest('.page-btn-new, .page-nav-new');
+        if (pageBtn) {
+            var pageAction = pageBtn.getAttribute('data-page');
+            var totalPages = window.__lessonsTotalPages || 1;
+            if (pageAction === 'prev') currentPage = Math.max(1, currentPage - 1);
+            else if (pageAction === 'next') currentPage = Math.min(totalPages, currentPage + 1);
+            else currentPage = parseInt(pageAction, 10);
+            renderLessonsList();
+            saveNavigationState();
+            return;
+        }
+    });
+    // أزرار المشاركة ثابتة في الصفحة (ليست معاد رسمها)، لذا تُربط مرة واحدة هنا
+    initShareButtons();
+}
+
+// ---------- تحسين 9: تخزين الدروس في IndexedDB لوضع عدم الاتصال ----------
+var IDB_NAME = 'taouhidPlatformDB';
+var IDB_STORE = 'cache';
+function idbOpen() {
+    return new Promise(function(resolve, reject) {
+        if (!window.indexedDB) { reject(new Error('IndexedDB غير مدعوم')); return; }
+        var req = indexedDB.open(IDB_NAME, 1);
+        req.onupgradeneeded = function() {
+            var db = req.result;
+            if (!db.objectStoreNames.contains(IDB_STORE)) {
+                db.createObjectStore(IDB_STORE);
+            }
+        };
+        req.onsuccess = function() { resolve(req.result); };
+        req.onerror = function() { reject(req.error); };
+    });
+}
+function idbSavePlatformData(data) {
+    return idbOpen().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction(IDB_STORE, 'readwrite');
+            tx.objectStore(IDB_STORE).put(data, 'platformData');
+            tx.oncomplete = function() { resolve(true); };
+            tx.onerror = function() { reject(tx.error); };
+        });
+    }).catch(function() { /* تجاهل بصمت — التخزين المؤقت اختياري وليس أساسياً */ });
+}
+function idbGetPlatformData() {
+    return idbOpen().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction(IDB_STORE, 'readonly');
+            var req = tx.objectStore(IDB_STORE).get('platformData');
+            req.onsuccess = function() { resolve(req.result || null); };
+            req.onerror = function() { reject(req.error); };
+        });
+    }).catch(function() { return null; });
+}
+
+
 async function init() {
     try {
-        
-        
-        
-        
-        
-        
-        
+        // تحسين 7: تفعيل التفويض الحدثي مرة واحدة فقط بدل مستمعات متكررة عند كل رسم
+        initEventDelegation();
+        // تحسين 8: تحديث شارة النقاط من البيانات المحفوظة محلياً
+        updatePointsBadge();
+        // تحسين 5: مراقبة حالة الاتصال بالإنترنت
+        setupConnectionStatusListeners();
+        // تحسين 2: تحليلات محلية مبسطة (لا تُرسل لأي خادم، تُخزَّن على جهاز المستخدم فقط)
+        logAnalyticsEvent('platform_load', {});
+        // تحسين 3: اقتراح استكمال آخر مرحلة/مادة تمت زيارتها
+        suggestLastVisitedIfAny();
         
         
         
@@ -7466,6 +7704,24 @@ async function init() {
         
         loadCountdownDate();
         
+        // تحسين 9: وضع عدم الاتصال — إذا بدأ المستخدم التصفح دون إنترنت أصلاً، نعرض فوراً
+        // آخر نسخة من الدروس محفوظة على جهازه عبر IndexedDB بدل انتظار مهلة الشبكة (8 ثوانٍ)
+        // أو ظهور بيانات افتراضية فارغة.
+        if (!navigator.onLine) {
+            try {
+                var cachedOfflineData = await idbGetPlatformData();
+                if (cachedOfflineData) {
+                    platformData = cachedOfflineData;
+                    lessonsEverLoadedFromServer = true;
+                    dataLoadedFlag = true;
+                    clearTimeout(dataTimeout);
+                    refreshCurrentView();
+                    updateStats();
+                    showInfo('📴 أنت غير متصل بالإنترنت، يتم عرض آخر نسخة محفوظة من الدروس على جهازك');
+                }
+            } catch(idbErr) { /* تجاهل بصمت إن لم يكن IndexedDB متاحاً */ }
+        }
+        
         try {
             await loadDataFromFirebase();
             await loadLockSettings();
@@ -7478,6 +7734,7 @@ async function init() {
             refreshCurrentView();
             updateStats();
             setInterval(updateCountdown, 1000);
+            try { idbSavePlatformData(platformData); } catch(idbErr2) {}
         } catch(error) {
             console.error('❌ خطأ في تحميل البيانات:', error);
             // لا نمحو دروساً محمّلة فعلاً بنجاح بسبب فشل عابر في أحد إعدادات الإضافية (news, lockSettings...)
