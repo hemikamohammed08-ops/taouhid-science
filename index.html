@@ -849,6 +849,15 @@
             user-select: none;
             will-change: transform;
         }
+        /* إصلاح: الصور الطويلة جداً (مثل صور دروس تجمع عدة صفحات في صورة واحدة طويلة) كانت تُقاس
+           بحد max-height فقط، فكان عرضها ينكمش إلى شريط رفيع غير قابل للقراءة كي يلتزم بالارتفاع.
+           عند اكتشاف هذا النوع (انظر openImageViewer) نعرضها بعرض ثابت مقروء بدل ذلك؛ التكبير
+           والتصغير والسحب تبقى تعمل كالمعتاد فوق هذا الحجم الأساسي الجديد. */
+        #imageViewerOverlay .viewer-body img.tall-doc {
+            max-height: none;
+            width: 95%;
+            height: auto;
+        }
         #imageViewerOverlay .viewer-controls {
             position: absolute;
             bottom: 30px;
@@ -3906,9 +3915,17 @@ function openImageViewer(imageUrl, title) {
     body.className = 'viewer-body';
     
     var img = document.createElement('img');
-    img.src = imageUrl;
     img.alt = title || 'صورة';
     img.draggable = false;
+    // إصلاح: نتحقق من أبعاد الصورة الحقيقية بعد تحميلها. إن كانت طويلة جداً مقارنة بعرضها
+    // (كصور الدروس التي تجمع عدة صفحات في صورة واحدة) نعرضها بعرض كامل مقروء (class="tall-doc")
+    // بدل تركها تنكمش لشريط ضيق بسبب قيد max-height الافتراضي. باقي الصور العادية لا تتأثر.
+    img.onload = function() {
+        if (img.naturalWidth > 0 && (img.naturalHeight / img.naturalWidth) > 1.6) {
+            img.classList.add('tall-doc');
+        }
+    };
+    img.src = imageUrl;
     
     var scale = 1;
     var MIN_SCALE = 0.5;
@@ -4622,10 +4639,15 @@ async function showLessonContent(id, title, url, download, type, fileId) {
             '<button class="btn" style="padding:4px 16px; font-size:0.8rem; background:#0ea5e9; color:white;" onclick="openShareMenu(\'' + escAttr(title) + '\')"><i class="fas fa-share-alt"></i> مشاركة</button>' +
             '<button class="btn btn-danger" onclick="closeFileViewer()" style="padding:4px 16px; font-size:0.8rem;"><i class="fas fa-times"></i> إغلاق</button>' +
             '</div></div>' +
-            '<div style="min-height:250px; text-align:center; background:#f5f5f5; border-radius:12px; padding:20px;">';
+            '<div style="min-height:250px; max-height:75vh; overflow-y:auto; text-align:center; background:#f5f5f5; border-radius:12px; padding:20px;">';
         
         if (isValidImageUrl) {
-            contentHtml += '<img src="' + escAttr(freshUrl) + '" style="max-width:100%; max-height:55vh; border-radius:12px; display:inline-block; margin:0 auto; cursor:pointer; transition:transform 0.2s ease, box-shadow 0.2s ease; box-shadow:0 4px 12px rgba(0,0,0,0.1);" alt="' + escAttr(title) + '" decoding="async" role="button" tabindex="0" aria-label="' + escAttr('تكبير الصورة: ' + title) + '" onclick="openImageViewer(\'' + escAttr(freshUrl) + '\', \'' + escAttr(title) + '\')" onmouseover="this.style.boxShadow=\'0 8px 30px rgba(0,0,0,0.2)\'; this.style.transform=\'scale(1.02)\';" onmouseout="this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.1)\'; this.style.transform=\'scale(1)\';">' +
+            // ملاحظة إصلاح: كانت الصورة تُقيَّد بـ max-height:55vh مع max-width:100%، وهذا يجعل أي صورة
+            // طويلة (مثل صور الدروس التي تجمع عدة صفحات في صورة واحدة طويلة) "تنكمش" عرضها إلى شريط
+            // ضيق جداً غير قابل للقراءة كي يلتزم بارتفاع 55vh. الحل: نعرض الصورة بعرض الحاوية الكامل
+            // دائماً (width:100%; height:auto) بلا قيد على الارتفاع، ونجعل الحاوية نفسها قابلة للتمرير
+            // العمودي (overflow-y:auto أعلاه) عندما تكون الصورة أطول من المساحة المتاحة، بدل ضغط عرضها.
+            contentHtml += '<img src="' + escAttr(freshUrl) + '" style="width:100%; max-width:100%; height:auto; border-radius:12px; display:block; margin:0 auto; cursor:pointer; transition:transform 0.2s ease, box-shadow 0.2s ease; box-shadow:0 4px 12px rgba(0,0,0,0.1);" alt="' + escAttr(title) + '" decoding="async" role="button" tabindex="0" aria-label="' + escAttr('تكبير الصورة: ' + title) + '" onclick="openImageViewer(\'' + escAttr(freshUrl) + '\', \'' + escAttr(title) + '\')" onmouseover="this.style.boxShadow=\'0 8px 30px rgba(0,0,0,0.2)\'; this.style.transform=\'scale(1.01)\';" onmouseout="this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.1)\'; this.style.transform=\'scale(1)\';">' +
             '<p style="color:var(--text-muted); font-size:0.7rem; margin-top:8px;">👆 اضغط على الصورة للتكبير والتحريك</p>';
         } else {
             contentHtml += '<div style="display:flex; justify-content:center; align-items:center; min-height:250px; flex-direction:column; padding:20px; text-align:center;">' +
