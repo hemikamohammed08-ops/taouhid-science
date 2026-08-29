@@ -4525,7 +4525,27 @@ async function showLessonContent(id, title, url, download, type, fileId) {
             <p style="color:var(--text-secondary); font-size:1rem; font-weight:700;">⏳ جاري تحميل الملف...</p>
         </div>
     `;
-    
+
+    // شبكة أمان: إذا كان الدرس داخلياً وبدون رابط أو معرّف ملف (بيانات مُحمّلة سابقاً كزائر)،
+    // نُعيد تحميل الدروس بصلاحيات المستخدم الحالي ونأخذ الرابط الجديد بدل إظهار خطأ يُجبر
+    // المستخدم على الخروج من الدرس أو تحديث الصفحة.
+    if ((type === 'pdf' || type === 'image') && !fileId && (!url || url === '#' || url === 'undefined' || url === 'null')) {
+        try {
+            await loadDataFromFirebase();
+            var refreshed = getCurrentLessons();
+            for (var ri = 0; ri < refreshed.length; ri++) {
+                if (refreshed[ri].id === id) {
+                    url = refreshed[ri].file_info?.url || refreshed[ri].internal_url || url;
+                    download = refreshed[ri].file_info?.url || refreshed[ri].download_url || download;
+                    fileId = refreshed[ri].file_info?.file_id || refreshed[ri].telegram_file_id || fileId;
+                    break;
+                }
+            }
+            currentViewingLesson = { id: id, title: title, url: url, download: download, type: type, fileId: fileId };
+            container = document.getElementById('lessonsContainer') || container;
+        } catch (e) {}
+    }
+
     var freshUrl = url;
     var freshDownload = download;
     if (fileId) {
@@ -7409,6 +7429,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 updateAuthButtons();
                 attachNotificationsListener();
+                // إصلاح: عند التحميل كزائر تُرفض قراءة عقدة 'lessons_secure' فتُخزَّن الدروس
+                // بدون روابط (internal_url / telegram_file_id فارغة). بعد تسجيل الدخول كانت
+                // الواجهة تُعاد رسمها من نفس البيانات القديمة، فلا يفتح الدرس إلا بعد الخروج
+                // منه وإعادة فتحه أو إعادة تحديث الصفحة. الحل: إعادة تحميل بيانات الدروس
+                // بصلاحيات المستخدم الجديد قبل إعلان جاهزية التحقق ورسم الواجهة.
+                try { await loadDataFromFirebase(); } catch (e) {}
                 isAuthReady = true;
                 if (previousUser === null) { 
                     refreshCurrentView(); 
@@ -7420,7 +7446,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 resetSessionTimer();
             } else {
                 isAuthReady = true;
-                if (previousUser !== null) updateUIAfterLogout();
+                if (previousUser !== null) {
+                    // بعد الخروج نُعيد تحميل الدروس بصلاحيات الزائر حتى لا تبقى الروابط الخاصة في الذاكرة
+                    updateUIAfterLogout();
+                    loadDataFromFirebase().then(function () {
+                        try { refreshCurrentView(); } catch (e) {}
+                    }).catch(function () {});
+                }
                 else updateAuthButtons();
             }
         });
