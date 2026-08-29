@@ -969,10 +969,10 @@
             background: rgba(0, 0, 0, 0.95);
             backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
             z-index: 100000;
-            display: flex; justify-content: center; align-items: center; flex-direction: column;
-            padding: 20px;
+            display: flex; justify-content: flex-start; align-items: stretch; flex-direction: column;
+            padding: 0;
             animation: fadeIn 0.3s ease;
-            touch-action: none;
+            touch-action: auto;
             -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
             direction: ltr;
         }
@@ -997,18 +997,24 @@
         #pdfViewerOverlay .viewer-close-btn:hover { background: rgba(255,255,255,0.25); transform: scale(1.05); }
         #pdfViewerOverlay .viewer-close-btn:active { transform: scale(0.9); }
         #pdfViewerOverlay .viewer-body {
-            width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;
-            position: relative; overflow: hidden; touch-action: none; -webkit-touch-callout: none;
+            width: 100%; flex: 1 1 auto; min-height: 0; display: block; text-align: center;
+            position: relative; overflow: auto; -webkit-overflow-scrolling: touch;
+            padding: 76px 8px 104px; touch-action: pan-x pan-y pinch-zoom; -webkit-touch-callout: none;
+            overscroll-behavior: contain;
+        }
+        #pdfViewerOverlay .viewer-page {
+            display: block; width: 100%; margin: 0 auto;
         }
         #pdfViewerOverlay .viewer-body img {
-            max-width: 95%; max-height: 78vh; border-radius: 6px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-            object-fit: contain; transition: transform 0.05s linear, opacity 0.25s ease;
-            cursor: default; touch-action: none; -webkit-touch-callout: none;
-            -webkit-user-drag: none; user-select: none; will-change: transform; background: #fff;
+            display: block; margin: 0 auto; width: 100%; max-width: none; height: auto;
+            border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            transition: opacity 0.2s ease;
+            cursor: default; -webkit-touch-callout: none;
+            -webkit-user-drag: none; user-select: none; background: #fff;
         }
         #pdfViewerOverlay .pdf-viewer-loading {
-            position: absolute; display: flex; flex-direction: column; align-items: center; gap: 14px;
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            display: flex; flex-direction: column; align-items: center; gap: 14px;
             color: #fff; z-index: 100001; text-align: center;
         }
         #pdfViewerOverlay .spinner-white {
@@ -4118,7 +4124,7 @@ function _getPdfDocument(url) {
     var p = (async function () {
         await _ensurePdfLib();
         if (!window['pdfjsLib']) throw new Error('pdf.js غير متاح');
-        var res = await fetch(url, { credentials: 'same-origin', cache: 'no-store' });
+        var res = await fetch(url, { credentials: 'same-origin', cache: 'default' });
         if (!res.ok) throw new Error('HTTP ' + res.status);
         var buf = await res.arrayBuffer();
         if (!buf || buf.byteLength < 5) throw new Error('ملف فارغ');
@@ -4229,13 +4235,16 @@ function openPdfViewer(url, title, downloadUrl) {
     loadingEl.className = 'pdf-viewer-loading';
     loadingEl.innerHTML = '<div class="spinner-white"></div><p>⏳ جاري تحميل الملف...</p>';
 
+    var pageWrap = document.createElement('div');
+    pageWrap.className = 'viewer-page';
     var img = document.createElement('img');
     img.alt = title || 'PDF';
     img.draggable = false;
     img.style.display = 'none';
+    pageWrap.appendChild(img);
 
     body.appendChild(loadingEl);
-    body.appendChild(img);
+    body.appendChild(pageWrap);
 
     var pageNav = document.createElement('div');
     pageNav.className = 'pdf-page-nav';
@@ -4269,106 +4278,72 @@ function openPdfViewer(url, title, downloadUrl) {
     document.body.appendChild(overlay);
     document.body.style.overflow = 'hidden';
 
-    // ---- حالة التكبير/التحريك ----
-    var scale = 1, MIN_SCALE = 1, MAX_SCALE = 5, STEP = 0.5;
-    var translateX = 0, translateY = 0;
-    var isDragging = false, startX = 0, startY = 0;
-    var touchCount = 0, touchDist = 0, initialScale = 1, initialPinchTranslateX = 0, initialPinchTranslateY = 0;
+    // ---- حالة العرض: التكبير يعتمد على عرض الصفحة (ملء العرض) مع تمرير طبيعي ----
+    // 1 = ملاءمة عرض الشاشة (النص واضح تماماً)، ويمكن التكبير حتى 4 أضعاف.
+    var zoom = 1, MIN_ZOOM = 0.5, MAX_ZOOM = 4, ZOOM_STEP = 0.25;
     var pdfDoc = null, numPages = 0, currentPage = 1;
     var pageCache = {};
     var renderToken = 0;
 
-    function applyTransform() {
-        img.style.transform = 'translate(' + translateX + 'px, ' + translateY + 'px) scale(' + scale + ')';
-        zoomLevelDisplay.textContent = Math.round(scale * 100) + '%';
-        img.style.cursor = scale > 1 ? 'grab' : 'default';
+    function applyZoom() {
+        img.style.width = (zoom * 100) + '%';
+        zoomLevelDisplay.textContent = Math.round(zoom * 100) + '%';
     }
-    function zoomIn() { scale = Math.min(MAX_SCALE, scale + STEP); applyTransform(); }
-    function zoomOut() {
-        scale = Math.max(MIN_SCALE, scale - STEP);
-        if (scale === MIN_SCALE) { translateX = 0; translateY = 0; }
-        applyTransform();
+    function setZoom(z, keepScroll) {
+        var prev = zoom;
+        zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.round(z * 100) / 100));
+        if (zoom === prev) return;
+        var ratio = zoom / prev;
+        var cx = body.scrollLeft + body.clientWidth / 2;
+        var cy = body.scrollTop + body.clientHeight / 2;
+        applyZoom();
+        if (keepScroll !== false) {
+            body.scrollLeft = cx * ratio - body.clientWidth / 2;
+            body.scrollTop = cy * ratio - body.clientHeight / 2;
+        }
     }
-    function resetZoom() { scale = 1; translateX = 0; translateY = 0; applyTransform(); }
+    function zoomIn() { setZoom(zoom + ZOOM_STEP); }
+    function zoomOut() { setZoom(zoom - ZOOM_STEP); }
+    function resetZoom() { zoom = 1; applyZoom(); body.scrollLeft = 0; }
 
     zoomOutBtn.onclick = function (e) { e.stopPropagation(); zoomOut(); };
     zoomInBtn.onclick = function (e) { e.stopPropagation(); zoomIn(); };
-    resetBtn.onclick = function (e) { e.stopPropagation(); resetZoom(); };
+    resetBtn.onclick = function (e) { e.stopPropagation(); resetZoom(); body.scrollTop = 0; };
 
-    img.onmousedown = function (e) {
-        if (e.button !== 0 || scale <= 1) return;
-        isDragging = true;
-        startX = e.clientX - translateX; startY = e.clientY - translateY;
-        img.style.cursor = 'grabbing';
-        e.preventDefault();
-    };
-    document.onmousemove = function (e) {
-        if (!isDragging) return;
-        translateX = e.clientX - startX; translateY = e.clientY - startY;
-        applyTransform();
-    };
-    document.onmouseup = function () {
-        if (isDragging) { isDragging = false; img.style.cursor = scale > 1 ? 'grab' : 'default'; }
-    };
-
-    img.ontouchstart = function (e) {
-        var touches = e.touches;
-        touchCount = touches.length;
-        if (touchCount === 1) {
-            startX = touches[0].clientX - translateX;
-            startY = touches[0].clientY - translateY;
-            isDragging = scale > 1;
-        } else if (touchCount === 2) {
-            var dx = touches[0].clientX - touches[1].clientX, dy = touches[0].clientY - touches[1].clientY;
-            touchDist = Math.sqrt(dx * dx + dy * dy);
-            initialScale = scale;
-            initialPinchTranslateX = translateX; initialPinchTranslateY = translateY;
-            isDragging = false;
+    // تكبير بإصبعين (Pinch) — التمرير العادي متروك للمتصفح لتجربة سلسة
+    var pinchDist = 0, pinchZoom = 1, isPinching = false;
+    body.addEventListener('touchstart', function (e) {
+        if (e.touches.length === 2) {
+            var dx = e.touches[0].clientX - e.touches[1].clientX;
+            var dy = e.touches[0].clientY - e.touches[1].clientY;
+            pinchDist = Math.sqrt(dx * dx + dy * dy) || 1;
+            pinchZoom = zoom;
+            isPinching = true;
         }
+    }, { passive: true });
+    body.addEventListener('touchmove', function (e) {
+        if (!isPinching || e.touches.length !== 2) return;
+        var dx = e.touches[0].clientX - e.touches[1].clientX;
+        var dy = e.touches[0].clientY - e.touches[1].clientY;
+        var d = Math.sqrt(dx * dx + dy * dy) || 1;
         e.preventDefault();
-    };
-    img.ontouchmove = function (e) {
-        var touches = e.touches;
-        e.preventDefault();
-        if (touchCount === 1 && touches.length === 1 && isDragging) {
-            translateX = touches[0].clientX - startX;
-            translateY = touches[0].clientY - startY;
-            applyTransform();
-        } else if (touchCount === 2 && touches.length === 2) {
-            var dx = touches[0].clientX - touches[1].clientX, dy = touches[0].clientY - touches[1].clientY;
-            var newDist = Math.sqrt(dx * dx + dy * dy);
-            var delta = (newDist - touchDist) / 200;
-            var newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, initialScale + delta));
-            var midX = (touches[0].clientX + touches[1].clientX) / 2, midY = (touches[0].clientY + touches[1].clientY) / 2;
-            var scaleRatio = newScale / initialScale;
-            var rect = body.getBoundingClientRect();
-            var cx = midX - rect.left - rect.width / 2, cy = midY - rect.top - rect.height / 2;
-            translateX = initialPinchTranslateX + (cx - cx * scaleRatio);
-            translateY = initialPinchTranslateY + (cy - cy * scaleRatio);
-            scale = newScale;
-            applyTransform();
-        }
-    };
-    img.ontouchend = function (e) { touchCount = e.touches.length; if (touchCount === 0) isDragging = false; e.preventDefault(); };
-    img.ontouchcancel = function () { touchCount = 0; isDragging = false; };
+        setZoom(pinchZoom * (d / pinchDist));
+    }, { passive: false });
+    body.addEventListener('touchend', function (e) {
+        if (e.touches.length < 2) isPinching = false;
+    }, { passive: true });
 
-    img.onwheel = function (e) {
+    // عجلة الفأرة: تمرير طبيعي، والتكبير مع Ctrl
+    body.addEventListener('wheel', function (e) {
+        if (!e.ctrlKey) return;
         e.preventDefault();
-        var delta = e.deltaY > 0 ? -STEP * 0.5 : STEP * 0.5;
-        var newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale + delta));
-        var rect = body.getBoundingClientRect();
-        var mx = e.clientX - rect.left - rect.width / 2, my = e.clientY - rect.top - rect.height / 2;
-        var ratio = newScale / scale;
-        translateX = translateX + (mx - mx * ratio); translateY = translateY + (my - my * ratio);
-        scale = newScale;
-        applyTransform();
-    };
+        setZoom(zoom + (e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP));
+    }, { passive: false });
+
     img.ondblclick = function (e) {
         e.stopPropagation();
-        if (scale > 1) resetZoom(); else { scale = 2.5; applyTransform(); }
+        if (zoom > 1) { resetZoom(); } else { setZoom(2); }
     };
-
-    overlay.onclick = function (e) { if (e.target === overlay || e.target === body) closePdfViewer(); };
 
     _pdfViewerEscHandler = function (e) {
         if (!document.getElementById('pdfViewerOverlay')) return;
@@ -4390,23 +4365,34 @@ function openPdfViewer(url, title, downloadUrl) {
     async function _renderPageToDataUrl(num) {
         var page = await pdfDoc.getPage(num);
         var base = page.getViewport({ scale: 1 });
-        var targetWidth = Math.min(window.innerWidth * (window.innerWidth < 700 ? 1.4 : 1.15), 1600);
-        var dpr = Math.min(window.devicePixelRatio || 1, 2.5);
-        var renderScale = (targetWidth / base.width) * dpr;
-        var viewport = page.getViewport({ scale: renderScale });
+        var cssWidth = Math.max(320, body.clientWidth - 16);
+        var dpr = Math.min(window.devicePixelRatio || 1, 3);
+        // دقة عالية دائماً حتى يبقى النص واضحاً عند التكبير
+        var targetPx = Math.min(Math.max(cssWidth * dpr * 1.5, 1400), 2600);
+        var viewport = page.getViewport({ scale: targetPx / base.width });
         var canvas = document.createElement('canvas');
         canvas.width = Math.floor(viewport.width);
         canvas.height = Math.floor(viewport.height);
         await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
-        return canvas.toDataURL('image/jpeg', 0.92);
+        return canvas.toDataURL('image/jpeg', 0.94);
     }
 
     function preloadNeighbors(num) {
-        [num - 1, num + 1].forEach(function (n) {
+        [num + 1, num - 1].forEach(function (n) {
             if (n >= 1 && n <= numPages && !pageCache[n]) {
                 _renderPageToDataUrl(n).then(function (u) { pageCache[n] = u; }).catch(function () {});
             }
         });
+    }
+
+    function showPage(dataUrl) {
+        img.src = dataUrl;
+        img.style.display = 'block';
+        img.style.opacity = '1';
+        loadingEl.style.display = 'none';
+        applyZoom();
+        body.scrollTop = 0;
+        body.scrollLeft = 0;
     }
 
     async function renderPage(num) {
@@ -4416,10 +4402,7 @@ function openPdfViewer(url, title, downloadUrl) {
         updatePageNav();
 
         if (pageCache[num]) {
-            img.src = pageCache[num];
-            img.style.display = 'block';
-            loadingEl.style.display = 'none';
-            resetZoom();
+            showPage(pageCache[num]);
             preloadNeighbors(num);
             return;
         }
@@ -4430,11 +4413,7 @@ function openPdfViewer(url, title, downloadUrl) {
             var dataUrl = await _renderPageToDataUrl(num);
             pageCache[num] = dataUrl;
             if (myToken !== renderToken) return;
-            img.src = dataUrl;
-            img.style.display = 'block';
-            img.style.opacity = '1';
-            loadingEl.style.display = 'none';
-            resetZoom();
+            showPage(dataUrl);
             preloadNeighbors(num);
         } catch (e) {
             console.error('PDF page render error:', e);
@@ -4447,20 +4426,31 @@ function openPdfViewer(url, title, downloadUrl) {
     prevBtn.onclick = function (e) { e.stopPropagation(); goToPage(currentPage - 1); };
     nextBtn.onclick = function (e) { e.stopPropagation(); goToPage(currentPage + 1); };
 
-    // تنقّل بين الصفحات بالسحب (Swipe) عندما لا يكون هناك تكبير
-    var swipeStartX = null;
+    // تنقّل بين الصفحات بالسحب الأفقي (لا يتعارض مع التمرير العمودي)
+    var swipeStartX = null, swipeStartY = null;
     body.addEventListener('touchstart', function (e) {
-        if (scale > 1) { swipeStartX = null; return; }
-        if (e.touches.length === 1) swipeStartX = e.touches[0].clientX;
+        if (isPinching || e.touches.length !== 1) { swipeStartX = null; return; }
+        swipeStartX = e.touches[0].clientX;
+        swipeStartY = e.touches[0].clientY;
     }, { passive: true });
     body.addEventListener('touchend', function (e) {
-        if (scale > 1 || swipeStartX === null) return;
+        if (swipeStartX === null) return;
         var t = e.changedTouches && e.changedTouches[0];
-        if (!t) return;
-        var diff = t.clientX - swipeStartX;
-        if (Math.abs(diff) > 60) { if (diff < 0) goToPage(currentPage + 1); else goToPage(currentPage - 1); }
+        if (!t) { swipeStartX = null; return; }
+        var dx = t.clientX - swipeStartX;
+        var dy = t.clientY - swipeStartY;
         swipeStartX = null;
+        if (zoom > 1) return;
+        if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.8) {
+            if (dx < 0) goToPage(currentPage + 1); else goToPage(currentPage - 1);
+        }
     }, { passive: true });
+
+    window.addEventListener('orientationchange', function () {
+        if (!document.getElementById('pdfViewerOverlay')) return;
+        pageCache = {};
+        if (pdfDoc) renderPage(currentPage);
+    });
 
     (async function () {
         try {
@@ -4504,6 +4494,17 @@ async function showLessonContent(id, title, url, download, type, fileId) {
     var backBtn = document.getElementById('backBtn');
     if (backBtn) backBtn.style.display = 'none';
     
+    // انتظر انتهاء التحقق من الصلاحيات بدل رفض العرض مباشرة (كان يجبر المستخدم على إعادة التحميل)
+    try {
+        if (!isAuthReady && typeof auth !== 'undefined' && auth && auth.currentUser) {
+            container.innerHTML = '<div style="display:flex; justify-content:center; align-items:center; min-height:260px; flex-direction:column; gap:14px;">' +
+                '<div style="width:44px; height:44px; border:5px solid var(--bg-body); border-top:5px solid var(--primary); border-radius:50%; animation: spin 0.8s linear infinite;"></div>' +
+                '<p style="color:var(--text-secondary); font-weight:700;">⏳ جاري التحقق من حسابك...</p></div>';
+            await waitForAuthReady(12000);
+            container = document.getElementById('lessonsContainer') || container;
+        }
+    } catch (e) {}
+
     var canView = isAdminMode || (currentUser && currentUserIsApproved && isLessonAccessible(currentLessonType));
     if (!canView) { 
         if (backBtn) backBtn.style.display = 'inline-flex'; 
@@ -4538,7 +4539,6 @@ async function showLessonContent(id, title, url, download, type, fileId) {
         } catch(e) { freshUrl = url; freshDownload = download; }
     }
     
-    await new Promise(resolve => setTimeout(resolve, 300));
     
     var isPDF = type === 'pdf';
     var isImage = type === 'image';
@@ -4579,7 +4579,7 @@ async function showLessonContent(id, title, url, download, type, fileId) {
         }
         contentHtml += '</div></div>';
         if (isLinkValid) {
-            setTimeout(function() { renderProfessionalPdfViewer(pdfBoxId, viewerUrl, title, freshDownload || viewerUrl); }, 50);
+            setTimeout(function() { renderProfessionalPdfViewer(pdfBoxId, viewerUrl, title, freshDownload || viewerUrl); }, 0);
         }
     } else if (isImage) {
         var isValidImageUrl = freshUrl && freshUrl !== '' && freshUrl !== '#' && freshUrl !== 'undefined';
@@ -6259,7 +6259,7 @@ async function refreshCurrentView() {
             isRestoringState = true;
             var restored = restoreNavigationState();
             if (restored) {
-                await waitForAuthReady(4000);
+                await waitForAuthReady(10000);
                 if (isInCommunity) {
                     showCommunitySection();
                     isRestoringState = false;
@@ -6607,7 +6607,8 @@ function renderLessonsList() {
         for (var i = 0; i < paginated.length; i++) {
             var lesson = paginated[i];
             var isLocked = !isLessonAccessible(currentLessonType);
-            var canView = isAdminMode || (currentUser && currentUserIsApproved && !isLocked);
+            var authPending = !!(typeof auth !== 'undefined' && auth && auth.currentUser && !isAuthReady);
+            var canView = isAdminMode || authPending || (currentUser && currentUserIsApproved && !isLocked);
             
             var fileId = lesson.file_info?.file_id || lesson.telegram_file_id || null;
             var createdDate = lesson.created_at ? new Date(lesson.created_at).toLocaleDateString('ar') : '';
@@ -7332,8 +7333,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 var permissionCheckSucceeded = false;
                 while (permissionCheckAttempts < 3 && !permissionCheckSucceeded) {
                     try {
-                        isApprovedMember = await checkMemberApproval(email);
-                        isTeacher = await checkTeacherPermissions(email);
+                        // فحص متوازٍ (كان تسلسلياً) لتسريع ظهور المحتوى بعد تسجيل الدخول
+                        var permResults = await Promise.all([
+                            checkMemberApproval(email),
+                            checkTeacherPermissions(email)
+                        ]);
+                        isApprovedMember = permResults[0];
+                        isTeacher = permResults[1];
                         permissionCheckSucceeded = true;
                     } catch (permError) {
                         permissionCheckAttempts++;
@@ -7384,8 +7390,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     showWarning('تم تعيين مرحلتك كـ "ابتدائي" بشكل افتراضي، يرجى التواصل مع الإدارة إذا كان ذلك خطأ');
                 }
                 
-                await registerActiveSession(email);
-                attachSessionConflictListener(email);
+                registerActiveSession(email).then(function () {
+                    attachSessionConflictListener(email);
+                }).catch(function () {});
                 
                 updateUserInterface();
                 if (isAdminMode && currentUser?.email === MASTER_TEACHER_EMAIL) {
@@ -7406,6 +7413,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (previousUser === null) { 
                     refreshCurrentView(); 
                     updateStats();
+                } else if (currentLessonType && !currentViewingFile) {
+                    // تحديث أزرار العرض فور اكتمال التحقق دون إزعاج المستخدم
+                    try { renderLessonsList(); } catch (e) {}
                 }
                 resetSessionTimer();
             } else {
