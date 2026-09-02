@@ -55,7 +55,7 @@
     
     
     
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' https: blob: 'unsafe-inline' https://www.google.com https://www.gstatic.com; worker-src 'self' blob: https:; child-src 'self' blob: https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; connect-src 'self' https: wss: blob:; frame-src 'self' https: blob:; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src https://cdn.gpteng.co 'self' https: blob: 'unsafe-inline' https://www.google.com https://www.gstatic.com; worker-src 'self' blob: https:; child-src 'self' blob: https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; connect-src 'self' https: wss: blob:; frame-src 'self' https: blob:; base-uri 'self'; form-action 'self'; upgrade-insecure-requests; frame-ancestors 'self' https://lovable.dev https://beta.lovable.dev https://*.beta.lovable.dev https://*.dwl.lovable.dev https://*.sandcastle.lovable.net https://gptengineer.app http://localhost:* http://*.localhost:*">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -356,13 +356,13 @@
             content: ""; position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: -2;
             background-image: url('https://commons.wikimedia.org/wiki/Special:FilePath/20230709_English_classroom_in_school.jpg?width=1600');
             background-size: cover; background-position: center; background-attachment: fixed;
-            filter: saturate(0.85);
+            filter: saturate(1.05) contrast(1.05);
         }
         body::after {
             content: ""; position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: -1;
-            background: rgba(240, 244, 248, 0.93);
+            background: linear-gradient(180deg, rgba(240,244,248,0.80), rgba(232,238,246,0.86));
         }
-        [data-theme="dark"] body::after { background: rgba(10, 15, 26, 0.93); }
+        [data-theme="dark"] body::after { background: linear-gradient(180deg, rgba(10,15,26,0.84), rgba(8,12,22,0.90)); }
         @media (max-width: 640px) {
             body::before { background-attachment: scroll; }
         }
@@ -536,6 +536,8 @@
 
         .stages-new { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; margin: 28px 0 36px; }
         .stages-new.hidden { display: none; }
+        /* ===== لا تظهر منطقة المراحل إلا بعد الضغط على "اختر مرحلتك الدراسية" ===== */
+        [data-stage-gate="closed"] { display: none !important; }
         .stage-btn-new {
             border: none; padding: 16px 32px; border-radius: var(--radius-full);
             font-size: 1rem; font-weight: 800; font-family: 'Tajawal', sans-serif;
@@ -734,7 +736,28 @@
         }
         .admin-overlay.active { display: block; }
 
-        .welcome-new { text-align: center; padding: 32px 20px; background: var(--bg-white); border-radius: var(--radius-lg); margin: 16px 0; box-shadow: var(--shadow-md); }
+        .welcome-new {
+            position: relative; overflow: hidden; text-align: center; padding: 44px 22px;
+            border-radius: var(--radius-lg); margin: 16px 0; box-shadow: var(--shadow-lg);
+            background-color: #0d2b5c;
+            background-image: url('https://commons.wikimedia.org/wiki/Special:FilePath/20230709_English_classroom_in_school.jpg?width=1600');
+            background-size: cover; background-position: center;
+            color: #fff;
+        }
+        .welcome-new::before {
+            content: ""; position: absolute; inset: 0; z-index: 0;
+            background: linear-gradient(125deg, rgba(99,102,241,0.88), rgba(14,165,233,0.80), rgba(16,185,129,0.78), rgba(245,200,74,0.72));
+            background-size: 320% 320%;
+            animation: welcomeAurora 16s ease-in-out infinite;
+        }
+        @keyframes welcomeAurora {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .welcome-new > * { position: relative; z-index: 1; }
+        .welcome-new h3, .welcome-new p { color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.35); }
+        .welcome-new p { opacity: 0.95; }
         .welcome-new .emoji { font-size: 2.5rem; display: block; }
         .welcome-new h3 { font-size: 1.3rem; font-weight: 800; }
 
@@ -1412,6 +1435,16 @@
 
         /* لمسة زخرفية هادئة خلف الهيدر (هيرو) بدل الخلفية المسطحة */
         .header-new { position: relative; overflow: hidden; }
+        /* ===== إطار الهيدر بخلفية القسم الحقيقية (أظهر وأبرز) ===== */
+        .header-new {
+            background-color: #0d2b5c;
+            background-image:
+                linear-gradient(115deg, rgba(9,25,54,0.78) 0%, rgba(20,55,105,0.62) 45%, rgba(26,74,138,0.42) 72%, rgba(232,168,56,0.32) 100%),
+                url('https://commons.wikimedia.org/wiki/Special:FilePath/20230709_English_classroom_in_school.jpg?width=1600');
+            background-size: cover, cover;
+            background-position: center, center;
+            border: 1px solid rgba(255,255,255,0.16);
+        }
         .header-new::before {
             content: "";
             position: absolute;
@@ -1534,7 +1567,18 @@
         }
 
     </style>
-</head>
+
+<style>
+	@font-face {
+		font-family: 'CameraPlainVariable';
+		src: url('https://cdn.gpteng.co/mcp-widgets/v1/fonts/CameraPlainVariable.woff2') format('woff2');
+		font-weight: 100 900;
+		font-style: normal;
+		font-display: swap;
+	}
+
+</style>
+<meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e37fc7c9c87798ee862e35fe02221704/id-preview-eff0be86--45fc513e-0add-48ea-9297-9061a1543237.lovable.app-1788354093901.png"><meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e37fc7c9c87798ee862e35fe02221704/id-preview-eff0be86--45fc513e-0add-48ea-9297-9061a1543237.lovable.app-1788354093901.png"></head>
 <body>
 
 
@@ -1648,6 +1692,19 @@
         </div>
     </header>
 
+    <script>
+    // إصلاح ظهور نافذة الإشعارات: نقلها لتكون طفلاً مباشراً لـ body
+    // بدل بقائها داخل الهيدر (الذي يستخدم overflow:hidden لأغراض التصميم)،
+    // لضمان ظهورها كاملة وبدون أي قصّ أو تموضع خاطئ، دون تغيير أي من وظائفها
+    // (نفس المعرّفات id ونفس دوال JS تعمل كما هي تماماً).
+    (function() {
+        var overlay = document.getElementById('notifOverlay');
+        var panel = document.getElementById('notificationsPanel');
+        if (overlay) document.body.appendChild(overlay);
+        if (panel) document.body.appendChild(panel);
+    })();
+    </script>
+
     <section class="hero-banner" aria-label="مرحباً بكم">
         <div class="hero-banner__bg"></div>
         <div class="hero-banner__overlay"></div>
@@ -1655,13 +1712,38 @@
         <div class="hero-banner__content">
             <span class="hero-banner__badge"><span class="dot"></span> الدروس تُحدَّث باستمرار</span>
             <h2>محتواك الدراسي <span>على بُعد نقرة</span></h2>
-            <p>دروس، ملخصات، وتمارين لكل المراحل، مع متابعة مباشرة من الأستاذ محمد ومجتمع من التلاميذ والأهل.</p>
-            <button class="hero-banner__cta" onclick="document.getElementById('mainStagesContainer').scrollIntoView({behavior:'smooth', block:'start'})">
+            <p>دروس، ملخصات، وتمارين لكل المراحل، مع متابعة مباشرة من  مجموعة من الأساتذة.</p>
+            <button class="hero-banner__cta" onclick="revealStageArea()">
                 <i class="fas fa-arrow-down"></i> اختر مرحلتك الدراسية
             </button>
         </div>
     </section>
     <script>
+    // إظهار منطقة المراحل بعد الضغط على زر "اختر مرحلتك الدراسية" (لا يؤثر على أي وظيفة أخرى)
+    function revealStageArea(scroll) {
+        var opened = false;
+        var nodes = document.querySelectorAll('[data-stage-gate="closed"]');
+        for (var i = 0; i < nodes.length; i++) { nodes[i].removeAttribute('data-stage-gate'); opened = true; }
+        var target = document.getElementById('mainStagesContainer');
+        if (target && scroll !== false) {
+            setTimeout(function(){ target.scrollIntoView({behavior:'smooth', block:'start'}); }, opened ? 80 : 0);
+        }
+    }
+    window.revealStageArea = revealStageArea;
+    (function() {
+        // أي محتوى يُحمَّل داخل منطقة الدروس يفتح البوابة تلقائياً حتى لا تتعطل أي وظيفة
+        var area = document.getElementById('dynamicArea');
+        if (area && window.MutationObserver) {
+            new MutationObserver(function(){
+                if (area.getAttribute('data-stage-gate') !== 'closed') return;
+                // تجاهل بطاقة الترحيب الافتراضية حتى لا تُفتح البوابة تلقائياً
+                var onlyWelcome = area.children.length <= 1 && area.querySelector('.welcome-new');
+                if (onlyWelcome) return;
+                if (area.textContent.trim() === '') return;
+                revealStageArea(false);
+            }).observe(area, { childList: true, subtree: true });
+        }
+    })();
     (function() {
         var host = document.getElementById('heroParticles');
         if (!host) return;
@@ -1700,7 +1782,7 @@
         </div>
     </div>
 
-    <div class="countdown-new" id="countdownContainer">
+    <div class="countdown-new" id="countdownContainer" data-stage-gate="closed">
         <div class="title"><i class="fas fa-calendar-days"></i> العودة إلى الدراسة</div>
         <div class="timer">
             <div class="box"><div class="number" id="days">00</div><div class="label">يوم</div></div>
@@ -1710,14 +1792,14 @@
         </div>
     </div>
 
-    <div class="stages-new" id="mainStagesContainer">
+    <div class="stages-new" id="mainStagesContainer" data-stage-gate="closed">
         <button class="stage-btn-new primary" data-main="primary"><i class="fas fa-school"></i> ابتدائي</button>
         <button class="stage-btn-new middle" data-main="middle"><i class="fas fa-chalkboard-user"></i> متوسط</button>
         <button class="stage-btn-new high" data-main="high"><i class="fas fa-university"></i> ثانوي</button>
         <button class="stage-btn-new community" id="communityBtn"><i class="fas fa-users"></i> مجتمعنا</button>
     </div>
 
-    <div id="statsContainer" class="stats-container" style="display:none;">
+    <div id="statsContainer" class="stats-container" style="display:none;" data-stage-gate="closed">
         <div class="stat-item">
             <span class="number" id="statsLessons">0</span>
             <span class="label">📚 إجمالي الدروس</span>
@@ -1734,7 +1816,7 @@
 
 
 
-    <div id="dynamicArea">
+    <div id="dynamicArea" data-stage-gate="closed">
         <div class="welcome-new">
             <span class="emoji">👨‍🏫📚</span>
             <h3>مرحباً بك في منصة الأستاذ محمد</h3>
@@ -1800,7 +1882,7 @@
         <div style="font-size:2.5rem;">🔐</div>
         <h2>تسجيل الدخول</h2>
         <div style="display:flex; flex-direction:column; gap:10px; margin:16px 0;">
-            <button id="loginAdminBtn" style="background:#dc2626; color:white; padding:12px; border-radius:var(--radius-full); border:none; font-weight:700; cursor:pointer; min-height:44px;">🏛️ الإدارة</button>
+            <button id="loginAdminBtn" title="الإدارة" aria-label="الإدارة" style="background:#dc2626; color:white; padding:12px; border-radius:var(--radius-full); border:none; font-weight:700; cursor:pointer; min-height:44px;">🏛️</button>
             <button id="loginTeacherBtn" style="background:#f59e0b; color:white; padding:12px; border-radius:var(--radius-full); border:none; font-weight:700; cursor:pointer; min-height:44px;">👨‍🏫 أستاذ</button>
             <button id="loginMemberBtn" style="background:var(--primary); color:white; padding:12px; border-radius:var(--radius-full); border:none; font-weight:700; cursor:pointer; min-height:44px;">👨‍🎓 عضو</button>
         </div>
@@ -3043,7 +3125,9 @@ window.goToNotificationLesson = goToNotificationLesson;
 document.addEventListener('click', function(e) {
     var panel = document.getElementById('notificationsPanel');
     var wrapper = document.getElementById('notifWrapper');
-    if (panel && panel.classList.contains('active') && wrapper && !wrapper.contains(e.target)) {
+    var clickedInsideWrapper = wrapper && wrapper.contains(e.target);
+    var clickedInsidePanel = panel && panel.contains(e.target);
+    if (panel && panel.classList.contains('active') && !clickedInsideWrapper && !clickedInsidePanel) {
         closeNotificationsPanel();
     }
 });
@@ -7695,5 +7779,6 @@ async function init() {
 
 init();
 </script>
+
 </body>
 </html>
