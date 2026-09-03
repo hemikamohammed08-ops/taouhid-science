@@ -1,0 +1,5540 @@
+// ============================================================
+// ===== التكوين والمتغيرات العامة =====
+// ============================================================
+
+var CONFIG = {
+    firebase: {
+        apiKey: "AIzaSyA0VmzcILa8DY13_Y33VvQMCfwXSF00uTQ",
+        authDomain: "taouhid-sci.firebaseapp.com",
+        projectId: "taouhid-sci",
+        storageBucket: "taouhid-sci.firebasestorage.app",
+        messagingSenderId: "408000399471",
+        appId: "1:408000399471:web:05940e3637d2b21bf0a59a",
+        databaseURL: "https://taouhid-sci-default-rtdb.firebaseio.com/"
+    },
+};
+
+// ✅ تمت إزالة EmailJS - يستخدم Google Forms الآن
+
+// ===== محمّل سكربتات كسول (Lazy Script Loader) =====
+// يحمّل مكتبة خارجية مرة واحدة فقط وعند الحاجة الفعلية (تحسين أداء - نفس الملفات ونفس النتيجة)
+var _lazyScriptPromises = {};
+function _loadScriptOnce(src) {
+    if (_lazyScriptPromises[src]) return _lazyScriptPromises[src];
+    _lazyScriptPromises[src] = new Promise(function(resolve, reject) {
+        var existing = document.querySelector('script[src="' + src + '"]');
+        if (existing) { resolve(); return; }
+        var s = document.createElement('script');
+        s.src = src;
+        s.onload = function() { resolve(); };
+        s.onerror = function() { delete _lazyScriptPromises[src]; reject(new Error('تعذر تحميل ' + src)); };
+        document.head.appendChild(s);
+    });
+    return _lazyScriptPromises[src];
+}
+
+var database = null;
+var auth = null;
+var currentUser = null;
+var isAuthReady = false;
+var isAdminMode = false;
+var currentUserIsApproved = false;
+var currentUserStage = null;
+var notificationsRef = null;
+var notificationsLoadedOnce = false;
+var sessionStartTimeMs = Date.now();
+var lessonNotifications = [];
+var unreadNotificationsCount = 0;
+var dataLoaded = false;
+var platformData = null;
+// حارس السباق (race guard): يمنع استجابة قديمة متأخرة من الكتابة فوق بيانات أحدث منها
+var lessonsLoadRequestId = 0;
+// يصبح true فقط بعد أول تحميل ناجح فعلي من Firebase (وليس بيانات افتراضية) — يُستخدم لمنع أي مسار خطأ من محو دروس محمّلة فعلاً
+var lessonsEverLoadedFromServer = false;
+var CURRENT_APP_VERSION = '5.6';
+var lockSettings = null;
+var countdownTargetDate = null;
+var registrationSettings = null;
+var newsItems = ["📢 مرحباً بكم في منصة الأستاذ محمد التعليمية"];
+// ⚠️ ملاحظة: Base64 هنا مجرد تعتيم بسيط (obfuscation) وليس تشفيراً حقيقياً — يمكن فك تشفيره فوراً من console المتصفح.
+// الحماية الفعلية ضد الوصول غير المصرح به تعتمد بالكامل على قواعد Firebase Realtime Database (auth.token.email)، وليس على إخفاء هذا النص.
+var MASTER_TEACHER_EMAIL = atob("aGVtaWthbW9oYW1tZWQwOEBnbWFpbC5jb20=");
+
+function emailToKey(email) {
+    return (email || '').trim().toLowerCase().replace(/\./g, '_');
+}
+function normalizeEmail(email) {
+    return (email || '').trim().toLowerCase();
+}
+var LESSONS_PER_PAGE = 10;
+// ملاحظة: الحد مضبوط على 4MB لأن استضافة Vercel تفرض حداً بنيوياً صارماً 4.5MB
+// على حجم أي طلب/رد لدالة Serverless، ولا يمكن تجاوزه من الكود. لدعم ملفات أكبر
+// يلزم تغيير معماري (رفع مباشر لتخزين خارجي مثل Vercel Blob بدل تمرير الملف عبر الدالة).
+var MAX_FILE_SIZE = 4 * 1024 * 1024;
+var CONTACT_MESSAGES_PATH = 'contact_messages';
+var sortOrder = 'desc';
+var sessionId = null;
+
+var loginAttempts = {};
+var requestCount = {};
+var MAX_REQUESTS_PER_MINUTE = 60;
+
+var currentStage = null;
+var currentSubStage = null;
+var currentYear = null;
+var currentSubject = null;
+var currentLessonType = null;
+var currentPage = 1;
+var navigationStack = [];
+var isInCommunity = false;
+var currentFilter = 'all';
+var selectedCommunityStage = 'primary';
+var editingLessonId = null;
+var editingInternalLessonId = null;
+var uploadedFile = null;
+var uploadedFileForEdit = null;
+var isRestoringState = false;
+var isFirstLoad = true;
+var currentViewingFile = null;
+var currentViewingLesson = null;
+var joinRequests = [];
+var approvedMembers = [];
+
+var inviteLinks = {
+    primary: { telegram: "", facebook: "" },
+    middle: { telegram: "", facebook: "" },
+    high: { telegram: "", facebook: "" }
+};
+
+// ============================================================
+// ===== دوال الأمان =====
+// ============================================================
+
+function setSecureSessionData(key, value) {
+    try { sessionStorage.setItem('sec_' + key, value); } catch(e) {}
+}
+
+function getSecureSessionData(key) {
+    try { return sessionStorage.getItem('sec_' + key); } catch(e) { return null; }
+}
+
+function clearSecureSessionData(key) {
+    try { sessionStorage.removeItem('sec_' + key); } catch(e) {}
+}
+
+function setSecurePersistentData(key, value) {
+    try { localStorage.setItem('sec_' + key, value); } catch(e) {}
+}
+
+function getSecurePersistentData(key) {
+    try { return localStorage.getItem('sec_' + key); } catch(e) { return null; }
+}
+
+function generateSessionId() {
+    return CryptoJS.lib.WordArray.random(32).toString(CryptoJS.enc.Hex);
+}
+
+// المشكلة 2: إصلاح خطأ PERMISSION_DENIED في security_logs عن طريق تغليف الكتابة بـ .catch()
+function logSecurityEvent(eventType, details) {
+    if (!database) return;
+    try {
+        var logData = {
+            event: eventType,
+            details: details || {},
+            timestamp: Date.now(),
+            user: currentUser?.email || 'anonymous',
+            userAgent: navigator.userAgent,
+            sessionId: sessionId || 'unknown'
+        };
+        database.ref('security_logs').push(logData).catch(function(err) {
+            // تجاهل أخطاء الأمان بصمت - لا نريد أن تظهر في الكونسول
+            // يمكن تفعيل هذا للتصحيح إذا لزم الأمر:
+            // console.debug('Security log write failed (permission denied):', err.code || err.message);
+        });
+    } catch(e) {
+        // تجاهل الأخطاء في سجل الأمان
+    }
+}
+
+function checkRateLimit(action) {
+    var now = Date.now();
+    var key = action + '_' + (currentUser?.email || 'anonymous');
+    if (!requestCount[key]) { requestCount[key] = []; }
+    requestCount[key] = requestCount[key].filter(function(t) { return now - t < 60000; });
+    if (requestCount[key].length >= MAX_REQUESTS_PER_MINUTE) {
+        logSecurityEvent('rate_limit_exceeded', { action: action });
+        showWarning('⚠️ تم تجاوز الحد المسموح من الطلبات. يرجى الانتظار دقيقة.');
+        return false;
+    }
+    requestCount[key].push(now);
+    return true;
+}
+
+function checkLoginAttempts(email) {
+    if (!email) return { blocked: false };
+    var attempts = loginAttempts[email] || { count: 0, lastAttempt: 0 };
+    var now = Date.now();
+    var cooldownPeriod = 15 * 60 * 1000;
+    
+    if (attempts.count >= 5) {
+        if (now - attempts.lastAttempt < cooldownPeriod) {
+            var remaining = Math.ceil((cooldownPeriod - (now - attempts.lastAttempt)) / 1000);
+            return { blocked: true, remainingTime: remaining };
+        } else {
+            loginAttempts[email] = { count: 0, lastAttempt: now };
+            return { blocked: false };
+        }
+    }
+    return { blocked: false };
+}
+
+function recordFailedLogin(email) {
+    if (!email) return;
+    if (!loginAttempts[email]) {
+        loginAttempts[email] = { count: 0, lastAttempt: Date.now() };
+    }
+    loginAttempts[email].count++;
+    loginAttempts[email].lastAttempt = Date.now();
+    logSecurityEvent('failed_login', { email: email, attempts: loginAttempts[email].count });
+}
+
+function resetLoginAttempts(email) {
+    if (email) delete loginAttempts[email];
+}
+
+var SESSION_TIMEOUT = 30 * 60 * 1000;
+var sessionTimer = null;
+
+function resetSessionTimer() {
+    if (sessionTimer) clearTimeout(sessionTimer);
+    if (currentUser) {
+        sessionTimer = setTimeout(function() {
+            if (currentUser) {
+                logSecurityEvent('session_timeout', { user: currentUser.email });
+                showWarning('⏰ انتهت صلاحية الجلسة بسبب عدم النشاط');
+                if (auth) auth.signOut().catch(function() {});
+                updateUIAfterLogout();
+            }
+        }, SESSION_TIMEOUT);
+    }
+}
+
+function setupSessionActivityListeners() {
+    var events = ['click', 'keypress', 'scroll', 'touchstart', 'mousemove'];
+    for (var i = 0; i < events.length; i++) {
+        document.addEventListener(events[i], function() {
+            if (currentUser) resetSessionTimer();
+        });
+    }
+}
+
+var _sessionConflictActive = false;
+var activeSessionRef = null;
+var activeSessionListenerFn = null;
+
+// يراقب جلسة المستخدم لحظياً: إن كتب جهاز آخر sessionId مختلف، يتم تسجيل الخروج فوراً
+// بدلاً من الانتظار حتى تُستدعى validateSession() قبل إجراء إداري معيّن.
+function attachSessionConflictListener(email) {
+    detachSessionConflictListener();
+    if (!database || !email) return;
+    activeSessionRef = database.ref('activeSessions/' + emailToKey(email));
+    activeSessionListenerFn = function(snapshot) {
+        var data = snapshot.val();
+        if (data && sessionId && data.sessionId && data.sessionId !== sessionId) {
+            logSecurityEvent('session_conflict', {
+                user: email,
+                currentSession: sessionId,
+                otherSession: data.sessionId
+            });
+            showWarning('⚠️ تم تسجيل الدخول من جهاز آخر، سيتم تسجيل الخروج');
+            // نمنع حذف سجل الجلسة من قاعدة البيانات هنا، لأنه أصبح يخص الجهاز الآخر الآن وليس هذا الجهاز
+            _sessionConflictActive = true;
+            detachSessionConflictListener();
+            if (auth) auth.signOut().catch(function() {});
+            updateUIAfterLogout();
+        }
+    };
+    activeSessionRef.on('value', activeSessionListenerFn);
+}
+
+function detachSessionConflictListener() {
+    if (activeSessionRef && activeSessionListenerFn) {
+        try { activeSessionRef.off('value', activeSessionListenerFn); } catch(e) {}
+    }
+    activeSessionRef = null;
+    activeSessionListenerFn = null;
+}
+
+async function validateSession() {
+    if (!currentUser || !sessionId) return true;
+    try {
+        var snapshot = await database.ref('activeSessions/' + emailToKey(currentUser.email)).once('value');
+        var data = snapshot.val();
+        if (data && data.sessionId !== sessionId) {
+            logSecurityEvent('session_conflict', { 
+                user: currentUser.email, 
+                currentSession: sessionId,
+                otherSession: data.sessionId
+            });
+            showWarning('⚠️ تم تسجيل الدخول من جهاز آخر، سيتم تسجيل الخروج');
+            _sessionConflictActive = true;
+            detachSessionConflictListener();
+            await auth.signOut();
+            updateUIAfterLogout();
+            return false;
+        }
+        return true;
+    } catch(e) { return true; }
+}
+
+async function registerActiveSession(email) {
+    if (!email) return;
+    sessionId = generateSessionId();
+    try {
+        await database.ref('activeSessions/' + emailToKey(email)).set({
+            email: email,
+            sessionId: sessionId,
+            lastActivity: Date.now(),
+            userAgent: navigator.userAgent
+        });
+    } catch(e) {
+        // تجاهل أخطاء التسجيل
+    }
+}
+
+async function removeActiveSession(email) {
+    if (!email) return;
+    try {
+        await database.ref('activeSessions/' + emailToKey(email)).remove();
+    } catch(e) {
+        // تجاهل أخطاء الإزالة
+    }
+}
+
+// ============================================================
+// ===== دوال إمكانية الوصول (لوحة المفاتيح) =====
+// ============================================================
+
+// يجعل أي عنصر يحمل role="button" (الأيقونات غير قابلة للتركيز أصلاً مثل الشعار
+// وأيقونتي الترس، وعناصر القوائم المُولَّدة ديناميكياً كالإشعارات) قابلاً للتفعيل
+// عبر مفتاحي Enter أو Space تماماً كأي زر <button> حقيقي. معالج واحد مفوَّض على
+// document يغطي العناصر الحالية والمستقبلية دون الحاجة لربط كل عنصر يدوياً.
+document.addEventListener('keydown', function(e) {
+    if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+    var target = e.target.closest ? e.target.closest('[role="button"]') : null;
+    if (!target) return;
+    // لا نتدخل إن كان العنصر زراً أو رابطاً حقيقياً أصلاً (له سلوك افتراضي كافٍ)
+    if (target.tagName === 'BUTTON' || target.tagName === 'A') return;
+    e.preventDefault();
+    target.click();
+});
+
+// ============================================================
+// ===== دوال الخصوصية =====
+// ============================================================
+
+function checkPrivacyConsent() {
+    try {
+        var consent = localStorage.getItem('privacyConsent');
+        if (!consent) {
+            document.getElementById('privacyNotice').style.display = 'block';
+            return false;
+        }
+        return true;
+    } catch(e) { return false; }
+}
+
+function acceptPrivacy() {
+    try {
+        localStorage.setItem('privacyConsent', 'accepted');
+        document.getElementById('privacyNotice').style.display = 'none';
+        showSuccess('شكراً لك، يمكنك الآن استخدام المنصة بأمان');
+    } catch(e) {}
+}
+
+function showPrivacyPolicy() {
+    showInfo('📋 سياسة الخصوصية:\n\n' +
+        '1. نقوم بجمع البريد الإلكتروني والمرحلة التعليمية لتقديم الخدمات.\n' +
+        '2. نستخدم ملفات تعريف الارتباط لتحسين تجربة المستخدم.\n' +
+        '3. لا نقوم بمشاركة بياناتك مع أطراف ثالثة.\n' +
+        '4. يمكنك طلب حذف بياناتك في أي وقت.\n' +
+        '5. بياناتك محمية بتشفير متقدم.\n\n' +
+        'للاستفسارات، يرجى التواصل مع الإدارة.');
+}
+
+// ============================================================
+// ===== دوال مساعدة =====
+// ============================================================
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
+if (typeof DOMPurify !== 'undefined' && !window.__dompurifyHooksAdded) {
+    window.__dompurifyHooksAdded = true;
+    DOMPurify.addHook('afterSanitizeAttributes', function(node) {
+        if (node.tagName === 'A' && node.getAttribute('target') === '_blank') {
+            node.setAttribute('rel', 'noopener noreferrer');
+        }
+        ['href', 'src'].forEach(function(attr) {
+            var val = node.getAttribute(attr);
+            if (val && /^\s*(javascript|data|vbscript):/i.test(val)) {
+                node.removeAttribute(attr);
+            }
+        });
+    });
+}
+
+function sanitizeHtml(html) {
+    if (typeof DOMPurify !== 'undefined') {
+        return DOMPurify.sanitize(html, {
+            ALLOWED_TAGS: ['p', 'span', 'div', 'strong', 'b', 'i', 'em', 'u', 'br', 'hr', 'a', 'img', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'td', 'th'],
+            ALLOWED_ATTR: ['href', 'target', 'src', 'alt', 'class', 'dir', 'lang'],
+            ALLOW_DATA_ATTR: false,
+            FORBID_ATTR: ['style', 'onerror', 'onload', 'onclick', 'onmouseover', 'onmouseout', 'onchange', 'onfocus', 'onblur'],
+            FORBID_TAGS: ['form', 'input', 'button', 'select', 'option', 'textarea', 'label', 'marquee', 'iframe', 'object', 'embed', 'style', 'script']
+        });
+    }
+    var tmp = document.createElement('div');
+    tmp.textContent = html;
+    return tmp.innerHTML;
+}
+
+function escAttr(value) {
+    if (value === null || value === undefined) return '';
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function isFakeEmail(email) {
+    if (!email) return true;
+    var domain = email.split('@')[1];
+    if (!domain) return true;
+    domain = domain.toLowerCase();
+    var fakeDomains = ['tempmail.com', '10minutemail.com', 'guerrillamail.com', 'mailinator.com', 'yopmail.com', 'throwawaymail.com'];
+    for (var i = 0; i < fakeDomains.length; i++) {
+        if (domain.includes(fakeDomains[i])) return true;
+    }
+    return false;
+}
+
+function getLessonId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return '';
+    var parts = dateStr.split('-');
+    if (parts.length === 3) return parts[2] + '/' + parts[1] + '/' + parts[0];
+    return dateStr;
+}
+
+function validatePasswordStrength(password) {
+    var result = { valid: false, errors: [] };
+    if (password.length < 8) { result.errors.push('كلمة المرور يجب أن تكون 8 أحرف على الأقل'); }
+    if (!/[A-Z]/.test(password)) { result.errors.push('يجب أن تحتوي على حرف كبير واحد على الأقل'); }
+    if (!/[a-z]/.test(password)) { result.errors.push('يجب أن تحتوي على حرف صغير واحد على الأقل'); }
+    if (!/[0-9]/.test(password)) { result.errors.push('يجب أن تحتوي على رقم واحد على الأقل'); }
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) { result.errors.push('يجب أن تحتوي على رمز خاص واحد على الأقل'); }
+    result.valid = result.errors.length === 0;
+    return result;
+}
+
+function updatePasswordRequirements(password, type) {
+    var prefix = type === 'teacher' ? '' : 'M';
+    var checks = {
+        length: password.length >= 8,
+        upper: /[A-Z]/.test(password),
+        lower: /[a-z]/.test(password),
+        number: /[0-9]/.test(password),
+        special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+    };
+    var labels = {
+        length: '8 أحرف على الأقل',
+        upper: 'حرف كبير',
+        lower: 'حرف صغير',
+        number: 'رقم',
+        special: 'رمز خاص'
+    };
+    for (var key in checks) {
+        var elId = 'req' + prefix + key.charAt(0).toUpperCase() + key.slice(1);
+        var el = document.getElementById(elId);
+        if (el) {
+            el.className = 'req ' + (checks[key] ? 'valid' : 'invalid');
+            el.innerHTML = '<i class="fas ' + (checks[key] ? 'fa-check' : 'fa-times') + '"></i> ' + labels[key];
+        }
+    }
+}
+
+function showToast(message, type, duration) {
+    type = type || 'info';
+    duration = duration || 5000;
+    var container = document.getElementById('toastContainer');
+    if (!container) {
+        var newContainer = document.createElement('div');
+        newContainer.id = 'toastContainer';
+        newContainer.className = 'toast-container';
+        document.body.appendChild(newContainer);
+        container = newContainer;
+    }
+    var icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
+    var toast = document.createElement('div');
+    toast.className = 'toast ' + type;
+    toast.innerHTML = '<span style="font-size:1.2rem;"><i class="fas ' + (icons[type] || icons.info) + '"></i></span><span>' + message + '</span>';
+    container.appendChild(toast);
+    setTimeout(function() {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(80px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(function() { if (toast.parentNode) toast.remove(); }, 300);
+    }, duration);
+}
+
+function showWarning(message) { showToast('⚠️ ' + message, 'warning', 4000); }
+function showError(message) { showToast('❌ ' + message, 'error', 5000); }
+function showSuccess(message) { showToast('✅ ' + message, 'success', 5000); }
+function showInfo(message) { showToast('ℹ️ ' + message, 'info', 4000); }
+
+// ============================================================
+// ===== دوال إشعارات الدروس الجديدة =====
+// ============================================================
+
+var notificationStageLabels = { primary: 'الابتدائية', middle: 'المتوسط', high: 'الثانوي', all: 'جميع المراحل' };
+
+function getNotificationStageLabel(stage) {
+    return notificationStageLabels[stage] || stage || 'غير محددة';
+}
+
+// هل هذا الإشعار يخص مرحلة المستخدم الحالي؟
+function notificationMatchesCurrentUser(notif) {
+    if (!notif) return false;
+    if (isAdminMode) return true; // الأساتذة والإدارة يرون كل الإشعارات
+    if (!currentUserIsApproved) return false;
+    if (!currentUserStage || currentUserStage === 'all') return true;
+    if (notif.stage === 'all') return true;
+    return notif.stage === currentUserStage;
+}
+
+function getNotificationsLastSeen() {
+    return parseInt(getSecurePersistentData('notifLastSeen_' + (currentUser?.email || '')) || '0', 10);
+}
+
+function setNotificationsLastSeen(ts) {
+    if (!currentUser) return;
+    setSecurePersistentData('notifLastSeen_' + currentUser.email, String(ts));
+}
+
+// ===== حالة محلية: الإشعارات المحذوفة والمقروءة يدوياً (خاصة بكل مستخدم على جهازه) =====
+var notificationsFilter = 'all';
+var hiddenNotificationIds = [];
+var readNotificationIds = [];
+
+function notifStoreKey(prefix) {
+    return prefix + (currentUser?.email || 'guest');
+}
+
+function loadNotificationsLocalState() {
+    hiddenNotificationIds = [];
+    readNotificationIds = [];
+    try {
+        var h = getSecurePersistentData(notifStoreKey('notifHidden_'));
+        if (h) hiddenNotificationIds = JSON.parse(h) || [];
+    } catch (e) { hiddenNotificationIds = []; }
+    try {
+        var r = getSecurePersistentData(notifStoreKey('notifRead_'));
+        if (r) readNotificationIds = JSON.parse(r) || [];
+    } catch (e) { readNotificationIds = []; }
+}
+
+function saveNotificationsLocalState() {
+    if (!currentUser) return;
+    try {
+        // نحتفظ بآخر 200 معرّف فقط حتى لا يكبر التخزين
+        setSecurePersistentData(notifStoreKey('notifHidden_'), JSON.stringify(hiddenNotificationIds.slice(-200)));
+        setSecurePersistentData(notifStoreKey('notifRead_'), JSON.stringify(readNotificationIds.slice(-200)));
+    } catch (e) { /* تجاهل */ }
+}
+
+function getVisibleNotifications() {
+    return lessonNotifications.filter(function(n) {
+        return hiddenNotificationIds.indexOf(n.id) === -1;
+    });
+}
+
+function isNotificationUnread(n) {
+    if (readNotificationIds.indexOf(n.id) !== -1) return false;
+    return n.createdAt > getNotificationsLastSeen();
+}
+
+function formatNotificationTime(ts) {
+    if (!ts) return '';
+    var diff = Date.now() - ts;
+    if (diff < 60000) return 'الآن';
+    var mins = Math.floor(diff / 60000);
+    if (mins < 60) return 'منذ ' + mins + ' دقيقة';
+    var hours = Math.floor(mins / 60);
+    if (hours < 24) return 'منذ ' + hours + ' ساعة';
+    var days = Math.floor(hours / 24);
+    if (days < 7) return 'منذ ' + days + ' يوم';
+    try {
+        return new Date(ts).toLocaleString('ar-DZ', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' });
+    } catch (e) { return ''; }
+}
+
+function attachNotificationsListener() {
+    if (!database || !currentUser) return;
+    if (!currentUserIsApproved && !isAdminMode) return;
+    if (notificationsRef) return; // مُفعّل مسبقاً
+
+    var wrapper = document.getElementById('notifWrapper');
+    if (wrapper) wrapper.style.display = 'inline-flex';
+
+    notificationsLoadedOnce = false;
+    lessonNotifications = [];
+    loadNotificationsLocalState();
+    notificationsRef = database.ref('notifications').orderByChild('createdAt').limitToLast(30);
+
+    notificationsRef.on('child_added', function(snapshot) {
+        var notif = snapshot.val();
+        if (!notif) return;
+        notif.id = snapshot.key;
+        if (!notificationMatchesCurrentUser(notif)) return;
+
+        // تجنب تكرار نفس الإشعار إذا وصل أكثر من مرة (مثلاً بعد إعادة الاتصال)
+        if (lessonNotifications.some(function(n) { return n.id === notif.id; })) return;
+
+        lessonNotifications.unshift(notif);
+        if (lessonNotifications.length > 30) lessonNotifications.pop();
+        renderNotificationsPanel();
+        updateNotificationsBadge();
+
+        // إظهار إشعار فوري فقط للدروس المضافة بعد بدء الجلسة (ليس عند التحميل الأول)
+        var isFreshLesson = notificationsLoadedOnce && notif.createdAt >= sessionStartTimeMs;
+        var isOwnLesson = currentUser && notif.createdBy === currentUser.email;
+        if (isFreshLesson && !isOwnLesson) {
+            showLessonNotificationToast(notif);
+            triggerBrowserNotification(notif);
+        }
+    }, function(error) {
+        // فشل قراءة الإشعارات (غالباً بسبب صلاحيات قاعدة البيانات) - نُظهر ذلك بدل الفشل الصامت
+        console.error('❌ فشل تحميل الإشعارات:', error);
+        logSecurityEvent('notifications_read_denied', { error: error && error.message });
+        var list = document.getElementById('notificationsList');
+        if (list) {
+            list.innerHTML = '<div class="notif-empty"><i class="fas fa-triangle-exclamation" style="font-size:1.5rem; display:block; margin-bottom:6px; color:#ef4444;"></i>تعذر تحميل الإشعارات (تحقق من صلاحيات الوصول)</div>';
+        }
+    });
+
+    notificationsRef.once('value', function() {
+        notificationsLoadedOnce = true;
+    }, function(error) {
+        notificationsLoadedOnce = true;
+        console.error('❌ فشل تحميل الإشعارات (once):', error);
+    });
+}
+
+function detachNotificationsListener() {
+    if (notificationsRef) {
+        notificationsRef.off();
+        notificationsRef = null;
+    }
+    lessonNotifications = [];
+    unreadNotificationsCount = 0;
+    var wrapper = document.getElementById('notifWrapper');
+    if (wrapper) wrapper.style.display = 'none';
+    hiddenNotificationIds = [];
+    readNotificationIds = [];
+    notificationsFilter = 'all';
+    closeNotificationsPanel();
+}
+
+function showLessonNotificationToast(notif) {
+    var msg = '📚 تم إضافة درس جديد: "' + notif.title + '" — المرحلة: ' + getNotificationStageLabel(notif.stage);
+    showToast(msg, 'info', 6000);
+}
+
+function triggerBrowserNotification(notif) {
+    try {
+        if (typeof Notification === 'undefined') return;
+        if (Notification.permission === 'granted') {
+            new Notification('📚 درس جديد على منصة الأستاذ محمد', {
+                body: notif.title + ' — المرحلة: ' + getNotificationStageLabel(notif.stage),
+                icon: undefined,
+                dir: 'rtl',
+                lang: 'ar'
+            });
+        }
+    } catch (e) { /* تجاهل بيئات لا تدعم الإشعارات */ }
+}
+
+function requestBrowserNotificationPermission() {
+    try {
+        if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    } catch (e) { /* تجاهل */ }
+}
+
+function updateNotificationsBadge() {
+    var visible = getVisibleNotifications();
+    unreadNotificationsCount = visible.filter(isNotificationUnread).length;
+    var badge = document.getElementById('notifBadge');
+    var bellBtn = document.getElementById('notificationBellBtn');
+    if (badge) {
+        if (unreadNotificationsCount > 0) {
+            badge.textContent = unreadNotificationsCount > 9 ? '9+' : String(unreadNotificationsCount);
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+    if (bellBtn) bellBtn.classList.toggle('has-unread', unreadNotificationsCount > 0);
+    var headCount = document.getElementById('notifHeadCount');
+    if (headCount) headCount.textContent = String(visible.length);
+    var markBtn = document.getElementById('notifMarkAllBtn');
+    if (markBtn) markBtn.disabled = unreadNotificationsCount === 0;
+    var clearBtn = document.getElementById('notifClearAllBtn');
+    if (clearBtn) clearBtn.disabled = visible.length === 0;
+}
+
+function setNotificationsFilter(filter) {
+    notificationsFilter = filter === 'unread' ? 'unread' : 'all';
+    var tabAll = document.getElementById('notifTabAll');
+    var tabUnread = document.getElementById('notifTabUnread');
+    if (tabAll) tabAll.classList.toggle('active', notificationsFilter === 'all');
+    if (tabUnread) tabUnread.classList.toggle('active', notificationsFilter === 'unread');
+    renderNotificationsPanel();
+}
+window.setNotificationsFilter = setNotificationsFilter;
+
+function renderNotificationsPanel() {
+    var list = document.getElementById('notificationsList');
+    if (!list) return;
+    var visible = getVisibleNotifications();
+    var items = notificationsFilter === 'unread' ? visible.filter(isNotificationUnread) : visible;
+
+    if (!items.length) {
+        var emptyMsg = notificationsFilter === 'unread'
+            ? '<i class="fas fa-circle-check" style="font-size:1.6rem; display:block; margin-bottom:8px; color:#10b981;"></i>لا توجد إشعارات غير مقروءة'
+            : '<i class="fas fa-bell-slash" style="font-size:1.6rem; display:block; margin-bottom:8px;"></i>لا توجد إشعارات بعد';
+        list.innerHTML = '<div class="notif-empty">' + emptyMsg + '</div>';
+        return;
+    }
+
+    var html = '';
+    items.forEach(function(n) {
+        var isUnread = isNotificationUnread(n);
+        var id = sanitizeHtml(n.id || '');
+        html += '<div class="notif-item' + (isUnread ? ' unread' : '') + '" data-notif-id="' + id + '" role="button" tabindex="0" aria-label="' + escAttr('فتح إشعار: ' + (n.title || '')) + '" onclick="goToNotificationLesson(\'' + sanitizeHtml(n.lessonId || '') + '\', \'' + id + '\')">' +
+            '<div class="notif-icon"><i class="fas fa-book"></i></div>' +
+            '<div class="notif-text">' +
+                '<div class="title">📚 تم إضافة درس: ' + sanitizeHtml(n.title || '') + '</div>' +
+                '<div class="meta">المرحلة: ' + sanitizeHtml(getNotificationStageLabel(n.stage)) + (n.subject ? ' • ' + sanitizeHtml(n.subject) : '') + '</div>' +
+                '<div class="meta"><i class="fas fa-clock"></i> ' + formatNotificationTime(n.createdAt) + '</div>' +
+            '</div>' +
+            '<div class="notif-item-actions">' +
+                '<button class="notif-item-btn delete" title="حذف الإشعار" aria-label="حذف الإشعار" onclick="event.stopPropagation(); dismissNotification(\'' + id + '\')"><i class="fas fa-xmark"></i></button>' +
+                (isUnread ? '<button class="notif-item-btn" title="تعليم كمقروء" aria-label="تعليم كمقروء" onclick="event.stopPropagation(); markSingleNotificationRead(\'' + id + '\')"><i class="fas fa-check"></i></button>' : '') +
+            '</div>' +
+        '</div>';
+    });
+    list.innerHTML = html;
+}
+
+function markSingleNotificationRead(id) {
+    if (!id) return;
+    if (readNotificationIds.indexOf(id) === -1) readNotificationIds.push(id);
+    saveNotificationsLocalState();
+    updateNotificationsBadge();
+    renderNotificationsPanel();
+}
+window.markSingleNotificationRead = markSingleNotificationRead;
+
+function dismissNotification(id) {
+    if (!id) return;
+    var el = document.querySelector('.notif-item[data-notif-id="' + id + '"]');
+    if (hiddenNotificationIds.indexOf(id) === -1) hiddenNotificationIds.push(id);
+    if (readNotificationIds.indexOf(id) === -1) readNotificationIds.push(id);
+    saveNotificationsLocalState();
+    if (el) {
+        el.classList.add('removing');
+        setTimeout(function() { renderNotificationsPanel(); updateNotificationsBadge(); }, 220);
+    } else {
+        renderNotificationsPanel();
+        updateNotificationsBadge();
+    }
+}
+window.dismissNotification = dismissNotification;
+
+function clearAllNotifications() {
+    var visible = getVisibleNotifications();
+    if (!visible.length) return;
+    visible.forEach(function(n) {
+        if (hiddenNotificationIds.indexOf(n.id) === -1) hiddenNotificationIds.push(n.id);
+        if (readNotificationIds.indexOf(n.id) === -1) readNotificationIds.push(n.id);
+    });
+    setNotificationsLastSeen(Date.now());
+    saveNotificationsLocalState();
+    renderNotificationsPanel();
+    updateNotificationsBadge();
+    if (typeof showInfo === 'function') showInfo('تم مسح كل الإشعارات من قائمتك.');
+}
+window.clearAllNotifications = clearAllNotifications;
+
+function positionNotificationsPanel() {
+    var panel = document.getElementById('notificationsPanel');
+    var bellBtn = document.getElementById('notificationBellBtn');
+    if (!panel || !bellBtn) return;
+    var rect = bellBtn.getBoundingClientRect();
+    var margin = 12;
+    var panelWidth = Math.min(340, window.innerWidth * 0.88);
+
+    // نحسب الموقع بالنسبة للنافذة (viewport) وليس بالنسبة للهيدر
+    var top = rect.bottom + margin;
+    var left = rect.left; // محاذاة مع الحافة اليسرى للزر (كما في التصميم الأصلي RTL)
+
+    // نمنع خروج العلبة من حدود الشاشة يمينًا أو يسارًا
+    if (left + panelWidth > window.innerWidth - 8) {
+        left = window.innerWidth - panelWidth - 8;
+    }
+    if (left < 8) left = 8;
+
+    // نمنع خروجها أسفل الشاشة (نعرضها فوق الزر بدل تحته عند الحاجة)
+    var maxHeight = Math.min(420, window.innerHeight - top - 8);
+    if (maxHeight < 200) {
+        maxHeight = Math.min(420, rect.top - margin - 8);
+        top = Math.max(8, rect.top - margin - maxHeight);
+    }
+
+    panel.style.top = top + 'px';
+    panel.style.left = left + 'px';
+    panel.style.maxHeight = maxHeight + 'px';
+}
+
+function openNotificationsPanel() {
+    var panel = document.getElementById('notificationsPanel');
+    if (!panel) return;
+    positionNotificationsPanel();
+    panel.classList.add('active');
+    var overlay = document.getElementById('notifOverlay');
+    if (overlay) overlay.classList.add('active');
+    renderNotificationsPanel();
+    updateNotificationsBadge();
+    requestBrowserNotificationPermission();
+}
+window.openNotificationsPanel = openNotificationsPanel;
+
+function closeNotificationsPanel() {
+    var panel = document.getElementById('notificationsPanel');
+    if (panel) panel.classList.remove('active');
+    var overlay = document.getElementById('notifOverlay');
+    if (overlay) overlay.classList.remove('active');
+}
+window.closeNotificationsPanel = closeNotificationsPanel;
+
+function toggleNotificationsPanel(event) {
+    if (event) event.stopPropagation();
+    var panel = document.getElementById('notificationsPanel');
+    if (!panel) return;
+    if (panel.classList.contains('active')) {
+        closeNotificationsPanel();
+    } else {
+        openNotificationsPanel();
+    }
+}
+window.toggleNotificationsPanel = toggleNotificationsPanel;
+
+// إغلاق العلبة بمفتاح Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        var panel = document.getElementById('notificationsPanel');
+        if (panel && panel.classList.contains('active')) closeNotificationsPanel();
+    }
+});
+
+// إعادة حساب موقع العلبة عند تغيير حجم النافذة أو التمرير أثناء فتحها
+window.addEventListener('resize', function() {
+    var panel = document.getElementById('notificationsPanel');
+    if (panel && panel.classList.contains('active')) positionNotificationsPanel();
+});
+
+function markNotificationsRead() {
+    setNotificationsLastSeen(Date.now());
+    getVisibleNotifications().forEach(function(n) {
+        if (readNotificationIds.indexOf(n.id) === -1) readNotificationIds.push(n.id);
+    });
+    saveNotificationsLocalState();
+    updateNotificationsBadge();
+    renderNotificationsPanel();
+}
+window.markNotificationsRead = markNotificationsRead;
+
+function goToNotificationLesson(lessonId, notifId) {
+    if (notifId) markSingleNotificationRead(notifId);
+    closeNotificationsPanel();
+    // لا يوجد تفاصيل ملاحية دقيقة هنا، فقط توجيه المستخدم لتصفح الدروس
+    if (lessonId) showInfo('يمكنك العثور على الدرس الجديد ضمن قائمة الدروس المتاحة لمرحلتك.');
+}
+window.goToNotificationLesson = goToNotificationLesson;
+
+document.addEventListener('click', function(e) {
+    var panel = document.getElementById('notificationsPanel');
+    var wrapper = document.getElementById('notifWrapper');
+    var clickedInsideWrapper = wrapper && wrapper.contains(e.target);
+    var clickedInsidePanel = panel && panel.contains(e.target);
+    if (panel && panel.classList.contains('active') && !clickedInsideWrapper && !clickedInsidePanel) {
+        closeNotificationsPanel();
+    }
+});
+
+// إرسال إشعار لكل المستخدمين المسجلين عند إضافة درس جديد
+async function broadcastLessonNotification(lessonId, lessonData) {
+    if (!database) return;
+    try {
+        var notifId = database.ref('notifications').push().key;
+        await database.ref('notifications/' + notifId).set({
+            lessonId: lessonId,
+            title: lessonData.title,
+            stage: lessonData.stage,
+            subject: lessonData.subject || '',
+            lessonType: lessonData.lesson_type || '',
+            createdAt: Date.now(),
+            createdBy: currentUser?.email || 'unknown'
+        });
+    } catch (error) {
+        console.error('❌ فشل إرسال إشعار الدرس الجديد:', error);
+    }
+}
+
+// ============================================================
+// ===== دوال عرض وإخفاء النوافذ =====
+// ============================================================
+
+function showLoginChoice() { 
+    if (!checkRateLimit('login_choice')) return;
+    document.getElementById('loginChoiceModal').classList.add('active'); 
+}
+window.showLoginChoice = showLoginChoice;
+
+function showRegisterChoice() { 
+    if (!currentUser && registrationSettings && registrationSettings.registrationLocked) {
+        showRegistrationStoppedModal();
+        return;
+    }
+    if (!checkRateLimit('register_choice')) return;
+    document.getElementById('registerChoiceModal').classList.add('active'); 
+}
+window.showRegisterChoice = showRegisterChoice;
+
+function showLogoutConfirm() {
+    hideAllModals();
+    document.getElementById('logoutConfirmModal').classList.add('active');
+}
+window.showLogoutConfirm = showLogoutConfirm;
+
+function showRevokeConfirm() {
+    hideAllModals();
+    document.getElementById('revokeConfirmModal').classList.add('active');
+}
+window.showRevokeConfirm = showRevokeConfirm;
+
+function hideAllModals() {
+    var modals = document.querySelectorAll('.modal-overlay.active, .visitor-popup-new.active');
+    for (var i = 0; i < modals.length; i++) {
+        modals[i].classList.remove('active');
+    }
+    closeAdminPanel();
+    clearFileUploadFields();
+}
+window.hideAllModals = hideAllModals;
+
+function closeAdminPanel() {
+    document.getElementById('adminPanel').classList.remove('active');
+    document.getElementById('adminOverlay').classList.remove('active');
+}
+window.closeAdminPanel = closeAdminPanel;
+
+function showLoginRequiredPopup() {
+    var modal = document.getElementById('loginRequiredPopup');
+    if (modal) modal.classList.add('active');
+}
+window.showLoginRequiredPopup = showLoginRequiredPopup;
+
+function closeLoginRequiredPopup() {
+    document.getElementById('loginRequiredPopup').classList.remove('active');
+}
+window.closeLoginRequiredPopup = closeLoginRequiredPopup;
+
+function toggleTheme() {
+    var current = document.documentElement.getAttribute('data-theme');
+    var newTheme = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    var themeBtn = document.getElementById('themeToggleBtn');
+    if (themeBtn) {
+        var icon = themeBtn.querySelector('i');
+        if (icon) icon.className = newTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        var label = newTheme === 'dark' ? 'تبديل إلى الوضع النهاري' : 'تبديل إلى الوضع الليلي';
+        themeBtn.setAttribute('aria-label', label);
+        themeBtn.setAttribute('title', label);
+    }
+}
+window.toggleTheme = toggleTheme;
+
+var savedTheme = localStorage.getItem('theme') || 'light';
+document.documentElement.setAttribute('data-theme', savedTheme);
+
+// ============================================================
+// ===== تهيئة Firebase =====
+// ============================================================
+
+try {
+    firebase.initializeApp(CONFIG.firebase);
+    database = firebase.database();
+    auth = firebase.auth();
+    
+} catch(e) {
+    console.error("Firebase error:", e);
+}
+
+// ============================================================
+// ===== دوال المصادقة =====
+// ============================================================
+
+// تشخيص دقيق لخطأ "بيانات الدخول غير صحيحة": هذا الخطأ في Firebase الحديث يُستخدم
+// لكل من (كلمة مرور خاطئة) و(الحساب غير موجود أصلاً) بنفس الرسالة الغامضة لأسباب أمنية،
+// مما يمنع تشخيص المشكلة الحقيقية. نستخدم fetchSignInMethodsForEmail (لا يتطلب كلمة مرور)
+// لمعرفة هل البريد مسجّل فعلاً في نظام المصادقة أم لا، ونعرض رسالة دقيقة بناءً على ذلك.
+async function diagnoseAmbiguousCredentialError(email) {
+    try {
+        var methods = await auth.fetchSignInMethodsForEmail(email);
+        if (!methods || methods.length === 0) {
+            return '❌ لا يوجد حساب مسجَّل بهذا البريد الإلكتروني في نظام الدخول. تأكد من كتابة البريد بشكل صحيح، أو قم بإرسال طلب تسجيل جديد.';
+        }
+        return '❌ كلمة المرور غير صحيحة. إذا نسيت كلمة المرور اضغط على "نسيت كلمة المرور؟" أدناه.';
+    } catch (e) {
+        // إذا فشل التشخيص نفسه (مثلاً بسبب ضعف الاتصال) نعود للرسالة العامة الأصلية
+        return '❌ فشل تسجيل الدخول: البريد الإلكتروني أو كلمة المرور غير صحيحة';
+    }
+}
+
+async function handleAdminLogin() {
+    var email = normalizeEmail(document.getElementById('adminEmail').value);
+    var password = document.getElementById('adminPassword').value;
+    var remember = document.getElementById('adminRemember').checked;
+    var errorDiv = document.getElementById('adminLoginError');
+    errorDiv.innerText = '';
+    
+    if (!checkRateLimit('admin_login')) return;
+    if (!email || !password) { errorDiv.innerText = '❌ الرجاء إدخال البريد وكلمة المرور'; return; }
+    if (email !== MASTER_TEACHER_EMAIL) { 
+        errorDiv.innerText = '❌ هذا البريد ليس مسؤولاً'; 
+        logSecurityEvent('unauthorized_admin_login_attempt', { email: email });
+        return; 
+    }
+    
+    var check = checkLoginAttempts(email);
+    if (check.blocked) {
+        errorDiv.innerText = '⛔ تم حظر الحساب مؤقتاً. حاول بعد ' + check.remainingTime + ' ثانية';
+        return;
+    }
+    
+    try {
+        await auth.signInWithEmailAndPassword(email, password);
+        resetLoginAttempts(email);
+        if (remember) { setSecurePersistentData('rememberedEmail', email); }
+        await registerActiveSession(email);
+        logSecurityEvent('admin_login_success', { email: email });
+        hideAllModals();
+        showSuccess('تم تسجيل الدخول كمسؤول بنجاح!');
+        document.getElementById('adminLoginModal').classList.remove('active');
+    } catch(error) {
+        recordFailedLogin(email);
+        console.error('🔴 Firebase Auth error code:', error.code, error.message);
+        if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+            errorDiv.innerText = await diagnoseAmbiguousCredentialError(email);
+            logSecurityEvent('admin_login_failed', { email: email, error: error.code });
+            return;
+        }
+        var msg = '❌ فشل تسجيل الدخول: ';
+        if (error.code === 'auth/invalid-email') msg += 'البريد الإلكتروني غير صالح';
+        else if (error.code === 'auth/too-many-requests') msg += 'تم حظر الحساب مؤقتاً، حاول لاحقاً';
+        else if (error.code === 'auth/network-request-failed') msg += 'تعذر الاتصال بالخادم، تحقق من الإنترنت';
+        else if (error.code === 'auth/unauthorized-domain') msg += 'هذا النطاق غير مصرح له بتسجيل الدخول، تواصل مع الإدارة';
+        else if (error.code === 'auth/user-disabled') msg += 'تم تعطيل هذا الحساب';
+        else msg += 'حدث خطأ في المصادقة (' + (error.code || 'غير معروف') + ')';
+        errorDiv.innerText = msg;
+        logSecurityEvent('admin_login_failed', { email: email, error: error.code });
+    }
+}
+
+async function handleTeacherLogin() {
+    var email = normalizeEmail(document.getElementById('teacherEmail').value);
+    var password = document.getElementById('teacherPassword').value;
+    var remember = document.getElementById('teacherRemember').checked;
+    var errorDiv = document.getElementById('teacherLoginError');
+    errorDiv.innerText = '';
+    
+    if (!checkRateLimit('teacher_login')) return;
+    if (!email || !password) { errorDiv.innerText = '❌ الرجاء إدخال البريد وكلمة المرور'; return; }
+    
+    var check = checkLoginAttempts(email);
+    if (check.blocked) {
+        errorDiv.innerText = '⛔ تم حظر الحساب مؤقتاً. حاول بعد ' + check.remainingTime + ' ثانية';
+        return;
+    }
+    
+    try {
+        await auth.signInWithEmailAndPassword(email, password);
+        await auth.currentUser.getIdToken(true);
+        var isTeacher;
+        try {
+            isTeacher = await checkTeacherPermissions(email);
+        } catch (permError) {
+            logSecurityEvent('teacher_permission_check_failed', { email: email, error: permError && permError.message });
+            errorDiv.innerText = '⚠️ تعذر التحقق من صلاحياتك بسبب ضعف الاتصال. يرجى المحاولة مرة أخرى.';
+            return;
+        }
+        if (!isTeacher) {
+            logSecurityEvent('unauthorized_teacher_login_attempt', { email: email });
+            await auth.signOut();
+            errorDiv.innerText = '❌ هذا البريد ليس لديه صلاحية أستاذ';
+            recordFailedLogin(email);
+            return;
+        }
+        resetLoginAttempts(email);
+        if (remember) { setSecurePersistentData('rememberedEmail', email); }
+        await registerActiveSession(email);
+        logSecurityEvent('teacher_login_success', { email: email });
+        hideAllModals(); 
+        showSuccess('تم تسجيل الدخول كأستاذ بنجاح!');
+    } catch(error) {
+        recordFailedLogin(email);
+        console.error('🔴 Firebase Auth error code:', error.code, error.message);
+        if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+            errorDiv.innerText = await diagnoseAmbiguousCredentialError(email);
+            logSecurityEvent('teacher_login_failed', { email: email, error: error.code });
+            return;
+        }
+        var msg = '❌ فشل تسجيل الدخول: ';
+        if (error.code === 'auth/invalid-email') msg += 'البريد الإلكتروني غير صالح';
+        else if (error.code === 'auth/too-many-requests') msg += 'تم حظر الحساب مؤقتاً، حاول لاحقاً';
+        else if (error.code === 'auth/network-request-failed') msg += 'تعذر الاتصال بالخادم، تحقق من الإنترنت';
+        else if (error.code === 'auth/unauthorized-domain') msg += 'هذا النطاق غير مصرح له بتسجيل الدخول، تواصل مع الإدارة';
+        else if (error.code === 'auth/user-disabled') msg += 'تم تعطيل هذا الحساب';
+        else msg += 'حدث خطأ في المصادقة (' + (error.code || 'غير معروف') + ')';
+        errorDiv.innerText = msg;
+        logSecurityEvent('teacher_login_failed', { email: email, error: error.code });
+    }
+}
+
+async function handleMemberLogin() {
+    var email = normalizeEmail(document.getElementById('memberEmail').value);
+    var password = document.getElementById('memberPassword').value;
+    var remember = document.getElementById('memberRemember').checked;
+    var errorDiv = document.getElementById('memberLoginError');
+    errorDiv.innerText = '';
+    
+    if (!checkRateLimit('member_login')) return;
+    if (!email || !password) { errorDiv.innerText = '❌ الرجاء إدخال البريد وكلمة المرور'; return; }
+    
+    var check = checkLoginAttempts(email);
+    if (check.blocked) {
+        errorDiv.innerText = '⛔ تم حظر الحساب مؤقتاً. حاول بعد ' + check.remainingTime + ' ثانية';
+        return;
+    }
+    
+    try {
+        await auth.signInWithEmailAndPassword(email, password);
+        await auth.currentUser.getIdToken(true);
+        var isApproved, isTeacher;
+        try {
+            isApproved = await checkMemberApproval(email);
+            isTeacher = await checkTeacherPermissions(email);
+        } catch (permError) {
+            logSecurityEvent('member_permission_check_failed', { email: email, error: permError && permError.message });
+            errorDiv.innerText = '⚠️ تعذر التحقق من صلاحياتك بسبب ضعف الاتصال. يرجى المحاولة مرة أخرى.';
+            return;
+        }
+        if (!isApproved) {
+            // إعادة محاولة واحدة بعد تحديث الرمز ومسح الذاكرة المؤقتة (حالة الموافقة الحديثة)
+            try {
+                clearPermissionCache(email);
+                await auth.currentUser.getIdToken(true);
+                await new Promise(function(r) { setTimeout(r, 600); });
+                isApproved = await checkMemberApproval(email);
+            } catch (retryError) {}
+        }
+        if (!isApproved) {
+            logSecurityEvent('unapproved_member_login_attempt', { email: email });
+            await auth.signOut();
+            errorDiv.innerText = '⏳ لم يتم الموافقة على طلبك بعد. إذا كنت عضواً قديماً يرجى إبلاغ الإدارة لتشغيل "إصلاح حسابات الأعضاء القدامى".';
+            return;
+        }
+        if (isTeacher || email === MASTER_TEACHER_EMAIL) {
+            logSecurityEvent('member_login_as_teacher_attempt', { email: email });
+            await auth.signOut();
+            errorDiv.innerText = '❌ هذا الحساب مسجل كأستاذ/مسؤول، يرجى استخدام خيار تسجيل الدخول المناسب';
+            recordFailedLogin(email);
+            return;
+        }
+        resetLoginAttempts(email);
+        if (remember) { setSecurePersistentData('rememberedEmail', email); }
+        await registerActiveSession(email);
+        logSecurityEvent('member_login_success', { email: email });
+        hideAllModals(); 
+        showSuccess('تم تسجيل الدخول كعضو بنجاح!');
+    } catch(error) {
+        recordFailedLogin(email);
+        console.error('🔴 Firebase Auth error code:', error.code, error.message);
+        if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+            errorDiv.innerText = await diagnoseAmbiguousCredentialError(email);
+            logSecurityEvent('member_login_failed', { email: email, error: error.code });
+            return;
+        }
+        var msg = '❌ فشل تسجيل الدخول: ';
+        if (error.code === 'auth/invalid-email') msg += 'البريد الإلكتروني غير صالح';
+        else if (error.code === 'auth/too-many-requests') msg += 'تم حظر الحساب مؤقتاً، حاول لاحقاً';
+        else if (error.code === 'auth/network-request-failed') msg += 'تعذر الاتصال بالخادم، تحقق من الإنترنت';
+        else if (error.code === 'auth/unauthorized-domain') msg += 'هذا النطاق غير مصرح له بتسجيل الدخول، تواصل مع الإدارة';
+        else if (error.code === 'auth/user-disabled') msg += 'تم تعطيل هذا الحساب';
+        else msg += 'حدث خطأ في المصادقة (' + (error.code || 'غير معروف') + ')';
+        errorDiv.innerText = msg;
+        logSecurityEvent('member_login_failed', { email: email, error: error.code });
+    }
+}
+
+async function handleForgotPassword() {
+    var emailInput = document.getElementById('forgotPasswordEmail');
+    var email = normalizeEmail(emailInput.value);
+    var errorDiv = document.getElementById('forgotPasswordError');
+    var successDiv = document.getElementById('forgotPasswordSuccess');
+    errorDiv.innerText = '';
+    successDiv.innerText = '';
+
+    if (!checkRateLimit('forgot_password')) return;
+    if (!email) { errorDiv.innerText = '❌ الرجاء إدخال البريد الإلكتروني'; return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errorDiv.innerText = '❌ البريد الإلكتروني غير صالح'; return; }
+
+    var btn = document.getElementById('forgotPasswordSubmitBtn');
+    btn.disabled = true;
+    var originalText = btn.innerText;
+    btn.innerText = 'جارٍ الإرسال...';
+
+    // رسالة عامة موحّدة سواء كان البريد مسجلاً أم لا، لمنع استغلال الخاصية لمعرفة
+    // ما إذا كان بريد معين مسجلاً في الموقع (حماية من enumeration attacks)
+    var genericSuccessMsg = '✅ إذا كان هذا البريد مسجلاً لدينا، فستصلك رسالة تحتوي على رابط إعادة تعيين كلمة المرور خلال دقائق. تحقق من مجلد الرسائل غير المرغوبة (Spam) أيضاً.';
+
+    try {
+        await auth.sendPasswordResetEmail(email);
+        logSecurityEvent('password_reset_requested', { email: email });
+        successDiv.innerText = genericSuccessMsg;
+        emailInput.value = '';
+        btn.innerText = originalText;
+        setTimeout(function() { hideAllModals(); successDiv.innerText = ''; }, 6000);
+    } catch (error) {
+        console.error('🔴 Password reset error code:', error.code, error.message);
+        logSecurityEvent('password_reset_failed', { email: email, error: error.code });
+        if (error.code === 'auth/user-not-found') {
+            // لا نكشف عدم وجود الحساب؛ نعرض نفس رسالة النجاح العامة
+            successDiv.innerText = genericSuccessMsg;
+            emailInput.value = '';
+        } else if (error.code === 'auth/invalid-email') {
+            errorDiv.innerText = '❌ البريد الإلكتروني غير صالح';
+        } else if (error.code === 'auth/too-many-requests') {
+            errorDiv.innerText = '⛔ تم إرسال طلبات كثيرة، حاول لاحقاً';
+        } else if (error.code === 'auth/network-request-failed') {
+            errorDiv.innerText = '❌ تعذر الاتصال بالخادم، تحقق من الإنترنت';
+        } else {
+            errorDiv.innerText = '❌ تعذر إرسال رابط إعادة التعيين، حاول لاحقاً';
+        }
+        btn.innerText = originalText;
+    }
+    btn.disabled = false;
+}
+window.handleForgotPassword = handleForgotPassword;
+
+function showForgotPasswordModal(prefillEmail) {
+    hideAllModals();
+    document.getElementById('forgotPasswordEmail').value = prefillEmail || '';
+    document.getElementById('forgotPasswordError').innerText = '';
+    document.getElementById('forgotPasswordSuccess').innerText = '';
+    document.getElementById('forgotPasswordModal').classList.add('active');
+}
+window.showForgotPasswordModal = showForgotPasswordModal;
+
+async function handleRegisterTeacher() {
+    if (!currentUser && registrationSettings && registrationSettings.registrationLocked) {
+        showRegistrationStoppedModal();
+        return;
+    }
+    
+    var email = normalizeEmail(document.getElementById('registerTeacherEmail').value);
+    var password = document.getElementById('registerTeacherPassword').value;
+    var confirm = document.getElementById('registerTeacherConfirm').value;
+    var errorDiv = document.getElementById('registerTeacherError');
+    errorDiv.innerText = '';
+    
+    if (!checkRateLimit('register_teacher')) return;
+    if (!email || !password || !confirm) { errorDiv.innerText = '❌ الرجاء ملء جميع الحقول'; return; }
+    if (isFakeEmail(email)) { 
+        errorDiv.innerText = '❌ لا يمكن التسجيل ببريد إلكتروني وهمي'; 
+        logSecurityEvent('fake_email_registration_attempt', { email: email });
+        return; 
+    }
+    if (password !== confirm) { errorDiv.innerText = '❌ كلمتا المرور غير متطابقتين'; return; }
+    
+    var strength = validatePasswordStrength(password);
+    if (!strength.valid) {
+        errorDiv.innerText = '❌ كلمة المرور ضعيفة: ' + strength.errors.join('، ');
+        return;
+    }
+    
+    try {
+        await auth.createUserWithEmailAndPassword(email, password);
+        await addJoinRequest(email, 'أستاذ', 'all');
+        await auth.signOut();
+        
+        document.getElementById('registerTeacherEmail').value = '';
+        document.getElementById('registerTeacherPassword').value = '';
+        document.getElementById('registerTeacherConfirm').value = '';
+        
+        logSecurityEvent('teacher_registration_request', { email: email });
+        showSuccess('تم إرسال طلب التسجيل كأستاذ! سيتم مراجعة طلبك قريباً.');
+        setTimeout(function() { hideAllModals(); }, 4000);
+    } catch(error) {
+        var msg = '❌ فشل إنشاء الحساب: ';
+        if (error.code === 'auth/email-already-in-use') msg += 'هذا البريد مستخدم بالفعل';
+        else if (error.code === 'auth/invalid-email') msg += 'البريد الإلكتروني غير صالح';
+        else if (error.code === 'auth/weak-password') msg += 'كلمة المرور ضعيفة جداً';
+        else msg += 'حدث خطأ في إنشاء الحساب';
+        errorDiv.innerText = msg;
+        logSecurityEvent('teacher_registration_failed', { email: email, error: error.code });
+    }
+}
+
+async function handleRegisterMember() {
+    if (!currentUser && registrationSettings && registrationSettings.registrationLocked) {
+        showRegistrationStoppedModal();
+        return;
+    }
+    
+    var email = normalizeEmail(document.getElementById('registerMemberEmail').value);
+    var password = document.getElementById('registerMemberPassword').value;
+    var confirm = document.getElementById('registerMemberConfirm').value;
+    var stage = document.getElementById('registerMemberStage').value;
+    var errorDiv = document.getElementById('registerMemberError');
+    errorDiv.innerText = '';
+    
+    if (!checkRateLimit('register_member')) return;
+    if (!email || !password || !confirm) { errorDiv.innerText = '❌ الرجاء ملء جميع الحقول'; return; }
+    if (isFakeEmail(email)) { 
+        errorDiv.innerText = '❌ لا يمكن التسجيل ببريد إلكتروني وهمي'; 
+        logSecurityEvent('fake_email_registration_attempt', { email: email });
+        return; 
+    }
+    if (password !== confirm) { errorDiv.innerText = '❌ كلمتا المرور غير متطابقتين'; return; }
+    
+    var strength = validatePasswordStrength(password);
+    if (!strength.valid) {
+        errorDiv.innerText = '❌ كلمة المرور ضعيفة: ' + strength.errors.join('، ');
+        return;
+    }
+    
+    try {
+        await auth.createUserWithEmailAndPassword(email, password);
+        await addJoinRequest(email, 'عضو', stage);
+        await auth.signOut();
+        
+        document.getElementById('registerMemberEmail').value = '';
+        document.getElementById('registerMemberPassword').value = '';
+        document.getElementById('registerMemberConfirm').value = '';
+        
+        var stageNames = { 'primary': 'الابتدائية', 'middle': 'المتوسط', 'high': 'الثانوي' };
+        logSecurityEvent('member_registration_request', { email: email, stage: stage });
+        showSuccess('تم إرسال طلب التسجيل كعضو في ' + (stageNames[stage] || stage) + '! سيتم مراجعة طلبك قريباً.');
+        setTimeout(function() { hideAllModals(); }, 4000);
+    } catch(error) {
+        var msg = '❌ فشل إنشاء الحساب: ';
+        if (error.code === 'auth/email-already-in-use') msg += 'هذا البريد مستخدم بالفعل';
+        else if (error.code === 'auth/invalid-email') msg += 'البريد الإلكتروني غير صالح';
+        else if (error.code === 'auth/weak-password') msg += 'كلمة المرور ضعيفة جداً';
+        else msg += 'حدث خطأ في إنشاء الحساب';
+        errorDiv.innerText = msg;
+        logSecurityEvent('member_registration_failed', { email: email, error: error.code });
+    }
+}
+
+// ============================================================
+// ===== دوال قاعدة البيانات =====
+// ============================================================
+
+var permissionCache = {};
+var PERMISSION_CACHE_TTL_MS = 8000;
+
+function getCachedPermission(cacheKey) {
+    var entry = permissionCache[cacheKey];
+    // لا نعتمد على النتائج السلبية المخزّنة: الموافقة قد تكون سُجّلت للتو
+    if (entry && entry.result === true && (Date.now() - entry.timestamp) < PERMISSION_CACHE_TTL_MS) {
+        return entry;
+    }
+    return null;
+}
+
+function clearPermissionCache(email) {
+    if (!email) { permissionCache = {}; return; }
+    var e = normalizeEmail(email);
+    delete permissionCache['member:' + e];
+    delete permissionCache['teacher:' + e];
+}
+
+function emailKeyVariants(email) {
+    var raw = (email || '').trim();
+    var low = raw.toLowerCase();
+    var variants = [
+        low.replace(/\./g, '_'),
+        low,
+        raw.replace(/\./g, '_'),
+        raw,
+        low.replace(/[.#$\[\]]/g, '_'),
+        low.replace(/@/g, '_at_').replace(/\./g, '_'),
+        low.replace(/@/g, '_at_'),
+        low.replace(/@/g, '_'),
+        low.replace(/[@.]/g, '_'),
+        low.replace(/\./g, ','),
+        low.replace(/\./g, '-'),
+        raw.replace(/@/g, '_at_').replace(/\./g, '_'),
+        raw.replace(/[@.]/g, '_'),
+        low.split('@')[0],
+        low.split('@')[0].replace(/\./g, '_')
+    ];
+    var seen = {}, out = [];
+    for (var i = 0; i < variants.length; i++) {
+        var v = variants[i];
+        if (v && !seen[v]) { seen[v] = true; out.push(v); }
+    }
+    return out;
+}
+
+// يوحّد أي صيغة مفتاح/بريد قديمة (أحرف كبيرة، نقاط غير مستبدلة، @ محوّل) لمقارنة موثوقة
+function canonicalEmailToken(value) {
+    return (value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/_at_/g, '@')
+        .replace(/[.\-]/g, '_')
+        .replace(/_+/g, '_');
+}
+
+// يقرأ سجلاً من مسار: أولاً بالمفتاح القياسي، ثم بمسح كامل للمسار لمطابقة أي صيغة قديمة.
+// ثم ينسخه إلى المفتاح القياسي حتى يعمل تسجيل الدخول لاحقاً بدون بحث.
+async function readRecordByEmailKeys(basePath, email) {
+    var canonical = emailToKey(email);
+    var target = canonicalEmailToken(email);
+    var directError = null;
+    var anyDirectReadSucceeded = false;
+
+    // قراءة مباشرة بالمفتاح القياسي أولاً (لا تحتاج صلاحية قراءة القائمة كاملة)
+    try {
+        var direct = await database.ref(basePath + '/' + canonical).once('value');
+        anyDirectReadSucceeded = true;
+        var dv = direct.val();
+        if (dv) return dv;
+    } catch (e) { directError = e; }
+
+    // للمسؤول فقط: مسح القائمة كاملة للبحث عن مفاتيح قديمة
+    var isAdmin = currentUser && normalizeEmail(currentUser.email) === MASTER_TEACHER_EMAIL;
+    if (!isAdmin) {
+        if (anyDirectReadSucceeded) return null;
+        throw (directError || new Error('Permission denied'));
+    }
+
+    // مسح كامل للمسار (للمسؤول فقط): يطابق المفتاح أو حقل email بأي صيغة قديمة
+    var listSnapshot;
+    try {
+        listSnapshot = await database.ref(basePath).once('value');
+    } catch (e) {
+        if (anyDirectReadSucceeded) return null;
+        throw (directError || e);
+    }
+
+    var found = null, foundKey = null;
+    listSnapshot.forEach(function(child) {
+        if (found) return;
+        var val = child.val() || {};
+        var keyToken = canonicalEmailToken(child.key);
+        var emailToken = canonicalEmailToken(typeof val === 'object' ? val.email : '');
+        if (keyToken === target || (emailToken && emailToken === target)) {
+            found = val;
+            foundKey = child.key;
+        }
+    });
+
+    if (found && foundKey !== canonical && typeof found === 'object') {
+        try {
+            await database.ref(basePath + '/' + canonical).set({
+                email: normalizeEmail(email),
+                approvedAt: found.approvedAt || found.addedAt || Date.now(),
+                userType: found.userType || 'member',
+                userStage: found.userStage || 'primary'
+            });
+        } catch (e) {}
+    }
+
+    return found;
+}
+
+// ============================================================
+// ===== إصلاح جذري: توحيد مفاتيح الأعضاء/الأساتذة القدامى =====
+// أصل المشكلة: الأعضاء القدامى مسجّلون بمفاتيح بصيغ قديمة
+// (أحرف كبيرة، @ محوّلة، نقاط غير مستبدلة...) وقواعد قاعدة البيانات
+// تمنع العضو العادي من قراءة القائمة كاملة، فلا يُعثر على سجله أبداً
+// وتظهر رسالة "لم يتم الموافقة على طلبك بعد".
+// الحل: ترحيل نهائي لكل السجلات إلى المفتاح القياسي (يشغّله المسؤول تلقائياً).
+// ============================================================
+
+// يستخرج البريد الحقيقي من سجل قديم قد لا يحتوي حقل email
+function emailFromLegacyRecord(key, value) {
+    if (value && typeof value === 'object' && value.email) return normalizeEmail(value.email);
+    var k = (key || '').trim().toLowerCase().replace(/_at_/g, '@');
+    if (k.indexOf('@') === -1) {
+        // آخر جزئين يمثلان النطاق عادة: name_gmail_com
+        var parts = k.split('_');
+        if (parts.length >= 3) {
+            var domain = parts.slice(-2).join('.');
+            var local = parts.slice(0, -2).join('.');
+            k = local + '@' + domain;
+        } else { return ''; }
+    }
+    var at = k.split('@');
+    if (at.length !== 2) return '';
+    return at[0].replace(/_/g, '.') + '@' + at[1].replace(/_/g, '.');
+}
+
+var legacyKeysRepairDone = false;
+
+async function repairLegacyKeysAtPath(basePath, defaults) {
+    var snapshot = await database.ref(basePath).once('value');
+    var data = snapshot.val() || {};
+    var fixed = 0;
+    for (var key in data) {
+        var value = data[key];
+        var email = emailFromLegacyRecord(key, value);
+        if (!email || email.indexOf('@') === -1) continue;
+        var canonical = emailToKey(email);
+        var record = (value && typeof value === 'object') ? value : {};
+        var payload = {
+            email: email,
+            approvedAt: record.approvedAt || record.addedAt || Date.now(),
+            userType: record.userType || defaults.userType,
+            userStage: record.userStage || defaults.userStage
+        };
+        var needsRewrite = (key !== canonical) ||
+            !record.email || normalizeEmail(record.email) !== email ||
+            !record.userStage || !record.userType;
+        if (!needsRewrite) continue;
+        await database.ref(basePath + '/' + canonical).update(payload);
+        if (key !== canonical) {
+            await database.ref(basePath + '/' + key).remove();
+        }
+        fixed++;
+    }
+    return fixed;
+}
+
+// ترحيل كامل (للمسؤول فقط) — يُنفَّذ مرة واحدة في الجلسة
+async function repairLegacyMemberKeys(options) {
+    options = options || {};
+    if (!database || !currentUser || normalizeEmail(currentUser.email) !== MASTER_TEACHER_EMAIL) return null;
+    if (legacyKeysRepairDone && !options.force) return null;
+    legacyKeysRepairDone = true;
+    try {
+        var members = await repairLegacyKeysAtPath('members/approved', { userType: 'عضو', userStage: 'primary' });
+        var teachers = await repairLegacyKeysAtPath('teachers', { userType: 'أستاذ', userStage: 'all' });
+        permissionCache = {};
+        if (members + teachers > 0) {
+            logSecurityEvent('legacy_keys_repaired', { members: members, teachers: teachers });
+        }
+        return { members: members, teachers: teachers };
+    } catch (e) {
+        legacyKeysRepairDone = false;
+        console.error('Legacy keys repair failed:', e);
+        logSecurityEvent('legacy_keys_repair_failed', { error: e && e.message });
+        return null;
+    }
+}
+
+async function checkTeacherPermissions(email) {
+    if (!database || !email) return false;
+    email = normalizeEmail(email);
+    if (email === MASTER_TEACHER_EMAIL) { currentUserStage = 'all'; return true; }
+    var cacheKey = 'teacher:' + email;
+    var cached = getCachedPermission(cacheKey);
+    if (cached) { currentUserStage = cached.userStage || currentUserStage; return cached.result; }
+    var result = false;
+    try {
+        var snapshot = await database.ref('teachers/' + emailToKey(email)).once('value');
+        var data = snapshot.val();
+        if (data) { currentUserStage = data.userStage || 'all'; result = true; }
+    } catch (e) {}
+    permissionCache[cacheKey] = { result: result, userStage: currentUserStage, timestamp: Date.now() };
+    return result;
+}
+
+async function checkMemberApproval(email) {
+    if (!database || !email) return false;
+    email = normalizeEmail(email);
+    var cacheKey = 'member:' + email;
+    var cached = getCachedPermission(cacheKey);
+    if (cached) { currentUserStage = cached.userStage || currentUserStage; return cached.result; }
+    var result = false;
+    try {
+        var snapshot = await database.ref('members/approved/' + emailToKey(email)).once('value');
+        var data = snapshot.val();
+        if (data) { currentUserStage = data.userStage || 'primary'; result = true; }
+    } catch (e) {}
+    permissionCache[cacheKey] = { result: result, userStage: currentUserStage, timestamp: Date.now() };
+    return result;
+}
+
+async function addJoinRequest(email, userType, stage) {
+    if (!database) return;
+    email = normalizeEmail(email);
+    await database.ref('members/joinRequests').push({ 
+        email: email,
+        userType: userType,
+        stage: stage || 'primary',
+        createdAt: Date.now()
+    });
+    logSecurityEvent('join_request', { email: email, userType: userType, stage: stage });
+}
+
+// ============================================================
+// ===== دوال معالجة الملفات =====
+// ============================================================
+
+function handleFileSelect(event, inputId) {
+    if (!checkRateLimit('file_select')) return;
+    var file = event.target.files[0];
+    if (!file) return;
+    
+    var allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+    var isValidType = false;
+    for (var i = 0; i < allowedTypes.length; i++) {
+        if (file.type === allowedTypes[i]) { isValidType = true; break; }
+    }
+    if (!isValidType) {
+        showWarning('نوع الملف غير مدعوم. يرجى رفع صورة أو ملف PDF');
+        event.target.value = '';
+        return;
+    }
+    
+    if (file.size > MAX_FILE_SIZE) {
+        showWarning('⚠️ حجم الملف كبير جداً. الحد الأقصى هو 4 ميجابايت');
+        event.target.value = '';
+        return;
+    }
+    
+    var displayId = inputId + 'Display';
+    var displayEl = document.getElementById(displayId);
+    if (displayEl) {
+        var sizeKB = (file.size / 1024).toFixed(1);
+        var sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+        var sizeText = file.size > 1024 * 1024 ? sizeMB + ' MB' : sizeKB + ' KB';
+        displayEl.textContent = '📎 ' + file.name + ' (' + sizeText + ')';
+        displayEl.style.color = '#10b981';
+        displayEl.style.fontWeight = '700';
+    }
+    
+    if (inputId === 'newLessonFile') { uploadedFile = file; }
+    else if (inputId === 'editLessonFile') { uploadedFileForEdit = file; }
+}
+
+function clearFileUploadFields() {
+    uploadedFile = null;
+    uploadedFileForEdit = null;
+    var d1 = document.getElementById('newLessonFileDisplay');
+    if (d1) { d1.textContent = 'لم يتم اختيار ملف'; d1.style.color = 'var(--text-secondary)'; d1.style.fontWeight = '400'; }
+    var d2 = document.getElementById('editLessonFileDisplay');
+    if (d2) { d2.textContent = 'لم يتم اختيار ملف'; d2.style.color = 'var(--text-secondary)'; d2.style.fontWeight = '400'; }
+    var i1 = document.getElementById('newLessonFile');
+    if (i1) i1.value = '';
+    var i2 = document.getElementById('editLessonFile');
+    if (i2) i2.value = '';
+}
+
+function fileToBase64(file) {
+    return new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function() {
+            var result = reader.result;
+            var base64 = result.substring(result.indexOf(',') + 1);
+            resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+async function uploadFileToTelegram(file, caption) {
+    caption = caption || '';
+    if (!file) { throw new Error('لم يتم اختيار ملف'); }
+    
+    var allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+    var found = false;
+    for (var i = 0; i < allowedTypes.length; i++) {
+        if (file.type === allowedTypes[i]) { found = true; break; }
+    }
+    if (!found) { throw new Error('نوع الملف غير مدعوم. يرجى رفع صورة (JPG, PNG, GIF, WEBP) أو ملف PDF'); }
+    if (file.size > MAX_FILE_SIZE) { throw new Error('حجم الملف كبير جداً. الحد الأقصى هو 10 ميجابايت'); }
+    
+    var progressEl = document.getElementById('uploadProgress');
+    if (progressEl) {
+        progressEl.classList.add('active');
+        var fill = document.getElementById('progressFill');
+        if (fill) {
+            var progress = 0;
+            var interval = setInterval(function() {
+                progress += 5;
+                if (progress >= 90) clearInterval(interval);
+                if (fill) fill.style.width = progress + '%';
+            }, 100);
+        }
+    }
+    
+    try {
+        // إرسال الملف كبيانات خام (raw binary) بدل JSON+Base64:
+        // يلغي تضخيم Base64 (~37%) ويتفادى حد bodyParser الافتراضي لـ Next.js (1MB)،
+        // مما يرفع السقف الفعلي لحجم الملف المدعوم قرب حد Vercel البنيوي (4.5MB).
+        var response = await fetch('/api/proxy', {
+            method: 'POST',
+            headers: {
+                'Content-Type': file.type || 'application/octet-stream',
+                'X-File-Name': encodeURIComponent(file.name || 'file'),
+                'X-File-Type': file.type || 'application/octet-stream',
+                'X-Caption': encodeURIComponent(caption || '')
+            },
+            body: file
+        });
+        
+        if (progressEl) progressEl.classList.remove('active');
+        var fill = document.getElementById('progressFill');
+        if (fill) fill.style.width = '0%';
+        
+        var result = await response.json();
+        if (!result.ok) { throw new Error(result.description || result.error || 'فشل رفع الملف إلى Telegram'); }
+        
+        var fileId, fileName, fileSize;
+        if (result.result && result.result.document) {
+            fileId = result.result.document.file_id;
+            fileName = result.result.document.file_name || file.name;
+            fileSize = result.result.document.file_size;
+        } else { throw new Error('لم يتم العثور على الملف في الرد'); }
+        
+        return {
+            url: getFreshTelegramUrl(fileId, fileName, false, file.type === 'application/pdf' ? 'pdf' : 'image'),
+            file_id: fileId,
+            name: fileName,
+            size: fileSize,
+            type: file.type
+        };
+    } catch(error) {
+        if (progressEl) progressEl.classList.remove('active');
+        var fill = document.getElementById('progressFill');
+        if (fill) fill.style.width = '0%';
+        throw error;
+    }
+}
+
+function forceDownload(url, filename) {
+    if (!url || url === '#' || url === 'undefined' || url === 'null') {
+        showError('رابط التحميل غير متاح حالياً');
+        return;
+    }
+    try {
+        var a = document.createElement('a');
+        a.href = url;
+        if (filename) a.download = filename;
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    } catch (e) {
+        window.open(url, '_blank');
+    }
+}
+window.forceDownload = forceDownload;
+
+function getFreshTelegramUrl(file_id, filename, forceDownload, type) {
+    if (!file_id) return null;
+    var u = window.location.origin + '/api/telegram-file?file_id=' + encodeURIComponent(file_id);
+    if (filename) u += '&filename=' + encodeURIComponent(filename);
+    if (forceDownload) u += '&dl=1';
+    // تلميح موثوق بنوع الملف (pdf/image) معروف من سياق الدرس نفسه في الواجهة،
+    // يُستخدم كأولوية على الخادم عند تعذّر استنتاج الامتداد من مسار تيليجرام
+    if (type === 'pdf' || type === 'image') u += '&type=' + type;
+    return u;
+}
+
+function waitForAuthReady(maxWaitMs) {
+    return new Promise(function(resolve) {
+        if (isAuthReady) { resolve(); return; }
+        var waited = 0;
+        var iv = setInterval(function() {
+            waited += 50;
+            if (isAuthReady || waited >= maxWaitMs) {
+                clearInterval(iv);
+                resolve();
+            }
+        }, 50);
+    });
+}
+
+// ============================================================
+// ===== دوال الاتصال بنا =====
+// ============================================================
+
+function openContactModal() {
+    if (!checkRateLimit('contact_modal')) return;
+    document.getElementById('contactModal').classList.add('active');
+}
+window.openContactModal = openContactModal;
+
+function closeContactModal() {
+    document.getElementById('contactModal').classList.remove('active');
+}
+window.closeContactModal = closeContactModal;
+
+function sendContactMessage() {
+    // ✅ تم استبدال EmailJS بـ Google Forms لأسباب أمنية
+    window.open('https://docs.google.com/forms/d/e/1FAIpQLScGxpkdkoYolBO-o-t_lT3Ca5eGrjgZTvsJOLy2S0BEqmOD7Q/viewform', '_blank');
+    closeContactModal();
+}
+
+window.sendContactMessage = sendContactMessage;
+
+// ============================================================
+// ===== دوال عرض الصور =====
+// ============================================================
+
+function openImageViewer(imageUrl, title) {
+    var existingViewer = document.getElementById('imageViewerOverlay');
+    if (existingViewer) existingViewer.remove();
+    
+    var overlay = document.createElement('div');
+    overlay.id = 'imageViewerOverlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    
+    var header = document.createElement('div');
+    header.className = 'viewer-header';
+    
+    var titleEl = document.createElement('span');
+    titleEl.className = 'viewer-title';
+    titleEl.textContent = title || 'صورة';
+    
+    var closeBtn = document.createElement('button');
+    closeBtn.className = 'viewer-close-btn';
+    closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+    closeBtn.onclick = function(e) { e.stopPropagation(); closeImageViewer(); };
+    
+    header.appendChild(titleEl);
+    header.appendChild(closeBtn);
+    
+    var body = document.createElement('div');
+    body.className = 'viewer-body';
+    
+    var img = document.createElement('img');
+    img.src = imageUrl;
+    img.alt = title || 'صورة';
+    img.draggable = false;
+    
+    var scale = 1;
+    var MIN_SCALE = 0.5;
+    var MAX_SCALE = 5.0;
+    var STEP = 0.25;
+    var translateX = 0;
+    var translateY = 0;
+    var isDragging = false;
+    var startX = 0, startY = 0;
+    var touchCount = 0;
+    var touchDist = 0;
+    var initialScale = 1;
+    var initialPinchTranslateX = 0, initialPinchTranslateY = 0;
+    
+    function applyTransform() {
+        img.style.transform = 'translate(' + translateX + 'px, ' + translateY + 'px) scale(' + scale + ')';
+        updateZoomLevelDisplay();
+    }
+    
+    function updateZoomLevelDisplay() {
+        var display = document.getElementById('viewerZoomLevel');
+        if (display) {
+            var percent = Math.round(scale * 100);
+            display.textContent = percent + '%';
+        }
+    }
+    
+    function zoomIn() { scale = Math.min(MAX_SCALE, scale + STEP); applyTransform(); }
+    function zoomOut() { scale = Math.max(MIN_SCALE, scale - STEP); applyTransform(); }
+    function resetZoom() { scale = 1; translateX = 0; translateY = 0; applyTransform(); }
+    
+    img.onmousedown = function(e) {
+        if (e.button !== 0) return;
+        isDragging = true;
+        startX = e.clientX - translateX;
+        startY = e.clientY - translateY;
+        img.style.cursor = 'grabbing';
+        e.preventDefault();
+    };
+    
+    document.onmousemove = function(e) {
+        if (!isDragging) return;
+        translateX = e.clientX - startX;
+        translateY = e.clientY - startY;
+        applyTransform();
+    };
+    
+    document.onmouseup = function() {
+        if (isDragging) {
+            isDragging = false;
+            img.style.cursor = scale > 1 ? 'grab' : 'default';
+        }
+    };
+    
+    img.ontouchstart = function(e) {
+        var touches = e.touches;
+        touchCount = touches.length;
+        if (touchCount === 1) {
+            var touch = touches[0];
+            startX = touch.clientX - translateX;
+            startY = touch.clientY - translateY;
+            isDragging = true;
+        } else if (touchCount === 2) {
+            var dx = touches[0].clientX - touches[1].clientX;
+            var dy = touches[0].clientY - touches[1].clientY;
+            touchDist = Math.sqrt(dx * dx + dy * dy);
+            initialScale = scale;
+            var midX = (touches[0].clientX + touches[1].clientX) / 2;
+            var midY = (touches[0].clientY + touches[1].clientY) / 2;
+            initialPinchTranslateX = translateX;
+            initialPinchTranslateY = translateY;
+            isDragging = false;
+        }
+        e.preventDefault();
+    };
+    
+    img.ontouchmove = function(e) {
+        var touches = e.touches;
+        e.preventDefault();
+        if (touchCount === 1 && touches.length === 1) {
+            var touch = touches[0];
+            translateX = touch.clientX - startX;
+            translateY = touch.clientY - startY;
+            applyTransform();
+        } else if (touchCount === 2 && touches.length === 2) {
+            var dx = touches[0].clientX - touches[1].clientX;
+            var dy = touches[0].clientY - touches[1].clientY;
+            var newDist = Math.sqrt(dx * dx + dy * dy);
+            var delta = (newDist - touchDist) / 200;
+            var newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, initialScale + delta));
+            var midX = (touches[0].clientX + touches[1].clientX) / 2;
+            var midY = (touches[0].clientY + touches[1].clientY) / 2;
+            var scaleRatio = newScale / initialScale;
+            var containerRect = body.getBoundingClientRect();
+            var centerX = midX - containerRect.left - containerRect.width / 2;
+            var centerY = midY - containerRect.top - containerRect.height / 2;
+            translateX = initialPinchTranslateX + (centerX - (centerX * scaleRatio));
+            translateY = initialPinchTranslateY + (centerY - (centerY * scaleRatio));
+            scale = newScale;
+            applyTransform();
+        }
+    };
+    
+    img.ontouchend = function(e) {
+        touchCount = e.touches.length;
+        if (touchCount === 0) isDragging = false;
+        e.preventDefault();
+    };
+    
+    img.ontouchcancel = function(e) {
+        touchCount = 0;
+        isDragging = false;
+        e.preventDefault();
+    };
+    
+    img.onwheel = function(e) {
+        e.preventDefault();
+        var delta = e.deltaY > 0 ? -STEP * 0.6 : STEP * 0.6;
+        var newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale + delta));
+        var containerRect = body.getBoundingClientRect();
+        var mouseX = e.clientX - containerRect.left - containerRect.width / 2;
+        var mouseY = e.clientY - containerRect.top - containerRect.height / 2;
+        var scaleRatio = newScale / scale;
+        translateX = translateX + (mouseX - (mouseX * scaleRatio));
+        translateY = translateY + (mouseY - (mouseY * scaleRatio));
+        scale = newScale;
+        applyTransform();
+    };
+    
+    img.ondblclick = function(e) { e.stopPropagation(); resetZoom(); };
+    
+    overlay.onclick = function(e) {
+        if (e.target === overlay || e.target === body) { closeImageViewer(); }
+    };
+    
+    var escHandler = function(e) {
+        if (e.key === 'Escape' && document.getElementById('imageViewerOverlay')) { closeImageViewer(); }
+    };
+    document.addEventListener('keydown', escHandler);
+    
+    var controls = document.createElement('div');
+    controls.className = 'viewer-controls';
+    
+    var zoomOutBtn = document.createElement('button');
+    zoomOutBtn.className = 'ctrl-btn zoom-out';
+    zoomOutBtn.innerHTML = '−';
+    zoomOutBtn.onclick = function(e) { e.stopPropagation(); zoomOut(); };
+    
+    var zoomLevelDisplay = document.createElement('span');
+    zoomLevelDisplay.className = 'zoom-level';
+    zoomLevelDisplay.id = 'viewerZoomLevel';
+    zoomLevelDisplay.textContent = '100%';
+    
+    var zoomInBtn = document.createElement('button');
+    zoomInBtn.className = 'ctrl-btn zoom-in';
+    zoomInBtn.innerHTML = '+';
+    zoomInBtn.onclick = function(e) { e.stopPropagation(); zoomIn(); };
+    
+    var divider1 = document.createElement('span');
+    divider1.className = 'divider';
+    
+    var resetBtn = document.createElement('button');
+    resetBtn.className = 'ctrl-btn reset-zoom';
+    resetBtn.innerHTML = '⟲';
+    resetBtn.onclick = function(e) { e.stopPropagation(); resetZoom(); };
+    
+    controls.appendChild(zoomOutBtn);
+    controls.appendChild(zoomLevelDisplay);
+    controls.appendChild(zoomInBtn);
+    controls.appendChild(divider1);
+    controls.appendChild(resetBtn);
+    
+    body.appendChild(img);
+    overlay.appendChild(header);
+    overlay.appendChild(body);
+    overlay.appendChild(controls);
+    document.body.appendChild(overlay);
+    
+    document.body.style.overflow = 'hidden';
+    applyTransform();
+}
+
+function closeImageViewer() {
+    var overlay = document.getElementById('imageViewerOverlay');
+    if (overlay) {
+        overlay.style.opacity = '0';
+        overlay.style.transition = 'opacity 0.3s ease';
+        setTimeout(function() {
+            overlay.remove();
+            document.body.style.overflow = '';
+        }, 300);
+    }
+}
+window.openImageViewer = openImageViewer;
+window.closeImageViewer = closeImageViewer;
+
+// ============================================================
+// ===== دوال عرض المحتوى (المُعدلة لحل مشكلة PDF) =====
+// ============================================================
+
+function showUnavailableModal() {
+    var modal = document.getElementById('unavailableModal');
+    if (modal) modal.classList.add('active');
+}
+window.showUnavailableModal = showUnavailableModal;
+
+function closeUnavailableModal() {
+    var modal = document.getElementById('unavailableModal');
+    if (modal) modal.classList.remove('active');
+}
+window.closeUnavailableModal = closeUnavailableModal;
+
+// ===== عارض PDF احترافي موحّد يعتمد بالكامل على pdf.js =====
+// يحلّ مشكلة عدم دعم بعض المتصفحات (خاصة الهواتف) لعرض PDF داخل iframe/object
+// عبر تحويل كل صفحة إلى صورة عالية الدقة (canvas) وعرضها بمحرك تكبير/تحريك
+// احترافي (Pinch-to-zoom + سحب + عجلة الفأرة + تنقل بين الصفحات بالسحب).
+var _pdfWorkerReady = false;
+function _ensurePdfWorker() {
+    if (_pdfWorkerReady) return;
+    if (window['pdfjsLib'] && window['pdfjsLib'].GlobalWorkerOptions) {
+        window['pdfjsLib'].GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        _pdfWorkerReady = true;
+    }
+}
+
+async function _ensurePdfLib() {
+    if (!window['pdfjsLib']) {
+        await _loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+    }
+    _ensurePdfWorker();
+}
+
+var _pdfDocCache = {}; // url -> Promise<PDFDocumentProxy>
+function _getPdfDocument(url) {
+    if (_pdfDocCache[url]) return _pdfDocCache[url];
+    var p = (async function () {
+        await _ensurePdfLib();
+        if (!window['pdfjsLib']) throw new Error('pdf.js غير متاح');
+        var res = await fetch(url, { credentials: 'same-origin', cache: 'default' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var buf = await res.arrayBuffer();
+        if (!buf || buf.byteLength < 5) throw new Error('ملف فارغ');
+        var data = new Uint8Array(buf);
+        return window['pdfjsLib'].getDocument({
+            data: data,
+            cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+            cMapPacked: true,
+            standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/',
+            useSystemFonts: false,
+            disableFontFace: false,
+            isEvalSupported: true
+        }).promise;
+    })();
+    _pdfDocCache[url] = p;
+    p.catch(function () { delete _pdfDocCache[url]; });
+    return p;
+}
+
+async function renderProfessionalPdfViewer(boxId, url, title, downloadUrl) {
+    var box = document.getElementById(boxId);
+    if (!box) return;
+    box.innerHTML =
+        '<div style="display:flex; justify-content:center; align-items:center; min-height:280px; flex-direction:column; gap:14px; padding:20px;">' +
+            '<div style="width:44px; height:44px; border:5px solid #e2e8f0; border-top:5px solid var(--primary); border-radius:50%; animation: spin 0.8s linear infinite;"></div>' +
+            '<p style="color:var(--text-secondary); font-weight:700; font-size:0.9rem;">⏳ جاري تجهيز معاينة الملف...</p>' +
+        '</div>';
+
+    try {
+        var pdf = await _getPdfDocument(url);
+        var page = await pdf.getPage(1);
+        var base = page.getViewport({ scale: 1 });
+        var thumbWidth = Math.max(240, Math.min(560, (box.clientWidth || 320) - 8));
+        var scale = thumbWidth / base.width;
+        var viewport = page.getViewport({ scale: scale });
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.floor(viewport.width * dpr);
+        canvas.height = Math.floor(viewport.height * dpr);
+        await page.render({
+            canvasContext: canvas.getContext('2d'),
+            viewport: viewport,
+            transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : null
+        }).promise;
+        var thumbSrc = canvas.toDataURL('image/jpeg', 0.85);
+
+        box.innerHTML =
+            '<div class="pdf-preview-card" onclick="openPdfViewer(\'' + escAttr(url) + '\', \'' + escAttr(title) + '\', \'' + escAttr(downloadUrl || url) + '\')" role="button" tabindex="0" aria-label="فتح عارض PDF">' +
+                '<div class="pdf-preview-thumb"><img src="' + thumbSrc + '" alt="' + escAttr(title) + '" draggable="false" loading="lazy" decoding="async"></div>' +
+                '<div class="pdf-preview-overlay">' +
+                    '<div class="pdf-preview-icon"><i class="fas fa-magnifying-glass-plus"></i></div>' +
+                    '<div class="pdf-preview-text">اضغط للعرض بالتكبير الكامل</div>' +
+                    '<div class="pdf-preview-pages"><i class="fas fa-file-pdf"></i> ' + pdf.numPages + ' صفحة</div>' +
+                '</div>' +
+            '</div>';
+    } catch (e) {
+        console.error('PDF preview error:', e);
+        box.innerHTML =
+            '<div style="display:flex; justify-content:center; align-items:center; min-height:300px; flex-direction:column; padding:20px; text-align:center; gap:10px;">' +
+                '<i class="fas fa-file-pdf" style="font-size:3.5rem; color:#dc2626;"></i>' +
+                '<p style="color:var(--text-secondary); font-weight:700;">تعذّرت معاينة الملف داخل الصفحة</p>' +
+                '<div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:8px;">' +
+                    '<button type="button" class="btn btn-primary" onclick="openPdfViewer(\'' + escAttr(url) + '\', \'' + escAttr(title) + '\', \'' + escAttr(downloadUrl || url) + '\')" style="padding:8px 20px; background:#3b82f6; color:#fff;"><i class="fas fa-eye"></i> محاولة العرض على أي حال</button>' +
+                    '<button type="button" class="btn btn-success" onclick="forceDownload(\'' + escAttr(downloadUrl || url) + '\', \'' + escAttr(title) + '\')" style="padding:8px 20px;"><i class="fas fa-download"></i> تحميل الملف</button>' +
+                '</div>' +
+            '</div>';
+    }
+}
+window.renderProfessionalPdfViewer = renderProfessionalPdfViewer;
+
+var _pdfViewerEscHandler = null;
+function openPdfViewer(url, title, downloadUrl) {
+    var existing = document.getElementById('pdfViewerOverlay');
+    if (existing) existing.remove();
+    if (_pdfViewerEscHandler) { document.removeEventListener('keydown', _pdfViewerEscHandler); _pdfViewerEscHandler = null; }
+
+    var overlay = document.createElement('div');
+    overlay.id = 'pdfViewerOverlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+
+    var header = document.createElement('div');
+    header.className = 'viewer-header';
+    var titleEl = document.createElement('span');
+    titleEl.className = 'viewer-title';
+    titleEl.textContent = title || 'ملف PDF';
+    var headerActions = document.createElement('div');
+    headerActions.className = 'viewer-header-actions';
+    var downloadBtn = document.createElement('button');
+    downloadBtn.className = 'viewer-close-btn';
+    downloadBtn.title = 'تحميل الملف';
+    downloadBtn.innerHTML = '<i class="fas fa-download"></i>';
+    downloadBtn.onclick = function (e) { e.stopPropagation(); forceDownload(downloadUrl || url, title); };
+    var closeBtn = document.createElement('button');
+    closeBtn.className = 'viewer-close-btn';
+    closeBtn.title = 'إغلاق';
+    closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+    closeBtn.onclick = function (e) { e.stopPropagation(); closePdfViewer(); };
+    headerActions.appendChild(downloadBtn);
+    headerActions.appendChild(closeBtn);
+    header.appendChild(titleEl);
+    header.appendChild(headerActions);
+
+    var body = document.createElement('div');
+    body.className = 'viewer-body';
+
+    var loadingEl = document.createElement('div');
+    loadingEl.className = 'pdf-viewer-loading';
+    loadingEl.innerHTML = '<div class="spinner-white"></div><p>⏳ جاري تحميل الملف...</p>';
+
+    var pageWrap = document.createElement('div');
+    pageWrap.className = 'viewer-page';
+    var img = document.createElement('img');
+    img.alt = title || 'PDF';
+    img.draggable = false;
+    img.style.display = 'none';
+    pageWrap.appendChild(img);
+
+    body.appendChild(loadingEl);
+    body.appendChild(pageWrap);
+
+    var pageNav = document.createElement('div');
+    pageNav.className = 'pdf-page-nav';
+    var prevBtn = document.createElement('button');
+    prevBtn.type = 'button'; prevBtn.className = 'ctrl-btn'; prevBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+    var pageLabel = document.createElement('span');
+    pageLabel.className = 'zoom-level'; pageLabel.textContent = '...';
+    var nextBtn = document.createElement('button');
+    nextBtn.type = 'button'; nextBtn.className = 'ctrl-btn'; nextBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+    pageNav.appendChild(prevBtn);
+    pageNav.appendChild(pageLabel);
+    pageNav.appendChild(nextBtn);
+
+    var controls = document.createElement('div');
+    controls.className = 'viewer-controls';
+    var zoomOutBtn = document.createElement('button'); zoomOutBtn.type = 'button'; zoomOutBtn.className = 'ctrl-btn zoom-out'; zoomOutBtn.innerHTML = '−';
+    var zoomLevelDisplay = document.createElement('span'); zoomLevelDisplay.className = 'zoom-level'; zoomLevelDisplay.textContent = '100%';
+    var zoomInBtn = document.createElement('button'); zoomInBtn.type = 'button'; zoomInBtn.className = 'ctrl-btn zoom-in'; zoomInBtn.innerHTML = '+';
+    var divider1 = document.createElement('span'); divider1.className = 'divider';
+    var resetBtn = document.createElement('button'); resetBtn.type = 'button'; resetBtn.className = 'ctrl-btn reset-zoom'; resetBtn.innerHTML = '⟲';
+    controls.appendChild(zoomOutBtn);
+    controls.appendChild(zoomLevelDisplay);
+    controls.appendChild(zoomInBtn);
+    controls.appendChild(divider1);
+    controls.appendChild(resetBtn);
+
+    overlay.appendChild(header);
+    overlay.appendChild(body);
+    overlay.appendChild(pageNav);
+    overlay.appendChild(controls);
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+
+    // ---- حالة العرض: التكبير يعتمد على عرض الصفحة (ملء العرض) مع تمرير طبيعي ----
+    // 1 = ملاءمة عرض الشاشة (النص واضح تماماً)، ويمكن التكبير حتى 4 أضعاف.
+    var zoom = 1, MIN_ZOOM = 0.5, MAX_ZOOM = 4, ZOOM_STEP = 0.25;
+    var pdfDoc = null, numPages = 0, currentPage = 1;
+    var pageCache = {};
+    var renderToken = 0;
+
+    function applyZoom() {
+        img.style.width = (zoom * 100) + '%';
+        zoomLevelDisplay.textContent = Math.round(zoom * 100) + '%';
+    }
+    function setZoom(z, keepScroll) {
+        var prev = zoom;
+        zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.round(z * 100) / 100));
+        if (zoom === prev) return;
+        var ratio = zoom / prev;
+        var cx = body.scrollLeft + body.clientWidth / 2;
+        var cy = body.scrollTop + body.clientHeight / 2;
+        applyZoom();
+        if (keepScroll !== false) {
+            body.scrollLeft = cx * ratio - body.clientWidth / 2;
+            body.scrollTop = cy * ratio - body.clientHeight / 2;
+        }
+    }
+    function zoomIn() { setZoom(zoom + ZOOM_STEP); }
+    function zoomOut() { setZoom(zoom - ZOOM_STEP); }
+    function resetZoom() { zoom = 1; applyZoom(); body.scrollLeft = 0; }
+
+    zoomOutBtn.onclick = function (e) { e.stopPropagation(); zoomOut(); };
+    zoomInBtn.onclick = function (e) { e.stopPropagation(); zoomIn(); };
+    resetBtn.onclick = function (e) { e.stopPropagation(); resetZoom(); body.scrollTop = 0; };
+
+    // تكبير بإصبعين (Pinch) — التمرير العادي متروك للمتصفح لتجربة سلسة
+    var pinchDist = 0, pinchZoom = 1, isPinching = false;
+    body.addEventListener('touchstart', function (e) {
+        if (e.touches.length === 2) {
+            var dx = e.touches[0].clientX - e.touches[1].clientX;
+            var dy = e.touches[0].clientY - e.touches[1].clientY;
+            pinchDist = Math.sqrt(dx * dx + dy * dy) || 1;
+            pinchZoom = zoom;
+            isPinching = true;
+        }
+    }, { passive: true });
+    body.addEventListener('touchmove', function (e) {
+        if (!isPinching || e.touches.length !== 2) return;
+        var dx = e.touches[0].clientX - e.touches[1].clientX;
+        var dy = e.touches[0].clientY - e.touches[1].clientY;
+        var d = Math.sqrt(dx * dx + dy * dy) || 1;
+        e.preventDefault();
+        setZoom(pinchZoom * (d / pinchDist));
+    }, { passive: false });
+    body.addEventListener('touchend', function (e) {
+        if (e.touches.length < 2) isPinching = false;
+    }, { passive: true });
+
+    // عجلة الفأرة: تمرير طبيعي، والتكبير مع Ctrl
+    body.addEventListener('wheel', function (e) {
+        if (!e.ctrlKey) return;
+        e.preventDefault();
+        setZoom(zoom + (e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP));
+    }, { passive: false });
+
+    img.ondblclick = function (e) {
+        e.stopPropagation();
+        if (zoom > 1) { resetZoom(); } else { setZoom(2); }
+    };
+
+    _pdfViewerEscHandler = function (e) {
+        if (!document.getElementById('pdfViewerOverlay')) return;
+        if (e.key === 'Escape') closePdfViewer();
+        else if (e.key === 'ArrowRight') goToPage(currentPage - 1);
+        else if (e.key === 'ArrowLeft') goToPage(currentPage + 1);
+    };
+    document.addEventListener('keydown', _pdfViewerEscHandler);
+
+    function updatePageNav() {
+        pageLabel.textContent = numPages ? (currentPage + ' / ' + numPages) : '...';
+        prevBtn.style.opacity = currentPage <= 1 ? '0.35' : '1';
+        prevBtn.style.pointerEvents = currentPage <= 1 ? 'none' : 'auto';
+        nextBtn.style.opacity = currentPage >= numPages ? '0.35' : '1';
+        nextBtn.style.pointerEvents = currentPage >= numPages ? 'none' : 'auto';
+        pageNav.style.display = numPages > 1 ? 'flex' : 'none';
+    }
+
+    async function _renderPageToDataUrl(num) {
+        var page = await pdfDoc.getPage(num);
+        var base = page.getViewport({ scale: 1 });
+        var cssWidth = Math.max(320, body.clientWidth - 16);
+        var dpr = Math.min(window.devicePixelRatio || 1, 3);
+        // دقة عالية دائماً حتى يبقى النص واضحاً عند التكبير
+        var targetPx = Math.min(Math.max(cssWidth * dpr * 1.5, 1400), 2600);
+        var viewport = page.getViewport({ scale: targetPx / base.width });
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.floor(viewport.width);
+        canvas.height = Math.floor(viewport.height);
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
+        return canvas.toDataURL('image/jpeg', 0.94);
+    }
+
+    function preloadNeighbors(num) {
+        [num + 1, num - 1].forEach(function (n) {
+            if (n >= 1 && n <= numPages && !pageCache[n]) {
+                _renderPageToDataUrl(n).then(function (u) { pageCache[n] = u; }).catch(function () {});
+            }
+        });
+    }
+
+    function showPage(dataUrl) {
+        img.src = dataUrl;
+        img.style.display = 'block';
+        img.style.opacity = '1';
+        loadingEl.style.display = 'none';
+        applyZoom();
+        body.scrollTop = 0;
+        body.scrollLeft = 0;
+    }
+
+    async function renderPage(num) {
+        if (!pdfDoc || num < 1 || num > numPages) return;
+        currentPage = num;
+        var myToken = ++renderToken;
+        updatePageNav();
+
+        if (pageCache[num]) {
+            showPage(pageCache[num]);
+            preloadNeighbors(num);
+            return;
+        }
+        loadingEl.style.display = 'flex';
+        loadingEl.innerHTML = '<div class="spinner-white"></div><p>⏳ جاري تحميل الصفحة ' + num + '...</p>';
+        img.style.opacity = '0.25';
+        try {
+            var dataUrl = await _renderPageToDataUrl(num);
+            pageCache[num] = dataUrl;
+            if (myToken !== renderToken) return;
+            showPage(dataUrl);
+            preloadNeighbors(num);
+        } catch (e) {
+            console.error('PDF page render error:', e);
+            if (myToken !== renderToken) return;
+            loadingEl.innerHTML = '<p style="color:#fca5a5;">⚠️ تعذر عرض هذه الصفحة</p>';
+        }
+    }
+
+    function goToPage(num) { if (num >= 1 && num <= numPages && num !== currentPage) renderPage(num); }
+    prevBtn.onclick = function (e) { e.stopPropagation(); goToPage(currentPage - 1); };
+    nextBtn.onclick = function (e) { e.stopPropagation(); goToPage(currentPage + 1); };
+
+    // تنقّل بين الصفحات بالسحب الأفقي (لا يتعارض مع التمرير العمودي)
+    var swipeStartX = null, swipeStartY = null;
+    body.addEventListener('touchstart', function (e) {
+        if (isPinching || e.touches.length !== 1) { swipeStartX = null; return; }
+        swipeStartX = e.touches[0].clientX;
+        swipeStartY = e.touches[0].clientY;
+    }, { passive: true });
+    body.addEventListener('touchend', function (e) {
+        if (swipeStartX === null) return;
+        var t = e.changedTouches && e.changedTouches[0];
+        if (!t) { swipeStartX = null; return; }
+        var dx = t.clientX - swipeStartX;
+        var dy = t.clientY - swipeStartY;
+        swipeStartX = null;
+        if (zoom > 1) return;
+        if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.8) {
+            if (dx < 0) goToPage(currentPage + 1); else goToPage(currentPage - 1);
+        }
+    }, { passive: true });
+
+    window.addEventListener('orientationchange', function () {
+        if (!document.getElementById('pdfViewerOverlay')) return;
+        pageCache = {};
+        if (pdfDoc) renderPage(currentPage);
+    });
+
+    (async function () {
+        try {
+            pdfDoc = await _getPdfDocument(url);
+            numPages = pdfDoc.numPages;
+            updatePageNav();
+            await renderPage(1);
+        } catch (e) {
+            console.error('PDF viewer load error:', e);
+            loadingEl.innerHTML =
+                '<p style="color:#fca5a5; text-align:center; padding:0 20px;">⚠️ تعذر تحميل الملف<br>' +
+                '<span style="font-size:0.75rem; opacity:0.8;">تحقق من الاتصال بالإنترنت</span></p>' +
+                '<button type="button" onclick="forceDownload(\'' + escAttr(downloadUrl || url) + '\', \'' + escAttr(title) + '\')" ' +
+                'style="margin-top:14px; background:var(--secondary); color:#1a4a8a; border:none; padding:8px 20px; border-radius:20px; font-weight:800; cursor:pointer;">تحميل الملف بدلاً من ذلك</button>';
+        }
+    })();
+}
+window.openPdfViewer = openPdfViewer;
+
+function closePdfViewer() {
+    var overlay = document.getElementById('pdfViewerOverlay');
+    if (overlay) {
+        overlay.style.opacity = '0';
+        overlay.style.transition = 'opacity 0.3s ease';
+        setTimeout(function () {
+            overlay.remove();
+            document.body.style.overflow = '';
+        }, 300);
+    }
+    if (_pdfViewerEscHandler) { document.removeEventListener('keydown', _pdfViewerEscHandler); _pdfViewerEscHandler = null; }
+}
+window.closePdfViewer = closePdfViewer;
+
+async function showLessonContent(id, title, url, download, type, fileId) {
+    var container = document.getElementById('lessonsContainer');
+    if (!container) {
+        try { renderLessonsList(); } catch (e) {}
+        container = document.getElementById('lessonsContainer');
+        if (!container) { return; }
+    }
+    var backBtn = document.getElementById('backBtn');
+    if (backBtn) backBtn.style.display = 'none';
+    
+    // انتظر انتهاء التحقق من الصلاحيات بدل رفض العرض مباشرة (كان يجبر المستخدم على إعادة التحميل)
+    try {
+        if (!isAuthReady && typeof auth !== 'undefined' && auth && auth.currentUser) {
+            container.innerHTML = '<div style="display:flex; justify-content:center; align-items:center; min-height:260px; flex-direction:column; gap:14px;">' +
+                '<div style="width:44px; height:44px; border:5px solid var(--bg-body); border-top:5px solid var(--primary); border-radius:50%; animation: spin 0.8s linear infinite;"></div>' +
+                '<p style="color:var(--text-secondary); font-weight:700;">⏳ جاري التحقق من حسابك...</p></div>';
+            await waitForAuthReady(12000);
+            container = document.getElementById('lessonsContainer') || container;
+        }
+    } catch (e) {}
+
+    var canView = isAdminMode || (currentUser && currentUserIsApproved && isLessonAccessible(currentLessonType));
+    if (!canView) { 
+        if (backBtn) backBtn.style.display = 'inline-flex'; 
+        if (!currentUser) {
+            showLoginRequiredPopup();
+        } else {
+            showUnavailableModal();
+        }
+        return; 
+    }
+    
+    currentViewingFile = id;
+    currentViewingLesson = { id: id, title: title, url: url, download: download, type: type, fileId: fileId };
+    
+    container.innerHTML = `
+        <div style="display:flex; justify-content:center; align-items:center; min-height:300px; flex-direction:column; gap:16px;">
+            <div style="width:50px; height:50px; border:5px solid var(--bg-body); border-top:5px solid var(--primary); border-radius:50%; animation: spin 0.8s linear infinite;"></div>
+            <p style="color:var(--text-secondary); font-size:1rem; font-weight:700;">⏳ جاري تحميل الملف...</p>
+        </div>
+    `;
+
+    // شبكة أمان: إذا كان الدرس داخلياً وبدون رابط أو معرّف ملف (بيانات مُحمّلة سابقاً كزائر)،
+    // نُعيد تحميل الدروس بصلاحيات المستخدم الحالي ونأخذ الرابط الجديد بدل إظهار خطأ يُجبر
+    // المستخدم على الخروج من الدرس أو تحديث الصفحة.
+    if ((type === 'pdf' || type === 'image') && !fileId && (!url || url === '#' || url === 'undefined' || url === 'null')) {
+        try {
+            await loadDataFromFirebase();
+            var refreshed = getCurrentLessons();
+            for (var ri = 0; ri < refreshed.length; ri++) {
+                if (refreshed[ri].id === id) {
+                    url = refreshed[ri].file_info?.url || refreshed[ri].internal_url || url;
+                    download = refreshed[ri].file_info?.url || refreshed[ri].download_url || download;
+                    fileId = refreshed[ri].file_info?.file_id || refreshed[ri].telegram_file_id || fileId;
+                    break;
+                }
+            }
+            currentViewingLesson = { id: id, title: title, url: url, download: download, type: type, fileId: fileId };
+            container = document.getElementById('lessonsContainer') || container;
+        } catch (e) {}
+    }
+
+    var freshUrl = url;
+    var freshDownload = download;
+    if (fileId) {
+        try {
+            freshUrl = getFreshTelegramUrl(fileId, title, false, type);
+            freshDownload = getFreshTelegramUrl(fileId, title, true, type);
+            if (!freshUrl) {
+                freshUrl = url;
+                freshDownload = download;
+            }
+        } catch(e) { freshUrl = url; freshDownload = download; }
+    }
+    
+    
+    var isPDF = type === 'pdf';
+    var isImage = type === 'image';
+    
+    if (!freshUrl || freshUrl === '' || freshUrl === 'undefined' || freshUrl === 'null') {
+        freshUrl = '#';
+        freshDownload = '#';
+    }
+    
+    var contentHtml = '';
+    
+    if (isPDF) {
+        var viewerUrl = freshUrl;
+        var isLinkValid = viewerUrl && viewerUrl !== '' && viewerUrl !== '#' && viewerUrl !== 'undefined';
+        var pdfBoxId = 'pdfBox_' + Date.now();
+
+        contentHtml = '<div style="background:var(--bg-white); border-radius:20px; padding:20px; margin:10px 0; box-shadow:var(--shadow-md);">' +
+            '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:2px solid var(--secondary); padding-bottom:10px; flex-wrap:wrap;">' +
+            '<h3><i class="fas fa-file-pdf"></i> ' + sanitizeHtml(title) + '</h3>' +
+            '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
+            '<button class="btn btn-success" onclick="forceDownload(\'' + escAttr(freshDownload || freshUrl) + '\', \'' + escAttr(title) + '\')" style="padding:4px 16px; font-size:0.8rem;"><i class="fas fa-download"></i> تحميل</button>' +
+            '<button class="btn btn-danger" onclick="closeFileViewer()" style="padding:4px 16px; font-size:0.8rem;"><i class="fas fa-times"></i> إغلاق</button>' +
+            '</div></div>' +
+            '<div id="' + pdfBoxId + '" style="min-height:400px; background:#f5f5f5; border-radius:12px; overflow:hidden; position:relative;">';
+
+        if (isLinkValid) {
+            contentHtml += '<div style="display:flex; justify-content:center; align-items:center; min-height:400px; flex-direction:column; gap:14px;">' +
+                '<div style="width:44px; height:44px; border:5px solid #e2e8f0; border-top:5px solid var(--primary); border-radius:50%; animation: spin 0.8s linear infinite;"></div>' +
+                '<p style="color:var(--text-secondary); font-weight:700;">⏳ جاري تجهيز عرض الملف...</p></div>';
+        } else {
+            contentHtml += '<div style="display:flex; justify-content:center; align-items:center; min-height:400px; flex-direction:column; padding:20px; text-align:center;">' +
+                '<i class="fas fa-file-pdf" style="font-size:4rem; color:#dc2626; margin-bottom:16px;"></i>' +
+                '<p style="color:var(--text-secondary); font-size:1rem; font-weight:700;">⚠️ تعذر تحميل الملف</p>' +
+                '<div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; justify-content:center;">' +
+                '<button class="btn btn-success" onclick="forceDownload(\'' + escAttr(freshDownload || freshUrl) + '\', \'' + escAttr(title) + '\')" style="padding:8px 20px;"><i class="fas fa-download"></i> تحميل الملف</button>' +
+                '<button class="btn btn-primary" onclick="location.reload()" style="padding:8px 20px; background:#3b82f6; color:white;"><i class="fas fa-sync"></i> إعادة المحاولة</button>' +
+                '</div></div>';
+        }
+        contentHtml += '</div></div>';
+        if (isLinkValid) {
+            setTimeout(function() { renderProfessionalPdfViewer(pdfBoxId, viewerUrl, title, freshDownload || viewerUrl); }, 0);
+        }
+    } else if (isImage) {
+        var isValidImageUrl = freshUrl && freshUrl !== '' && freshUrl !== '#' && freshUrl !== 'undefined';
+        
+        contentHtml = '<div style="background:var(--bg-white); border-radius:20px; padding:20px; margin:10px 0; box-shadow:var(--shadow-md);">' +
+            '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:2px solid var(--secondary); padding-bottom:10px; flex-wrap:wrap;">' +
+            '<h3><i class="fas fa-image"></i> ' + sanitizeHtml(title) + '</h3>' +
+            '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
+            '<button class="btn btn-success" onclick="forceDownload(\'' + escAttr(freshDownload || freshUrl) + '\', \'' + escAttr(title) + '\')" style="padding:4px 16px; font-size:0.8rem;"><i class="fas fa-download"></i> تحميل</button>' +
+            '<button class="btn btn-danger" onclick="closeFileViewer()" style="padding:4px 16px; font-size:0.8rem;"><i class="fas fa-times"></i> إغلاق</button>' +
+            '</div></div>' +
+            '<div style="min-height:250px; text-align:center; background:#f5f5f5; border-radius:12px; padding:20px;">';
+        
+        if (isValidImageUrl) {
+            contentHtml += '<img src="' + escAttr(freshUrl) + '" style="max-width:100%; max-height:55vh; border-radius:12px; display:inline-block; margin:0 auto; cursor:pointer; transition:transform 0.2s ease, box-shadow 0.2s ease; box-shadow:0 4px 12px rgba(0,0,0,0.1);" alt="' + escAttr(title) + '" decoding="async" role="button" tabindex="0" aria-label="' + escAttr('تكبير الصورة: ' + title) + '" onclick="openImageViewer(\'' + escAttr(freshUrl) + '\', \'' + escAttr(title) + '\')" onmouseover="this.style.boxShadow=\'0 8px 30px rgba(0,0,0,0.2)\'; this.style.transform=\'scale(1.02)\';" onmouseout="this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.1)\'; this.style.transform=\'scale(1)\';">' +
+            '<p style="color:var(--text-muted); font-size:0.7rem; margin-top:8px;">👆 اضغط على الصورة للتكبير والتحريك</p>';
+        } else {
+            contentHtml += '<div style="display:flex; justify-content:center; align-items:center; min-height:250px; flex-direction:column; padding:20px; text-align:center;">' +
+                '<i class="fas fa-image" style="font-size:3rem; color:#dc2626; margin-bottom:16px;"></i>' +
+                '<p style="color:var(--text-secondary); font-size:1rem; font-weight:700;">⚠️ تعذر تحميل الصورة</p>' +
+                '<div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; justify-content:center;">' +
+                '<button class="btn btn-success" onclick="forceDownload(\'' + escAttr(freshDownload || freshUrl) + '\', \'' + escAttr(title) + '\')" style="padding:8px 20px;"><i class="fas fa-download"></i> تحميل الصورة</button>' +
+                '<button class="btn btn-primary" onclick="location.reload()" style="padding:8px 20px; background:#3b82f6; color:white;"><i class="fas fa-sync"></i> إعادة المحاولة</button>' +
+                '</div></div>';
+        }
+        contentHtml += '</div></div>';
+    } else {
+        contentHtml = '<div style="background:var(--bg-white); border-radius:20px; padding:20px; margin:10px 0; box-shadow:var(--shadow-md);">' +
+            '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:2px solid var(--secondary); padding-bottom:10px; flex-wrap:wrap;">' +
+            '<h3><i class="fas fa-external-link-alt"></i> ' + sanitizeHtml(title) + '</h3>' +
+            '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
+            '<button class="btn btn-success" onclick="window.open(\'' + escAttr(freshUrl) + '\', \'_blank\')" style="padding:4px 16px; font-size:0.8rem;"><i class="fas fa-external-link-alt"></i> فتح الرابط</button>' +
+            '<button class="btn btn-danger" onclick="closeFileViewer()" style="padding:4px 16px; font-size:0.8rem;"><i class="fas fa-times"></i> إغلاق</button>' +
+            '</div></div>' +
+            '<div style="min-height:250px; text-align:center; padding:40px 20px; background:var(--bg-body); border-radius:12px;">' +
+            '<i class="fas fa-external-link-alt" style="font-size:3rem; color:var(--text-muted); display:block; margin-bottom:16px;"></i>' +
+            '<p style="color:var(--text-secondary);">📍 سيتم فتح الرابط في نافذة جديدة</p>' +
+            '<button class="btn btn-primary" onclick="window.open(\'' + escAttr(freshUrl) + '\', \'_blank\')" style="margin-top:12px;"><i class="fas fa-external-link-alt"></i> فتح الرابط</button>' +
+            '</div></div>';
+    }
+    
+    container.innerHTML = contentHtml;
+    saveNavigationState();
+}
+window.showLessonContent = showLessonContent;
+
+function closeFileViewer() {
+    var backBtn = document.getElementById('backBtn');
+    if (backBtn) backBtn.style.display = 'inline-flex';
+    currentViewingFile = null;
+    currentViewingLesson = null;
+    renderLessonsList();
+    saveNavigationState();
+}
+window.closeFileViewer = closeFileViewer;
+
+// ============================================================
+// ===== دوال الصلاحيات =====
+// ============================================================
+
+function canUserAccessStage(stage) {
+    if (isAdminMode) return true;
+    // الزوار (غير المسجلين) يمكنهم تصفح المحتوى العام لأي مرحلة دون تسجيل دخول.
+    // تسجيل الدخول مطلوب فقط لعرض/تحميل الدرس نفسه (انظر isLessonAccessible و showLessonContent).
+    if (!currentUser) return true;
+    if (currentUserIsApproved) {
+        if (!currentUserStage || currentUserStage === 'غير معروفة') {
+            showWarning('يرجى التواصل مع الإدارة لتحديد مرحلتك');
+            return false;
+        }
+        if (currentUserStage === stage) return true;
+        if (currentUserStage === 'all') return true;
+        return false;
+    }
+    return false;
+}
+
+function showAccessDeniedMessage(requestedStage) {
+    return '<div style="text-align:center; padding:40px 20px; background:#fef2f2; border-radius:20px; border:2px solid #dc2626; max-width:500px; margin:0 auto;">' +
+        '<h3 style="color:#dc2626; font-size:1.2rem;">⚠️ غير مصرح لك</h3>' +
+        '<button onclick="goHome()" style="background:var(--primary); color:white; border:none; padding:10px 28px; border-radius:9999px; cursor:pointer; font-weight:700; font-size:1rem; margin-top:16px;">🏠 العودة للرئيسية</button>' +
+        '</div>';
+}
+
+function isLessonAccessible(type) {
+    if (isAdminMode) return true;
+    if (currentUser && currentUserIsApproved) {
+        var today = new Date(); today.setHours(0,0,0,0);
+        if (type === 'summer') {
+            if (!lockSettings.summerLocked) return true;
+            return today >= new Date(lockSettings.summerUnlockDate);
+        } else {
+            if (!lockSettings.curriculumLocked) return true;
+            return today >= new Date(lockSettings.curriculumUnlockDate);
+        }
+    }
+    return false;
+}
+
+function filterLessons(type) {
+    currentFilter = type;
+    var btns = document.querySelectorAll('.filter-btn');
+    for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.toggle('active', btns[i].getAttribute('data-filter') === type);
+    }
+    renderLessonsList();
+}
+window.filterLessons = filterLessons;
+
+// ============================================================
+// ===== دوال الإحصائيات =====
+// ============================================================
+
+// المشكلة 5: إصلاح الإحصائيات - تحسين عد الدروس وتحميل الأعضاء بشكل صحيح
+function updateStats() {
+    var container = document.getElementById('statsContainer');
+    if (!container) return;
+    
+    // الإحصائيات الحقيقية تظهر فقط للمسؤول والأساتذة (isAdminMode)
+    // الأعضاء والزوار لا يظهر لهم هذا الحقل إطلاقاً
+    if (!isAdminMode) {
+        container.style.display = 'none';
+        return;
+    }
+    
+    var totalLessons = 0;
+    if (platformData) {
+        try {
+            if (platformData.primary) {
+                for (var subStage in platformData.primary) {
+                    if (platformData.primary[subStage] && platformData.primary[subStage].subjects) {
+                        var subjects = platformData.primary[subStage].subjects;
+                        for (var subject in subjects) {
+                            if (subjects[subject]) {
+                                totalLessons += (subjects[subject].summer || []).length;
+                                totalLessons += (subjects[subject].curriculum || []).length;
+                            }
+                        }
+                    }
+                }
+            }
+            if (platformData.middle && platformData.middle.subjectsByYear) {
+                for (var year in platformData.middle.subjectsByYear) {
+                    if (platformData.middle.subjectsByYear[year]) {
+                        var subjects = platformData.middle.subjectsByYear[year];
+                        for (var subject in subjects) {
+                            if (subjects[subject]) {
+                                totalLessons += (subjects[subject].summer || []).length;
+                                totalLessons += (subjects[subject].curriculum || []).length;
+                            }
+                        }
+                    }
+                }
+            }
+            if (platformData.high && platformData.high.subjectsByYear) {
+                for (var year in platformData.high.subjectsByYear) {
+                    if (platformData.high.subjectsByYear[year]) {
+                        var subjects = platformData.high.subjectsByYear[year];
+                        for (var subject in subjects) {
+                            if (subjects[subject]) {
+                                totalLessons += (subjects[subject].summer || []).length;
+                                totalLessons += (subjects[subject].curriculum || []).length;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch(e) {
+            console.error('Error counting lessons:', e);
+        }
+    }
+    
+    document.getElementById('statsLessons').textContent = totalLessons;
+    
+    // تحميل عدد الأعضاء من قاعدة البيانات مباشرة
+    if (database) {
+        database.ref('members/approved').once('value').then(function(snapshot) {
+            var data = snapshot.val() || {};
+            var count = Object.keys(data).length;
+            document.getElementById('statsUsers').textContent = count;
+        }).catch(function() {
+            document.getElementById('statsUsers').textContent = approvedMembers.length || 0;
+        });
+        
+        if (isAdminMode) {
+            database.ref('teachers').once('value').then(function(snapshot) {
+                var teachers = snapshot.val() || {};
+                document.getElementById('statsTeachers').textContent = Object.keys(teachers).length;
+            }).catch(function() {
+                document.getElementById('statsTeachers').textContent = '0';
+            });
+        } else {
+            document.getElementById('statsTeachers').textContent = '0';
+        }
+    } else {
+        document.getElementById('statsUsers').textContent = approvedMembers.length || 0;
+        document.getElementById('statsTeachers').textContent = '0';
+    }
+    
+    container.style.display = 'flex';
+}
+
+// ============================================================
+// ===== دوال تحديث الواجهة =====
+// ============================================================
+
+function updateAuthButtons() {
+    var loginBtn = document.getElementById('loginBtn');
+    var registerBtn = document.getElementById('registerBtn');
+    var logoutBtn = document.getElementById('logoutBtn');
+    if (currentUser) {
+        if (loginBtn) loginBtn.style.display = 'none';
+        if (registerBtn) registerBtn.style.display = 'none';
+        if (logoutBtn) { 
+            logoutBtn.style.display = 'inline-flex';
+            if (isAdminMode && currentUser?.email === MASTER_TEACHER_EMAIL) {
+                logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> تسجيل الخروج (الإدارة)';
+            } else if (isAdminMode) {
+                logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> تسجيل الخروج (أستاذ)';
+            } else {
+                logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> تسجيل الخروج (عضو)';
+            }
+        }
+    } else {
+        if (loginBtn) loginBtn.style.display = 'inline-flex';
+        if (registerBtn) registerBtn.style.display = 'inline-flex';
+        if (logoutBtn) logoutBtn.style.display = 'none';
+    }
+}
+
+function updateUserInterface() {
+    var banner = document.getElementById('membershipBanner');
+    var bannerSpan = document.getElementById('bannerUserType');
+    var revokeBtn = document.getElementById('revokeMembershipBtn');
+    var repairLegacyKeysBtn = document.getElementById('repairLegacyKeysBtn');
+    // إصلاح: كانت updateUserInterface() تُستدعى في كل تغيّر لحالة الدخول (بما في ذلك
+    // تجديد التوكن التلقائي من Firebase كل ساعة تقريباً)، وفي كل مرة كانت تُضاف مستمِعة
+    // click جديدة على نفس الزر دون إزالة القديمة. بعد عدة تجديدات كانت الضغطة الواحدة
+    // تُشغّل الإصلاح عدة مرات بالتوازي (نتائج مكررة، رسائل نجاح/خطأ مكررة، تعارض كتابة).
+    // الحل: نمنع إعادة الربط عبر علم على العنصر نفسه.
+    if (repairLegacyKeysBtn && !repairLegacyKeysBtn.dataset.bound) {
+        repairLegacyKeysBtn.dataset.bound = '1';
+        repairLegacyKeysBtn.addEventListener('click', async function() {
+            var resultSpan = document.getElementById('repairLegacyKeysResult');
+            if (!isAdminMode || normalizeEmail(currentUser?.email) !== MASTER_TEACHER_EMAIL) {
+                showError('غير مصرح لك - هذه الصلاحية للمسؤول فقط');
+                return;
+            }
+            if (!await validateSession()) return;
+            repairLegacyKeysBtn.disabled = true;
+            if (resultSpan) resultSpan.textContent = '⏳ جاري الإصلاح...';
+            var res = await repairLegacyMemberKeys({ force: true });
+            repairLegacyKeysBtn.disabled = false;
+            if (!res) {
+                if (resultSpan) resultSpan.textContent = '❌ تعذر الإصلاح، حاول مرة أخرى';
+                showError('تعذر إصلاح السجلات القديمة');
+                return;
+            }
+            if (resultSpan) resultSpan.textContent = '✅ تم توحيد ' + res.members + ' عضو و ' + res.teachers + ' أستاذ';
+            showSuccess('✅ تم إصلاح ' + (res.members + res.teachers) + ' سجل قديم');
+            await loadApprovedMembers();
+            await loadTeachersList();
+            updateStats();
+        });
+    }
+    
+    var teacherGear = document.getElementById('teacherGearIcon');
+    var adminGear = document.getElementById('adminGearIcon');
+    var adminPanel = document.getElementById('adminPanel');
+    
+    if (!currentUser) {
+        if (banner) banner.style.display = 'none';
+        if (revokeBtn) revokeBtn.style.display = 'none';
+        if (teacherGear) teacherGear.style.display = 'none';
+        if (adminGear) adminGear.style.display = 'none';
+        if (adminPanel) adminPanel.classList.remove('active');
+        updateAuthButtons();
+        return;
+    }
+    
+    var email = currentUser.email;
+    var isMaster = email === MASTER_TEACHER_EMAIL;
+    var isTeacher = isAdminMode && !isMaster;
+    var isMember = currentUser && !isAdminMode;
+    
+    if (banner) banner.style.display = 'flex';
+    
+    if (isMaster) {
+        if (bannerSpan) bannerSpan.innerHTML = '🏛️ الإدارة ' + sanitizeHtml(email);
+        if (teacherGear) teacherGear.style.display = 'none';
+        if (adminGear) adminGear.style.display = 'flex';
+        if (revokeBtn) revokeBtn.style.display = 'none';
+    } else if (isTeacher) {
+        if (bannerSpan) bannerSpan.innerHTML = '👨‍🏫 الأستاذ ' + sanitizeHtml(email);
+        if (teacherGear) teacherGear.style.display = 'flex';
+        if (adminGear) adminGear.style.display = 'none';
+        if (revokeBtn) revokeBtn.style.display = 'none';
+    } else if (isMember) {
+        if (bannerSpan) bannerSpan.innerHTML = '👨‍🎓 مرحباً ' + sanitizeHtml(email);
+        if (teacherGear) teacherGear.style.display = 'none';
+        if (adminGear) adminGear.style.display = 'none';
+        if (revokeBtn) revokeBtn.style.display = 'inline-flex';
+    }
+    
+    if (adminPanel) adminPanel.classList.remove('active');
+    updateAdminPanel();
+    updateAuthButtons();
+}
+
+function updateAdminPanel() {
+    var isMaster = currentUser?.email === MASTER_TEACHER_EMAIL;
+    var isTeacher = isAdminMode && !isMaster;
+    var adminOnlySection = document.getElementById('adminOnlySection');
+    var panelBadge = document.getElementById('panelBadge');
+    var panelTitle = document.getElementById('panelTitle');
+    var securityLogSection = document.getElementById('securityLogSection');
+    
+    if (isMaster) {
+        if (panelBadge) panelBadge.textContent = 'الإدارة';
+        if (adminOnlySection) adminOnlySection.style.display = 'block';
+        if (panelTitle) panelTitle.innerHTML = '🔐 لوحة التحكم <span class="admin-badge">الإدارة</span>';
+        if (securityLogSection) securityLogSection.style.display = 'block';
+        loadSecurityLogs();
+        loadJoinRequests(); 
+        loadApprovedMembers(); 
+        loadTeachersList();
+        loadRegistrationSettings();
+    } else if (isTeacher) {
+        if (panelBadge) panelBadge.textContent = '👨‍🏫 أستاذ';
+        if (adminOnlySection) adminOnlySection.style.display = 'none';
+        if (panelTitle) panelTitle.innerHTML = '🔐 لوحة التحكم <span class="teacher-badge">👨‍🏫 أستاذ</span>';
+        if (securityLogSection) securityLogSection.style.display = 'none';
+    }
+}
+
+function updateUIAfterLogout() {
+    if (currentUser && !_sessionConflictActive) { removeActiveSession(currentUser.email); }
+    _sessionConflictActive = false;
+    detachSessionConflictListener();
+    currentUser = null; 
+    isAdminMode = false; 
+    currentUserIsApproved = false; 
+    currentUserStage = null;
+    isInCommunity = false;
+    currentFilter = 'all';
+    var banner = document.getElementById('membershipBanner');
+    if (banner) banner.style.display = 'none';
+    document.getElementById('teacherGearIcon').style.display = 'none';
+    document.getElementById('adminGearIcon').style.display = 'none';
+    document.getElementById('adminPanel').classList.remove('active');
+    document.getElementById('securityLogSection').style.display = 'none';
+    updateAuthButtons();
+    detachNotificationsListener();
+    clearNavigationState();
+    refreshCurrentView();
+    hideAllModals();
+    updateStats();
+    loadCountdownDate();
+}
+
+async function loadSecurityLogs() {
+    if (!database || !isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) return;
+    try {
+        var snapshot = await database.ref('security_logs').orderByKey().limitToLast(50).once('value');
+        var logs = snapshot.val() || {};
+        var container = document.getElementById('securityLogList');
+        var html = '';
+        var count = 0;
+        var keys = Object.keys(logs).sort().reverse();
+        for (var i = 0; i < keys.length && i < 20; i++) {
+            var key = keys[i];
+            var log = logs[key];
+            var time = new Date(log.timestamp).toLocaleString('ar');
+            var eventName = log.event || 'unknown';
+            var details = log.details ? JSON.stringify(log.details) : '';
+            var user = log.user || 'anonymous';
+            html += '<div style="padding:3px 0; border-bottom:1px solid var(--border-color); font-size:0.65rem;">' +
+                '<strong>' + sanitizeHtml(eventName) + '</strong> - ' + sanitizeHtml(time) + ' - 👤 ' + sanitizeHtml(user) +
+                (details ? ' - ' + sanitizeHtml(details) : '') +
+                '</div>';
+            count++;
+        }
+        if (count === 0) {
+            html = '<div style="color:var(--text-muted); text-align:center;">📋 لا توجد سجلات أمان بعد</div>';
+        }
+        container.innerHTML = html;
+    } catch(e) {
+        document.getElementById('securityLogList').innerHTML = '<div style="color:var(--text-muted); text-align:center;">⚠️ حدث خطأ في تحميل السجلات</div>';
+    }
+}
+
+// ============================================================
+// ===== دوال تحميل البيانات =====
+// ============================================================
+
+function getDefaultPlatformData() {
+    return {
+        primary: {
+            stage1: { name: 'الطور الأول', years: 'تحضيري - أولى - ثانية', subjects: {
+                'اللغة العربية': { summer: [], curriculum: [] },
+                'الرياضيات': { summer: [], curriculum: [] },
+                'التربية الإسلامية': { summer: [], curriculum: [] }
+            }},
+            stage2: { name: 'الطور الثاني', years: 'الثالثة - الرابعة', subjects: {
+                'اللغة العربية': { summer: [], curriculum: [] },
+                'الرياضيات': { summer: [], curriculum: [] },
+                'التربية العلمية': { summer: [], curriculum: [] },
+                'التاريخ والجغرافيا': { summer: [], curriculum: [] },
+                'التربية الإسلامية': { summer: [], curriculum: [] }
+            }},
+            stage3: { name: 'الطور الثالث', years: 'الخامسة', subjects: {
+                'اللغة العربية': { summer: [], curriculum: [] },
+                'الرياضيات': { summer: [], curriculum: [] },
+                'التربية العلمية': { summer: [], curriculum: [] },
+                'التاريخ والجغرافيا': { summer: [], curriculum: [] },
+                'التربية الإسلامية': { summer: [], curriculum: [] }
+            }}
+        },
+        middle: {
+            name: 'مرحلة المتوسط',
+            yearsList: ['السنة الأولى متوسط', 'السنة الثانية متوسط', 'السنة الثالثة متوسط', 'السنة الرابعة متوسط'],
+            subjectsByYear: {
+                'السنة الأولى متوسط': { 'اللغة العربية': { summer: [], curriculum: [] }, 'الرياضيات': { summer: [], curriculum: [] }, 'التاريخ والجغرافيا': { summer: [], curriculum: [] }, 'التربية الإسلامية': { summer: [], curriculum: [] }, 'العلوم الفيزيائية': { summer: [], curriculum: [] }, 'المتفرقات': { summer: [], curriculum: [] } },
+                'السنة الثانية متوسط': { 'اللغة العربية': { summer: [], curriculum: [] }, 'الرياضيات': { summer: [], curriculum: [] }, 'التاريخ والجغرافيا': { summer: [], curriculum: [] }, 'التربية الإسلامية': { summer: [], curriculum: [] }, 'العلوم الفيزيائية': { summer: [], curriculum: [] }, 'المتفرقات': { summer: [], curriculum: [] } },
+                'السنة الثالثة متوسط': { 'اللغة العربية': { summer: [], curriculum: [] }, 'الرياضيات': { summer: [], curriculum: [] }, 'التاريخ والجغرافيا': { summer: [], curriculum: [] }, 'التربية الإسلامية': { summer: [], curriculum: [] }, 'العلوم الفيزيائية': { summer: [], curriculum: [] }, 'المتفرقات': { summer: [], curriculum: [] } },
+                'السنة الرابعة متوسط': { 'اللغة العربية': { summer: [], curriculum: [] }, 'الرياضيات': { summer: [], curriculum: [] }, 'التاريخ والجغرافيا': { summer: [], curriculum: [] }, 'التربية الإسلامية': { summer: [], curriculum: [] }, 'العلوم الفيزيائية': { summer: [], curriculum: [] }, 'المتفرقات': { summer: [], curriculum: [] } }
+            }
+        },
+        high: {
+            name: 'مرحلة الثانوي',
+            yearsList: ['السنة الأولى ثانوي', 'السنة الثانية ثانوي', 'السنة الثالثة ثانوي'],
+            subjectsByYear: {
+                'السنة الأولى ثانوي': { 'اللغة العربية': { summer: [], curriculum: [] }, 'الرياضيات': { summer: [], curriculum: [] }, 'التاريخ والجغرافيا': { summer: [], curriculum: [] }, 'العلوم الإسلامية': { summer: [], curriculum: [] }, 'العلوم الفيزيائية': { summer: [], curriculum: [] }, 'المتفرقات': { summer: [], curriculum: [] } },
+                'السنة الثانية ثانوي': { 'اللغة العربية': { summer: [], curriculum: [] }, 'الرياضيات': { summer: [], curriculum: [] }, 'التاريخ والجغرافيا': { summer: [], curriculum: [] }, 'العلوم الإسلامية': { summer: [], curriculum: [] }, 'العلوم الفيزيائية': { summer: [], curriculum: [] }, 'المتفرقات': { summer: [], curriculum: [] } },
+                'السنة الثالثة ثانوي': { 'اللغة العربية': { summer: [], curriculum: [] }, 'الرياضيات': { summer: [], curriculum: [] }, 'التاريخ والجغرافيا': { summer: [], curriculum: [] }, 'العلوم الإسلامية': { summer: [], curriculum: [] }, 'العلوم الفيزيائية': { summer: [], curriculum: [] }, 'المتفرقات': { summer: [], curriculum: [] } }
+            }
+        }
+    };
+}
+
+async function loadDataFromFirebase() {
+    if (!database) { 
+        platformData = getDefaultPlatformData(); 
+        dataLoaded = true; 
+        updateStats(); 
+        return; 
+    }
+    
+    // المشكلة 6: إصلاح اختفاء الدروس — كانت هناك عدة مصادر تُطلق إعادة تحميل الدروس في نفس
+    // الوقت (المستمع الفوري database.ref('lessons').on('value') + النداءات اليدوية بعد
+    // إضافة/تعديل/حذف درس). عند تداخل طلبين، كان الطلب الذي يصل متأخراً (بسبب شبكة أبطأ)
+    // يكتب فوق بيانات أحدث منه فتظهر المنصة وكأن الدروس اختفت فجأة رغم وجودها في القاعدة.
+    // الحل: نمنح كل طلب رقماً تسلسلياً، ونتجاهل أي نتيجة لا تحمل آخر رقم صادر عند وصولها.
+    var myRequestId = ++lessonsLoadRequestId;
+    
+    try {
+        var snapshot = await database.ref('lessons').once('value');
+
+        if (myRequestId !== lessonsLoadRequestId) {
+            // وصل طلب أحدث واستُخدمت نتيجته بالفعل — نتجاهل هذه النتيجة القديمة بدل أن تمحو البيانات الصحيحة
+            return true;
+        }
+
+        var lessons = snapshot.val() || {};
+
+        // إصلاح جذري لمشكلة عدم ظهور الدروس: قواعد قاعدة البيانات (Firebase Rules) لا تسمح
+        // بقراءة عقدة 'lessons' كاملة إلا لمن يملك صلاحية '.read' على العقدة نفسها أو على عقدة
+        // أعلى منها. منح '.read' على حقول فرعية فقط (title, stage, ...) لا يفيد إطلاقاً عند
+        // القراءة الجماعية عبر database.ref('lessons').once('value')، لأن قواعد Firebase لا
+        // "تُصفّي" النتائج — إما أن تُمنح القراءة على المسار المطلوب بالكامل أو تُرفض بالكامل.
+        // لذلك تم فصل البيانات الحساسة (روابط الملفات) إلى عقدة منفصلة 'lessons_secure' يُسمح
+        // بقراءتها فقط للأعضاء المعتمدين والأساتذة، بينما تبقى عقدة 'lessons' عامة القراءة.
+        // هنا نحاول تحميل 'lessons_secure' ودمجها؛ إن رُفض الإذن (زائر غير مسجّل) نتجاهل الخطأ
+        // بصمت ونعرض الدروس بدون أزرار المشاهدة/التحميل بدل أن تختفي القائمة كلها.
+        var secureLessons = {};
+        try {
+            var secureSnapshot = await database.ref('lessons_secure').once('value');
+            secureLessons = secureSnapshot.val() || {};
+        } catch (secureError) {
+            secureLessons = {};
+        }
+
+        // فحص ثانٍ للرقم التسلسلي: قد يصل طلب أحدث ويكتمل بالكامل أثناء انتظارنا لـ lessons_secure
+        // أعلاه (لأنه await ثانٍ ومنفصل). بدون هذا الفحص الثاني، نتيجة قديمة وربما غير مكتملة
+        // قد تصل متأخرة فتكتب فوق بيانات أحدث وصحيحة، فتظهر الدروس/الروابط أحياناً وتختفي أحياناً
+        // أخرى بشكل عشوائي حسب توقيت الشبكة — وهو تحديداً العرض الذي كان يظهر.
+        if (myRequestId !== lessonsLoadRequestId) {
+            return true;
+        }
+
+        var newPlatformData = getDefaultPlatformData();
+        
+        for (var lessonId in lessons) {
+            var lesson = lessons[lessonId];
+            var secure = secureLessons[lessonId] || {};
+            if (lesson && lesson.stage && lesson.subject && lesson.lesson_type) {
+                var lessonData = { 
+                    id: lessonId, 
+                    title: lesson.title, 
+                    platform: lesson.platform,
+                    external_url: lesson.external_url, 
+                    internal_url: secure.internal_url || '',
+                    download_url: secure.download_url || '', 
+                    content_type: lesson.content_type,
+                    file_info: secure.file_info || null,
+                    telegram_file_id: secure.telegram_file_id || null,
+                    created_at: lesson.created_at || new Date().toISOString()
+                };
+                
+                if (lesson.stage === 'primary' && lesson.substage && newPlatformData.primary[lesson.substage] &&
+                    newPlatformData.primary[lesson.substage].subjects[lesson.subject]) {
+                    if (newPlatformData.primary[lesson.substage].subjects[lesson.subject][lesson.lesson_type])
+                        newPlatformData.primary[lesson.substage].subjects[lesson.subject][lesson.lesson_type].push(lessonData);
+                } else if (lesson.stage === 'middle' && lesson.year && newPlatformData.middle.subjectsByYear[lesson.year] &&
+                    newPlatformData.middle.subjectsByYear[lesson.year][lesson.subject]) {
+                    if (newPlatformData.middle.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type])
+                        newPlatformData.middle.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type].push(lessonData);
+                } else if (lesson.stage === 'high' && lesson.year && newPlatformData.high.subjectsByYear[lesson.year] &&
+                    newPlatformData.high.subjectsByYear[lesson.year][lesson.subject]) {
+                    if (newPlatformData.high.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type])
+                        newPlatformData.high.subjectsByYear[lesson.year][lesson.subject][lesson.lesson_type].push(lessonData);
+                } else {
+                    // درس بحقول غير مطابقة للبنية المتوقعة (مثلاً مادة/مرحلة جديدة أُضيفت يدوياً في القاعدة) —
+                    // نسجّل تحذيراً بدل تجاهله بصمت، لأن هذا كان سبباً خفياً لظهور "دروس مفقودة" دون أي رسالة خطأ
+                    console.warn('⚠️ درس لم يتم إدراجه في القائمة لعدم تطابق بنيته المتوقعة:', lessonId, lesson);
+                }
+            }
+        }
+        
+        // لا نستبدل platformData إلا بعد اكتمال بناء النسخة الجديدة بالكامل بنجاح
+        platformData = newPlatformData;
+        dataLoaded = true;
+        lessonsEverLoadedFromServer = true;
+        updateStats();
+        return true;
+        
+    } catch(error) {
+        console.error('Error loading lessons:', error);
+        if (myRequestId !== lessonsLoadRequestId) {
+            // نتيجة قديمة فشلت بعد أن نجح طلب أحدث بالفعل — لا نلمس platformData الحالية الصحيحة
+            return false;
+        }
+        // لا نمحو دروساً محمّلة فعلاً من قبل بسبب خطأ عابر في الشبكة (مثل خطأ في تحديث لاحق) —
+        // نحافظ على آخر بيانات ناجحة ونكتفي بالتحذير، بدل استبدالها ببيانات افتراضية فارغة
+        if (!lessonsEverLoadedFromServer) {
+            platformData = getDefaultPlatformData();
+        }
+        dataLoaded = true;
+        updateStats();
+        return false;
+    }
+}
+
+// ============================================================
+// ===== دوال إدارة الدروس =====
+// ============================================================
+
+function toggleLessonFields() {
+    var type = document.getElementById('newLessonType').value;
+    var internal = document.getElementById('internalLessonFields');
+    var external = document.getElementById('externalLessonFields');
+    if (type === 'pdf' || type === 'image') {
+        internal.style.display = 'block';
+        external.style.display = 'none';
+    } else {
+        internal.style.display = 'none';
+        external.style.display = 'block';
+    }
+}
+window.toggleLessonFields = toggleLessonFields;
+
+document.getElementById('newLessonType')?.addEventListener('change', toggleLessonFields);
+
+async function addNewLesson() {
+    if (!isAdminMode) { showError('غير مصرح لك - هذه الصلاحية للأستاذ فقط'); return; }
+    if (!checkRateLimit('add_lesson')) return;
+    if (!await validateSession()) return;
+    
+    var title = document.getElementById('newLessonTitle').value.trim();
+    var lessonType = document.getElementById('newLessonType').value;
+    if (!title) { showWarning('الرجاء إدخال عنوان الدرس'); return; }
+    if (!currentStage || !currentSubject || !currentLessonType) {
+        showWarning('الرجاء اختيار المرحلة والمادة أولاً'); 
+        return; 
+    }
+    var lessonData = { 
+        title: title,
+        stage: currentStage, 
+        subject: currentSubject, 
+        lesson_type: currentLessonType, 
+        content_type: lessonType,
+        created_at: new Date().toISOString(), 
+        created_by: currentUser?.email || 'unknown' 
+    };
+    if (currentStage === 'primary') lessonData.substage = currentSubStage;
+    else lessonData.year = currentYear;
+
+    // بيانات حساسة (روابط الملفات) تُكتب في عقدة منفصلة 'lessons_secure' لأن قواعد القراءة
+    // تمنع أي عضو غير معتمد من الاطلاع عليها، بينما تبقى بيانات الدرس العامة في 'lessons'
+    var secureData = {};
+
+    if (lessonType === 'pdf' || lessonType === 'image') {
+        if (uploadedFile) {
+            try {
+                showInfo('⏳ جاري رفع الملف إلى Telegram...');
+                var fileInfo = await uploadFileToTelegram(uploadedFile, title);
+                secureData.file_info = {
+                    url: fileInfo.url,
+                    file_id: fileInfo.file_id,
+                    name: fileInfo.name,
+                    size: fileInfo.size,
+                    type: fileInfo.type
+                };
+                secureData.internal_url = fileInfo.url;
+                secureData.download_url = fileInfo.url;
+                secureData.telegram_file_id = fileInfo.file_id;
+                showSuccess('✅ تم رفع الملف إلى Telegram بنجاح! 🚀');
+            } catch(error) {
+                showError('❌ فشل رفع الملف: ' + error.message);
+                return;
+            }
+        } else {
+            var internalUrl = document.getElementById('newLessonInternalUrl').value.trim();
+            if (!internalUrl) { 
+                showWarning('⚠️ الرجاء إما اختيار ملف للرفع أو إدخال رابط مباشر'); 
+                return; 
+            }
+            secureData.internal_url = internalUrl;
+            secureData.download_url = document.getElementById('newLessonDownloadUrl').value.trim() || internalUrl;
+        }
+    } else {
+        var externalUrl = document.getElementById('newLessonExternalUrl').value.trim();
+        if (!externalUrl) { showWarning('⚠️ الرجاء إدخال الرابط الخارجي'); return; }
+        lessonData.external_url = externalUrl;
+        lessonData.platform = lessonType;
+    }
+    
+    var lessonId = getLessonId();
+    try {
+        var updates = {};
+        updates['lessons/' + lessonId] = lessonData;
+        if (Object.keys(secureData).length > 0) {
+            updates['lessons_secure/' + lessonId] = secureData;
+        }
+        await database.ref().update(updates);
+    } catch (error) {
+        showError('❌ فشل حفظ الدرس في قاعدة البيانات: ' + error.message);
+        return;
+    }
+    logSecurityEvent('lesson_added', { lessonId: lessonId, title: title, stage: currentStage });
+    showSuccess('✅ تم إضافة الدرس بنجاح 📚');
+    broadcastLessonNotification(lessonId, lessonData);
+    
+    document.getElementById('addLessonModal').classList.remove('active');
+    clearFileUploadFields();
+    document.getElementById('newLessonTitle').value = '';
+    document.getElementById('newLessonInternalUrl').value = '';
+    document.getElementById('newLessonDownloadUrl').value = '';
+    document.getElementById('newLessonExternalUrl').value = '';
+    
+    await loadDataFromFirebase();
+    refreshCurrentView();
+    updateStats();
+}
+
+async function deleteLesson(id) {
+    if (!isAdminMode) { showError('غير مصرح لك - هذه الصلاحية للأستاذ فقط'); return; }
+    if (!checkRateLimit('delete_lesson')) return;
+    if (!await validateSession()) return;
+    
+    showConfirmDialog('⚠️ هل أنت متأكد من حذف هذا الدرس؟\nلا يمكن استعادة البيانات بعد الحذف!', async function() {
+        try {
+            var deleteUpdates = {};
+            deleteUpdates['lessons/' + id] = null;
+            deleteUpdates['lessons_secure/' + id] = null;
+            await database.ref().update(deleteUpdates);
+            logSecurityEvent('lesson_deleted', { lessonId: id });
+            showSuccess('تم حذف الدرس بنجاح');
+            await loadDataFromFirebase();
+            refreshCurrentView();
+            updateStats();
+        } catch(error) {
+            showError('حدث خطأ أثناء حذف الدرس');
+        }
+    });
+}
+window.deleteLesson = deleteLesson;
+
+function openEditModal(id, title, url, platform) {
+    editingLessonId = id;
+    document.getElementById('editLessonTitle').value = title;
+    document.getElementById('editLessonUrl').value = url;
+    document.getElementById('editLessonPlatform').value = platform || 'telegram';
+    document.getElementById('editLessonModal').classList.add('active');
+}
+window.openEditModal = openEditModal;
+
+function openEditInternalModal(id, title, url, download, contentType) {
+    editingInternalLessonId = id;
+    document.getElementById('editInternalTitle').value = title;
+    document.getElementById('editInternalUrl').value = url;
+    document.getElementById('editInternalDownload').value = download || '';
+    if (contentType) document.getElementById('editInternalType').value = contentType;
+    clearFileUploadFields();
+    document.getElementById('editInternalLessonModal').classList.add('active');
+}
+window.openEditInternalModal = openEditInternalModal;
+
+// ============================================================
+// ===== دوال إدارة الطلبات =====
+// ============================================================
+
+async function loadJoinRequests() {
+    if (!database || !auth || !auth.currentUser || auth.currentUser.email !== MASTER_TEACHER_EMAIL) return;
+    try {
+        var snapshot = await database.ref('members/joinRequests').once('value');
+        var requests = snapshot.val() || {};
+        joinRequests = [];
+        for (var id in requests) {
+            var data = requests[id];
+            joinRequests.push({ id: id, email: data.email, userType: data.userType, stage: data.stage, createdAt: data.createdAt });
+        }
+        renderJoinRequestsList();
+    } catch(e) { console.error('Error loading requests:', e); }
+}
+
+function renderJoinRequestsList() {
+    var container = document.getElementById('joinRequestsList');
+    var countSpan = document.getElementById('requestsCount');
+    if (!container) return;
+    if (joinRequests.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:10px; color:var(--text-muted);">📭 لا توجد طلبات جديدة</div>';
+        if (countSpan) countSpan.innerText = '0';
+        return;
+    }
+    if (countSpan) countSpan.innerText = joinRequests.length;
+    var stageNames = { 'primary': 'ابتدائي', 'middle': 'متوسط', 'high': 'ثانوي', 'all': 'جميع المراحل' };
+    var html = '';
+    for (var i = 0; i < joinRequests.length; i++) {
+        var req = joinRequests[i];
+        var typeColor = req.userType === 'أستاذ' ? '#dc2626' : '#10b981';
+        var stageDisplay = stageNames[req.stage] || req.stage || 'غير محددة';
+        html += '<div style="background:var(--bg-white); border-radius:10px; padding:6px 10px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; border-right:3px solid ' + typeColor + '; font-size:0.8rem;">' +
+            '<div><div style="font-weight:700;">📧 ' + sanitizeHtml(req.email) + '</div>' +
+            '<div style="font-size:0.6rem; color:var(--text-muted);">' + new Date(req.createdAt).toLocaleDateString('ar') + ' | ' + (req.userType || 'عضو') + ' | مرحلة: ' + stageDisplay + '</div></div>' +
+            '<div>' +
+            '<button class="approve-btn" data-id="' + escAttr(req.id) + '" data-email="' + escAttr(req.email) + '" data-type="' + escAttr(req.userType) + '" data-stage="' + escAttr(req.stage || 'primary') + '" style="background:#10b981; color:white; border:none; padding:2px 8px; border-radius:20px; cursor:pointer; font-size:0.6rem; font-weight:700;">✅ قبول</button>' +
+            '<button class="reject-btn" data-id="' + escAttr(req.id) + '" style="background:#ef4444; color:white; border:none; padding:2px 8px; border-radius:20px; cursor:pointer; font-size:0.6rem; font-weight:700;">❌ رفض</button>' +
+            '</div></div>';
+    }
+    container.innerHTML = html;
+
+    var approveBtns = document.querySelectorAll('.approve-btn');
+    for (var i = 0; i < approveBtns.length; i++) {
+        approveBtns[i].addEventListener('click', async function() {
+            if (!isAdminMode || !currentUser || currentUser.email !== MASTER_TEACHER_EMAIL) {
+                showError('غير مصرح لك - هذه الصلاحية للمسؤول فقط');
+                return;
+            }
+            if (!await validateSession()) return;
+
+            var btn = this;
+            if (btn.disabled) return;
+            var id = btn.getAttribute('data-id');
+            var email = btn.getAttribute('data-email');
+            var userType = btn.getAttribute('data-type');
+            var stage = btn.getAttribute('data-stage') || 'primary';
+
+            btn.disabled = true;
+            var originalText = btn.innerHTML;
+            btn.innerHTML = '...';
+
+            try {
+                await database.ref('members/approved/' + emailToKey(email)).set({
+                    email: email, approvedAt: Date.now(), userType: userType, userStage: stage
+                });
+                if (userType === 'أستاذ') {
+                    await database.ref('teachers/' + emailToKey(email)).set({
+                        email: email, addedAt: Date.now(), addedBy: currentUser.email, userStage: stage
+                    });
+                }
+                await database.ref('members/joinRequests/' + id).remove();
+                var stageNames = { 'primary': 'الابتدائية', 'middle': 'المتوسط', 'high': 'الثانوي', 'all': 'جميع المراحل' };
+                logSecurityEvent('member_approved', { email: email, userType: userType, stage: stage });
+                showSuccess('تم قبول طلب ' + email + ' كـ ' + userType + ' في ' + (stageNames[stage] || stage));
+                await loadJoinRequests();
+                await loadApprovedMembers();
+                if (userType === 'أستاذ') await loadTeachersList();
+                updateStats();
+            } catch (e) {
+                console.error('Error approving request:', e);
+                logSecurityEvent('member_approve_failed', { email: email, error: e && e.message });
+                showError('❌ تعذر قبول الطلب: ' + (e && e.message ? e.message : 'خطأ غير معروف'));
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        });
+    }
+
+    var rejectBtns = document.querySelectorAll('.reject-btn');
+    for (var i = 0; i < rejectBtns.length; i++) {
+        rejectBtns[i].addEventListener('click', async function() {
+            if (!isAdminMode || !currentUser || currentUser.email !== MASTER_TEACHER_EMAIL) {
+                showError('غير مصرح لك - هذه الصلاحية للمسؤول فقط');
+                return;
+            }
+            if (!await validateSession()) return;
+
+            var btn = this;
+            if (btn.disabled) return;
+            var id = btn.getAttribute('data-id');
+
+            btn.disabled = true;
+            try {
+                await database.ref('members/joinRequests/' + id).remove();
+                logSecurityEvent('member_rejected', { requestId: id });
+                showWarning('تم رفض الطلب');
+                await loadJoinRequests();
+                updateStats();
+            } catch (e) {
+                console.error('Error rejecting request:', e);
+                showError('❌ تعذر رفض الطلب: ' + (e && e.message ? e.message : 'خطأ غير معروف'));
+                btn.disabled = false;
+            }
+        });
+    }
+}
+
+async function loadApprovedMembers() {
+    if (!database) return;
+    try {
+        var snapshot = await database.ref('members/approved').once('value');
+        var data = snapshot.val() || {};
+        approvedMembers = [];
+        for (var key in data) {
+            var value = data[key];
+            approvedMembers.push({
+                key: key,
+                email: (value && value.email) ? normalizeEmail(value.email) : (emailFromLegacyRecord(key, value) || key),
+                approvedAt: value.approvedAt || Date.now(),
+                userType: value.userType || 'عضو',
+                userStage: value.userStage || 'غير محددة'
+            });
+        }
+        renderApprovedMembersList();
+        updateStats();
+    } catch(e) { console.error('Error loading approved members:', e); }
+}
+
+function renderApprovedMembersList() {
+    var container = document.getElementById('approvedMembersList');
+    if (!container) return;
+    if (approvedMembers.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:10px; color:var(--text-muted);">📭 لا يوجد أعضاء معتمدون</div>';
+        return;
+    }
+    var stageNames = { 'primary': 'ابتدائي', 'middle': 'متوسط', 'high': 'ثانوي', 'all': 'جميع المراحل' };
+    var html = '';
+    for (var i = 0; i < approvedMembers.length; i++) {
+        var member = approvedMembers[i];
+        var isCurrentUser = member.email === currentUser?.email;
+        var isAdmin = member.email === MASTER_TEACHER_EMAIL;
+        var typeColor = member.userType === 'أستاذ' ? '#dc2626' : '#10b981';
+        var stageDisplay = stageNames[member.userStage] || member.userStage || 'غير محددة';
+        html += '<div style="background:var(--bg-white); border-radius:10px; padding:6px 10px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; border-right:3px solid ' + typeColor + '; font-size:0.8rem;">' +
+            '<div><div style="font-weight:700;">📧 ' + sanitizeHtml(member.email) + (isCurrentUser ? ' 👤 (أنت)' : '') + (isAdmin ? ' 🏛️' : '') + '</div>' +
+            '<div style="font-size:0.6rem; color:var(--text-muted);">' + new Date(member.approvedAt).toLocaleDateString('ar') + ' | ' + (member.userType || 'عضو') + ' | مرحلة: ' + stageDisplay + '</div></div>' +
+            '<div>' +
+            (isAdmin ? '<span style="color:#dc2626; font-weight:bold;">🏛️ الإدارة</span>' :
+            isCurrentUser ? '<span style="color:#10b981; font-weight:bold;">أنت</span>' :
+            '<button class="delete-member-btn" data-email="' + escAttr(member.email) + '" style="background:#f59e0b; color:white; border:none; padding:2px 8px; border-radius:20px; cursor:pointer; font-size:0.6rem; font-weight:700;"><i class="fas fa-user-times"></i> إلغاء</button>') +
+            '</div></div>';
+    }
+    container.innerHTML = html;
+
+    var deleteMemberBtns = container.querySelectorAll('.delete-member-btn');
+    for (var dm = 0; dm < deleteMemberBtns.length; dm++) {
+        deleteMemberBtns[dm].addEventListener('click', function() {
+            deleteMember(this.getAttribute('data-email'));
+        });
+    }
+}
+
+async function deleteMember(email) {
+    if (!isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) {
+        showError('غير مصرح لك - هذه الصلاحية للمسؤول فقط');
+        return;
+    }
+    if (email === MASTER_TEACHER_EMAIL) { showWarning('لا يمكن حذف المسؤول!'); return; }
+    if (!await validateSession()) return;
+    
+    showConfirmDialog('⚠️ هل أنت متأكد من إلغاء عضوية ' + email + '؟', async function() {
+        try {
+            await database.ref('members/approved/' + emailToKey(email)).remove();
+            var requestsSnapshot = await database.ref('members/joinRequests').once('value');
+            var requests = requestsSnapshot.val() || {};
+            for (var key in requests) {
+                if (requests[key].email === email) {
+                    await database.ref('members/joinRequests/' + key).remove();
+                }
+            }
+            logSecurityEvent('member_deleted', { email: email });
+            showSuccess('تم إلغاء عضوية ' + email + ' بنجاح');
+            await loadApprovedMembers();
+            await loadJoinRequests();
+            updateStats();
+            if (currentUser && currentUser.email === email) { 
+                await auth.signOut(); 
+                updateUIAfterLogout();
+            }
+        } catch(e) { showError('حدث خطأ: ' + e.message); }
+    });
+}
+window.deleteMember = deleteMember;
+
+async function loadTeachersList() {
+    if (!auth || !auth.currentUser || auth.currentUser.email !== MASTER_TEACHER_EMAIL) {
+        document.getElementById('teacherManagementSection').style.display = 'none';
+        return;
+    }
+    document.getElementById('teacherManagementSection').style.display = 'block';
+    try {
+        var snapshot = await database.ref('teachers').once('value');
+        var teachers = snapshot.val() || {};
+        var container = document.getElementById('teachersList');
+        var stageNames = { 'primary': 'ابتدائي', 'middle': 'متوسط', 'high': 'ثانوي', 'all': 'جميع المراحل' };
+        var html = '<div style="font-weight:bold; margin-bottom:4px;">📋 الأساتذة:</div>';
+        var count = 0;
+        for (var emailKey in teachers) {
+            var data = teachers[emailKey];
+            var email = data.email || emailKey.replace(/_/g, '.');
+            if (email === MASTER_TEACHER_EMAIL) continue;
+            count++;
+            var stageDisplay = stageNames[data.userStage] || data.userStage || 'غير محددة';
+            html += '<div style="background:var(--bg-white); border-radius:10px; padding:4px 8px; margin-bottom:3px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; border-right:3px solid #dc2626; font-size:0.75rem;">' +
+                '<div>📧 ' + sanitizeHtml(email) + ' <span style="font-size:0.6rem; color:var(--text-muted);">مرحلة: ' + stageDisplay + '</span></div>' +
+                '<button onclick=\'deleteTeacher("' + sanitizeHtml(email) + '")\' style="background:#dc2626; color:white; border:none; padding:2px 8px; border-radius:20px; cursor:pointer; font-size:0.55rem; font-weight:700;">🗑️ حذف</button>' +
+                '</div>';
+        }
+        if (count === 0) html += '<div style="color:var(--text-muted); font-size:0.75rem;">📭 لا يوجد أساتذة</div>';
+        container.innerHTML = html;
+        updateStats();
+    } catch(e) { console.error('Error loading teachers:', e); }
+}
+
+async function addTeacher() {
+    if (currentUser?.email !== MASTER_TEACHER_EMAIL) {
+        showError('غير مصرح لك - هذه الصلاحية للمسؤول فقط');
+        return;
+    }
+    if (!checkRateLimit('add_teacher')) return;
+    if (!await validateSession()) return;
+    
+    var email = document.getElementById('newTeacherEmail').value.trim();
+    if (!email) { showWarning('الرجاء إدخال البريد الإلكتروني'); return; }
+    if (email === MASTER_TEACHER_EMAIL) { showWarning('هذا هو بريد المسؤول!'); return; }
+    try {
+        var check = await database.ref('teachers/' + emailToKey(email)).once('value');
+        if (check.exists()) { showWarning('هذا البريد مسجل بالفعل كأستاذ'); return; }
+        var stageInput = prompt('📚 اختر المرحلة:\nأدخل: primary / middle / high / all');
+        var stage = 'all';
+        if (stageInput && ['primary','middle','high','all'].includes(stageInput.toLowerCase())) {
+            stage = stageInput.toLowerCase();
+        }
+        await database.ref('teachers/' + emailToKey(email)).set({
+            email: email, addedAt: Date.now(), addedBy: currentUser.email, userStage: stage
+        });
+        logSecurityEvent('teacher_added', { email: email, stage: stage });
+        showSuccess('تم إضافة الأستاذ ' + email + ' بنجاح');
+        document.getElementById('newTeacherEmail').value = '';
+        await loadTeachersList();
+        updateStats();
+    } catch(e) { showError('حدث خطأ: ' + e.message); }
+}
+
+async function deleteTeacher(email) {
+    if (currentUser?.email !== MASTER_TEACHER_EMAIL) {
+        showError('غير مصرح لك - هذه الصلاحية للمسؤول فقط');
+        return;
+    }
+    if (email === MASTER_TEACHER_EMAIL) { showWarning('لا يمكن حذف المسؤول!'); return; }
+    if (!await validateSession()) return;
+    
+    showConfirmDialog('⚠️ هل أنت متأكد من حذف الأستاذ ' + email + '؟', async function() {
+        try {
+            await database.ref('teachers/' + emailToKey(email)).remove();
+            logSecurityEvent('teacher_deleted', { email: email });
+            showSuccess('تم حذف الأستاذ ' + email + ' بنجاح');
+            await loadTeachersList();
+            updateStats();
+            if (currentUser && currentUser.email === email) { 
+                await auth.signOut(); 
+                updateUIAfterLogout(); 
+            }
+        } catch(e) { showError('حدث خطأ: ' + e.message); }
+    });
+}
+window.deleteTeacher = deleteTeacher;
+
+// ============================================================
+// ===== دوال شريط الأخبار =====
+// ============================================================
+
+// ===== محرك الشريط: حركة بالـ requestAnimationFrame (مستقل تماماً عن عرض الشاشة والاتجاه) =====
+var NEWS_MARQUEE_SPEED_PX_PER_SEC = 35;
+var _newsMarquee = { raf: null, offset: 0, groupWidth: 0, last: 0, paused: false, track: null, viewport: null };
+
+function renderNewsTicker() {
+    var container = document.getElementById('newsTickerContent');
+    if (!container) return;
+
+    // لا يوجد أي حد أقصى لعدد الأخبار — كل عناصر newsItems تُعرض
+    var items = (newsItems && newsItems.length) ? newsItems : ['📢 مرحباً بكم في منصة الأستاذ محمد التعليمية'];
+    console.log('📰 عدد أخبار شريط المستجدات المعروضة:', items.length);
+    var itemsHtml = items.map(function(item) {
+        return '<span class="marquee-item">' + sanitizeHtml(item) + '</span><span class="marquee-sep">•</span>';
+    }).join('');
+
+    container.innerHTML = '<div class="marquee-viewport"><div class="marquee-track">' +
+        '<span class="marquee-group">' + itemsHtml + '</span>' +
+        '</div></div>';
+
+    var viewport = container.querySelector('.marquee-viewport');
+    var track = container.querySelector('.marquee-track');
+    _newsMarquee.viewport = viewport;
+    _newsMarquee.track = track;
+    _newsMarquee.offset = 0;
+    _newsMarquee.groupWidth = 0;
+
+    // إيقاف/استئناف عند اللمس أو المرور
+    viewport.onmouseenter = function() { _newsMarquee.paused = true; };
+    viewport.onmouseleave = function() { _newsMarquee.paused = false; };
+    viewport.ontouchstart = function() { _newsMarquee.paused = true; };
+    viewport.ontouchend = function() { _newsMarquee.paused = false; };
+
+    setupNewsMarquee(itemsHtml);
+}
+
+// يكرّر مجموعة الأخبار حتى تفوق ضِعف عرض الشاشة، فلا تبقى فجوة على أي حجم شاشة
+function setupNewsMarquee(itemsHtml) {
+    var track = _newsMarquee.track;
+    var viewport = _newsMarquee.viewport;
+    if (!track || !viewport) return;
+
+    var measure = function() {
+        var group = track.querySelector('.marquee-group');
+        if (!group) return;
+        var groupWidth = group.getBoundingClientRect().width;
+        if (!groupWidth) { requestAnimationFrame(measure); return; }
+
+        var viewWidth = viewport.getBoundingClientRect().width || window.innerWidth;
+        var needed = Math.max(2, Math.ceil((viewWidth * 2) / groupWidth) + 1);
+        var current = track.querySelectorAll('.marquee-group').length;
+        if (current !== needed) {
+            var html = '';
+            for (var i = 0; i < needed; i++) html += '<span class="marquee-group">' + itemsHtml + '</span>';
+            track.innerHTML = html;
+        }
+        _newsMarquee.groupWidth = groupWidth;
+        if (_newsMarquee.offset > groupWidth) _newsMarquee.offset = _newsMarquee.offset % groupWidth;
+        startNewsMarquee();
+    };
+
+    requestAnimationFrame(measure);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure).catch(function() {});
+    setTimeout(measure, 700);
+}
+
+function startNewsMarquee() {
+    if (_newsMarquee.raf) cancelAnimationFrame(_newsMarquee.raf);
+    _newsMarquee.last = 0;
+    var step = function(ts) {
+        var m = _newsMarquee;
+        if (!m.track || !m.track.isConnected) { m.raf = null; return; }
+        if (!m.last) m.last = ts;
+        var dt = Math.min((ts - m.last) / 1000, 0.05); // حماية من القفزات بعد رجوع التطبيق للواجهة
+        m.last = ts;
+        if (!m.paused && m.groupWidth > 0) {
+            m.offset += NEWS_MARQUEE_SPEED_PX_PER_SEC * dt;
+            if (m.offset >= m.groupWidth) m.offset -= m.groupWidth;
+            m.track.style.transform = 'translate3d(' + (m.offset - m.groupWidth).toFixed(2) + 'px,0,0)';
+        }
+        m.raf = requestAnimationFrame(step);
+    };
+    _newsMarquee.raf = requestAnimationFrame(step);
+}
+
+// إعادة القياس فقط عند تغيّر العرض الفعلي (تجاهل تغيّر الارتفاع على الهاتف أثناء التمرير)
+var _newsTickerLastWinWidth = window.innerWidth;
+var _newsTickerResizeTimer = null;
+function remeasureNewsMarquee() {
+    var group = _newsMarquee.track && _newsMarquee.track.querySelector('.marquee-group');
+    if (!group) return;
+    renderNewsTicker();
+}
+window.addEventListener('resize', function() {
+    if (window.innerWidth === _newsTickerLastWinWidth) return;
+    _newsTickerLastWinWidth = window.innerWidth;
+    clearTimeout(_newsTickerResizeTimer);
+    _newsTickerResizeTimer = setTimeout(remeasureNewsMarquee, 300);
+});
+window.addEventListener('orientationchange', function() {
+    setTimeout(function() {
+        _newsTickerLastWinWidth = window.innerWidth;
+        remeasureNewsMarquee();
+    }, 300);
+});
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) { _newsMarquee.last = 0; startNewsMarquee(); }
+});
+
+async function loadNews() {
+    if (!database) return;
+    try {
+        var snapshot = await database.ref('settings/news').once('value');
+        var saved = snapshot.val();
+        if (saved && Array.isArray(saved.items) && saved.items.length) {
+            newsItems = saved.items;
+        } else if (saved && saved.text) {
+            newsItems = [saved.text];
+        } else {
+            newsItems = ['📢 مرحباً بكم في منصة الأستاذ محمد التعليمية'];
+        }
+        var editor = document.getElementById('newsEditorInput');
+        if (editor) editor.value = newsItems.join('\n');
+        renderNewsTicker();
+    } catch(e) { console.error('Error loading news:', e); }
+}
+
+async function updateNews() {
+    if (!isAdminMode) {
+        showError('غير مصرح لك - هذه الصلاحية للإدارة فقط');
+        return;
+    }
+    if (!checkRateLimit('update_news')) return;
+    if (!await validateSession()) return;
+    
+    var rawText = document.getElementById('newsEditorInput').value;
+    var newItems = rawText.split('\n').map(function(l) { return l.trim(); }).filter(Boolean);
+    if (!newItems.length) { showWarning('الرجاء إدخال نص المستجدات (خبر واحد على الأقل)'); return; }
+    try {
+        await database.ref('settings/news').set({ items: newItems, updatedAt: Date.now() });
+        newsItems = newItems;
+        renderNewsTicker();
+        logSecurityEvent('news_updated', { items: newItems });
+        showSuccess('✅ تم تحديث شريط المستجدات بنجاح');
+    } catch(e) { showError('❌ حدث خطأ: ' + e.message); }
+}
+
+// ============================================================
+// ===== دوال الإعدادات والقفل =====
+// ============================================================
+
+async function loadLockSettings() {
+    if (!database) { 
+        lockSettings = getDefaultLockSettings(); 
+        updateLockUI(); 
+        return lockSettings; 
+    }
+    try {
+        var snapshot = await database.ref('settings/lockSettings').once('value');
+        var saved = snapshot.val();
+        lockSettings = saved || getDefaultLockSettings();
+        updateLockUI();
+        return lockSettings;
+    } catch(e) { 
+        lockSettings = getDefaultLockSettings(); 
+        updateLockUI();
+        return lockSettings; 
+    }
+}
+
+function getDefaultLockSettings() {
+    return {
+        summerLocked: true, curriculumLocked: true,
+        summerUnlockDate: '2026-06-27', curriculumUnlockDate: '2026-08-16'
+    };
+}
+
+function updateLockUI() {
+    var sb = document.getElementById('summerLockStatusBadge');
+    var cb = document.getElementById('curriculumLockStatusBadge');
+    var si = document.getElementById('summerInfo');
+    var ci = document.getElementById('curriculumInfo');
+    var sd = document.getElementById('summerStopDate');
+    var cd = document.getElementById('curriculumStopDate');
+    updateCountdown();
+    if (!sb || !lockSettings) return;
+    sb.textContent = lockSettings.summerLocked ? '🔒 مقفلة' : '🔓 مفتوحة';
+    sb.style.background = lockSettings.summerLocked ? '#ef4444' : '#10b981';
+    cb.textContent = lockSettings.curriculumLocked ? '🔒 مقفلة' : '🔓 مفتوحة';
+    cb.style.background = lockSettings.curriculumLocked ? '#ef4444' : '#10b981';
+    if (si) si.textContent = lockSettings.summerLocked ? 'ستفتح في ' + formatDate(lockSettings.summerUnlockDate) : 'الدروس متاحة';
+    if (ci) ci.textContent = lockSettings.curriculumLocked ? 'ستفتح في ' + formatDate(lockSettings.curriculumUnlockDate) : 'الدروس متاحة';
+    if (sd) sd.value = lockSettings.summerUnlockDate;
+    if (cd) cd.value = lockSettings.curriculumUnlockDate;
+}
+
+async function saveLockSettings() {
+    if (!database) { showError('❌ لا يوجد اتصال بقاعدة البيانات'); return false; }
+    try {
+        await database.ref('settings/lockSettings').set(lockSettings);
+        try {
+            await database.ref('settings/publicCountdownDate').set(lockSettings.summerUnlockDate);
+            countdownTargetDate = lockSettings.summerUnlockDate;
+        } catch(e2) {
+            console.error('تعذر تحديث تاريخ العداد العام:', e2);
+        }
+        updateLockUI();
+        refreshCurrentView();
+        return true;
+    } catch(e) {
+        showError('❌ فشل حفظ الإعدادات: ' + e.message);
+        return false;
+    }
+}
+
+async function stopLessons(type) {
+    if (!isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) { showError('غير مصرح لك - هذه الصلاحية للمسؤول الرئيسي فقط'); return; }
+    if (!checkRateLimit('stop_lessons')) return;
+    if (!await validateSession()) return;
+    var dateInput = type === 'summer' ? document.getElementById('summerStopDate') : document.getElementById('curriculumStopDate');
+    var stopDate = dateInput?.value;
+    if (!stopDate) { showWarning('الرجاء تحديد تاريخ الاستئناف'); return; }
+    if (!lockSettings) lockSettings = getDefaultLockSettings();
+    var previous = { locked: type === 'summer' ? lockSettings.summerLocked : lockSettings.curriculumLocked,
+                      date: type === 'summer' ? lockSettings.summerUnlockDate : lockSettings.curriculumUnlockDate };
+    if (type === 'summer') { lockSettings.summerLocked = true; lockSettings.summerUnlockDate = stopDate; }
+    else { lockSettings.curriculumLocked = true; lockSettings.curriculumUnlockDate = stopDate; }
+    var ok = await saveLockSettings();
+    if (!ok) {
+        if (type === 'summer') { lockSettings.summerLocked = previous.locked; lockSettings.summerUnlockDate = previous.date; }
+        else { lockSettings.curriculumLocked = previous.locked; lockSettings.curriculumUnlockDate = previous.date; }
+        return;
+    }
+    logSecurityEvent('lessons_stopped', { type: type, stopDate: stopDate });
+    showSuccess('تم توقيف الدروس ' + (type === 'summer' ? 'الصيفية' : 'المقررة') + ' حتى ' + formatDate(stopDate));
+}
+
+async function startLessons(type) {
+    if (!isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) { showError('غير مصرح لك - هذه الصلاحية للمسؤول الرئيسي فقط'); return; }
+    if (!checkRateLimit('start_lessons')) return;
+    if (!await validateSession()) return;
+    if (!lockSettings) lockSettings = getDefaultLockSettings();
+    var previousLocked = type === 'summer' ? lockSettings.summerLocked : lockSettings.curriculumLocked;
+    if (type === 'summer') lockSettings.summerLocked = false;
+    else lockSettings.curriculumLocked = false;
+    var ok = await saveLockSettings();
+    if (!ok) {
+        if (type === 'summer') lockSettings.summerLocked = previousLocked;
+        else lockSettings.curriculumLocked = previousLocked;
+        return;
+    }
+    logSecurityEvent('lessons_started', { type: type });
+    showSuccess('تم استئناف الدروس ' + (type === 'summer' ? 'الصيفية' : 'المقررة'));
+}
+
+function updateCountdown() {
+    var dateStr = countdownTargetDate;
+    var container = document.getElementById('countdownContainer');
+    if (!dateStr) {
+        return;
+    }
+    var parts = dateStr.split('-');
+    if (parts.length !== 3) return;
+    var targetDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    var diff = targetDate - new Date();
+    if (diff <= 0) {
+        if (container) container.innerHTML = '<div class="title">🎉 مرحباً بعودتكم</div>';
+        return;
+    }
+    if (container && !document.getElementById('days')) {
+        container.innerHTML = '<div class="title"><i class="fas fa-calendar-days"></i> العودة إلى الدراسة</div><div class="timer">' +
+            '<div class="box"><div class="number" id="days">00</div><div class="label">يوم</div></div>' +
+            '<div class="box"><div class="number" id="hours">00</div><div class="label">ساعة</div></div>' +
+            '<div class="box"><div class="number" id="minutes">00</div><div class="label">دقيقة</div></div>' +
+            '<div class="box"><div class="number" id="seconds">00</div><div class="label">ثانية</div></div></div>';
+    }
+    document.getElementById('days').innerText = Math.floor(diff/86400000).toString().padStart(2,'0');
+    document.getElementById('hours').innerText = Math.floor((diff%86400000)/3600000).toString().padStart(2,'0');
+    document.getElementById('minutes').innerText = Math.floor((diff%3600000)/60000).toString().padStart(2,'0');
+    document.getElementById('seconds').innerText = Math.floor((diff%60000)/1000).toString().padStart(2,'0');
+}
+
+async function loadCountdownDate() {
+    if (!database) { updateCountdown(); return; }
+    try {
+        var snapshot = await database.ref('settings/publicCountdownDate').once('value');
+        var saved = snapshot.val();
+        if (saved) { countdownTargetDate = saved; }
+        updateCountdown();
+    } catch(e) {
+        console.error('Error loading public countdown date:', e);
+        updateCountdown();
+    }
+}
+
+// ============================================================
+// ===== دوال إدارة التسجيل =====
+// ============================================================
+
+function getDefaultRegistrationSettings() {
+    return { registrationLocked: false, resumeDate: '' };
+}
+
+async function loadRegistrationSettings() {
+    if (!database) {
+        registrationSettings = getDefaultRegistrationSettings();
+        updateRegistrationUI();
+        return registrationSettings;
+    }
+    try {
+        var snapshot = await database.ref('settings/registrationSettings').once('value');
+        var saved = snapshot.val();
+        registrationSettings = saved || getDefaultRegistrationSettings();
+        updateRegistrationUI();
+        return registrationSettings;
+    } catch(e) {
+        registrationSettings = getDefaultRegistrationSettings();
+        return registrationSettings;
+    }
+}
+
+function updateRegistrationUI() {
+    if (!registrationSettings) return;
+    var badge = document.getElementById('registrationStatusBadge');
+    var info = document.getElementById('registrationInfo');
+    var dateInput = document.getElementById('registrationResumeDateInput');
+    
+    if (registrationSettings.registrationLocked) {
+        if (badge) { badge.textContent = '🔴 موقوف'; badge.style.background = '#ef4444'; }
+        if (info) {
+            var dateDisplay = registrationSettings.resumeDate ? ' حتى ' + formatDate(registrationSettings.resumeDate) : '';
+            info.textContent = '⏸️ التسجيل موقوف مؤقتاً' + dateDisplay;
+        }
+    } else {
+        if (badge) { badge.textContent = '🟢 مفتوح'; badge.style.background = '#10b981'; }
+        if (info) info.textContent = '✅ التسجيل مفتوح للجميع';
+    }
+    if (dateInput && registrationSettings.resumeDate) {
+        dateInput.value = registrationSettings.resumeDate;
+    } else if (dateInput) {
+        dateInput.value = '';
+    }
+}
+
+async function stopRegistration() {
+    if (!isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) {
+        showError('غير مصرح لك - هذه الصلاحية للمسؤول فقط');
+        return;
+    }
+    if (!checkRateLimit('stop_registration')) return;
+    if (!await validateSession()) return;
+    
+    var dateInput = document.getElementById('registrationResumeDateInput');
+    var resumeDate = dateInput?.value;
+    if (!resumeDate) { showWarning('الرجاء تحديد تاريخ استئناف التسجيل'); return; }
+    registrationSettings.registrationLocked = true;
+    registrationSettings.resumeDate = resumeDate;
+    await saveRegistrationSettings();
+    logSecurityEvent('registration_stopped', { resumeDate: resumeDate });
+    showSuccess('تم إيقاف التسجيل حتى ' + formatDate(resumeDate));
+}
+
+async function startRegistration() {
+    if (!isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) {
+        showError('غير مصرح لك - هذه الصلاحية للمسؤول فقط');
+        return;
+    }
+    if (!checkRateLimit('start_registration')) return;
+    if (!await validateSession()) return;
+    
+    registrationSettings.registrationLocked = false;
+    registrationSettings.resumeDate = '';
+    await saveRegistrationSettings();
+    logSecurityEvent('registration_started');
+    showSuccess('تم استئناف التسجيل');
+}
+
+async function saveRegistrationSettings() {
+    if (!database) return;
+    await database.ref('settings/registrationSettings').set(registrationSettings);
+    updateRegistrationUI();
+}
+
+function showRegistrationStoppedModal() {
+    var modal = document.getElementById('registrationStoppedModal');
+    if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+}
+window.showRegistrationStoppedModal = showRegistrationStoppedModal;
+
+function closeRegistrationStoppedModal() {
+    var modal = document.getElementById('registrationStoppedModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+window.closeRegistrationStoppedModal = closeRegistrationStoppedModal;
+
+// ============================================================
+// ===== دوال المجتمع =====
+// ============================================================
+
+async function loadInviteLinks() {
+    if (!database) return;
+    try {
+        var snapshot = await database.ref('inviteLinks').once('value');
+        var data = snapshot.val();
+        if (data) {
+            if (data.primary) inviteLinks.primary = data.primary;
+            if (data.middle) inviteLinks.middle = data.middle;
+            if (data.high) inviteLinks.high = data.high;
+        }
+        renderCommunityLinks();
+    } catch(e) { console.error('Error loading invite links:', e); }
+}
+
+function renderCommunityLinks() {
+    var container = document.getElementById('communityLinksContainer');
+    if (!container) { setTimeout(renderCommunityLinks, 200); return; }
+    
+    var links = inviteLinks[selectedCommunityStage];
+    if (!links) {
+        container.innerHTML = '<p style="color:#999; text-align:center;">⚠️ لا توجد روابط لهذه المرحلة</p>';
+        return;
+    }
+    
+    if (!isAdminMode && currentUserStage !== selectedCommunityStage) {
+        container.innerHTML = '<div style="text-align:center; padding:20px; color:#dc2626; width:100%;">' +
+            '<i class="fas fa-lock" style="font-size:2rem; display:block; margin-bottom:8px;"></i>' +
+            '<p>⚠️ غير مصرح لك بمشاهدة روابط هذه المرحلة</p></div>';
+        return;
+    }
+    
+    container.innerHTML = '<div style="display:flex; flex-wrap:wrap; gap:16px; justify-content:center;">' +
+        '<div style="background:var(--bg-white); border-radius:16px; padding:20px; width:240px; text-align:center; box-shadow:var(--shadow-md); border-bottom:4px solid #7c3aed;">' +
+        '<i class="fab fa-telegram-plane" style="font-size:2.2rem; color:#0088cc;"></i>' +
+        '<h4 style="color:#5b21b6; margin:6px 0;">قناة التلجرام</h4>' +
+        '<div style="direction:ltr; background:var(--bg-body); padding:4px 8px; border-radius:20px; font-size:0.7rem; word-break:break-all; margin:6px 0;">' + sanitizeHtml(links.telegram || 'لا يوجد رابط') + '</div>' +
+        (links.telegram ? '<a href="' + escAttr(links.telegram) + '" target="_blank" rel="noopener noreferrer" style="background:#0088cc; color:white; padding:6px 16px; border-radius:20px; text-decoration:none; display:inline-block; font-weight:700; font-size:0.8rem;"><i class="fab fa-telegram-plane"></i> زيارة</a>' : '<p style="color:#999;">سيتم إضافة الرابط قريباً</p>') +
+        '</div>' +
+        '<div style="background:var(--bg-white); border-radius:16px; padding:20px; width:240px; text-align:center; box-shadow:var(--shadow-md); border-bottom:4px solid #7c3aed;">' +
+        '<i class="fab fa-facebook-f" style="font-size:2.2rem; color:#1877f2;"></i>' +
+        '<h4 style="color:#5b21b6; margin:6px 0;">مجموعة الفيسبوك</h4>' +
+        '<div style="direction:ltr; background:var(--bg-body); padding:4px 8px; border-radius:20px; font-size:0.7rem; word-break:break-all; margin:6px 0;">' + sanitizeHtml(links.facebook || 'لا يوجد رابط') + '</div>' +
+        (links.facebook ? '<a href="' + escAttr(links.facebook) + '" target="_blank" rel="noopener noreferrer" style="background:#1877f2; color:white; padding:6px 16px; border-radius:20px; text-decoration:none; display:inline-block; font-weight:700; font-size:0.8rem;"><i class="fab fa-facebook-f"></i> زيارة</a>' : '<p style="color:#999;">سيتم إضافة الرابط قريباً</p>') +
+        '</div>' +
+        '</div>';
+}
+
+function showCommunityGuestPreview() {
+    hideMainStages();
+    isInCommunity = true;
+    var html = '<div style="background:linear-gradient(135deg,#ede9fe,#ddd6fe); border-radius:20px; padding:28px; margin:20px 0; border:2px solid #7c3aed; text-align:center;">' +
+        '<button class="back-btn-new" id="communityGuestBackBtn"><i class="fas fa-arrow-right"></i> رجوع</button>' +
+        '<i class="fas fa-globe" style="font-size:2.4rem; color:#7c3aed; display:block; margin-bottom:10px;"></i>' +
+        '<h3 style="color:#5b21b6; font-size:1.2rem; margin-bottom:10px;">مجتمع الأستاذ محمد</h3>' +
+        '<p style="color:#5b21b6; max-width:480px; margin:0 auto 18px;">' +
+        'انضم إلى مجتمعنا على تلجرام والفيسبوك للتواصل مع بقية افراد مجتمعنا العلمي ومتابعة كل جديد. ' +
+        'روابط المجتمع الخاصة بكل مرحلة متاحة للأعضاء المسجَّلين والمقبولين فقط.</p>' +
+        '<div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">' +
+        '<button class="btn btn-primary" onclick="showLoginChoice()" style="padding:8px 24px;"><i class="fas fa-sign-in-alt"></i> تسجيل الدخول</button>' +
+        '<button class="btn btn-success" onclick="showRegisterChoice()" style="padding:8px 24px;"><i class="fas fa-user-plus"></i> طلب تسجيل</button>' +
+        '</div></div>';
+    document.getElementById('dynamicArea').innerHTML = html;
+    var backBtn = document.getElementById('communityGuestBackBtn');
+    if (backBtn) {
+        backBtn.addEventListener('click', function() {
+            isInCommunity = false;
+            showMainStages();
+            currentStage = null;
+            clearNavigationState();
+        });
+    }
+    saveNavigationState();
+}
+window.showCommunityGuestPreview = showCommunityGuestPreview;
+
+function showCommunitySection() {
+    if (!currentUser) { showCommunityGuestPreview(); return; }
+    if (!currentUserIsApproved && !isAdminMode) { 
+        showWarning('لم يتم قبول عضويتك بعد'); 
+        return; 
+    }
+    
+    if (!canUserAccessStage(selectedCommunityStage)) {
+        document.getElementById('dynamicArea').innerHTML = showAccessDeniedMessage(selectedCommunityStage);
+        return;
+    }
+    
+    isInCommunity = true;
+    hideMainStages();
+    
+    var availableStages = [];
+    if (isAdminMode) {
+        availableStages = ['primary', 'middle', 'high'];
+    } else {
+        availableStages = [currentUserStage || 'primary'];
+    }
+    
+    var stageNames = {
+        'primary': { label: '📚 ابتدائي', emoji: '📚' },
+        'middle': { label: '🏫 متوسط', emoji: '🏫' },
+        'high': { label: '🎓 ثانوي', emoji: '🎓' }
+    };
+    
+    var stagesHtml = '';
+    for (var i = 0; i < availableStages.length; i++) {
+        var stage = availableStages[i];
+        var isActive = selectedCommunityStage === stage;
+        stagesHtml += '<button class="stage-btn ' + (isActive ? 'active' : '') + '" data-stage="' + stage + '" style="' + 
+            (isActive ? 'background:#7c3aed; color:white;' : 'background:white; color:#5b21b6;') + 
+            ' border:none; padding:8px 20px; border-radius:20px; font-weight:700; cursor:pointer; transition:all 0.3s ease;">' +
+            (stageNames[stage]?.label || stage) + '</button>';
+    }
+    
+    var html = '<div style="background:linear-gradient(135deg,#ede9fe,#ddd6fe); border-radius:20px; padding:28px; margin:20px 0; border:2px solid #7c3aed;">' +
+        '<button class="back-btn-new" id="communityBackBtn"><i class="fas fa-arrow-right"></i> رجوع</button>' +
+        '<div style="font-size:1.3rem; font-weight:800; color:#5b21b6; text-align:center; margin-bottom:16px;">' +
+        '<i class="fas fa-globe"></i> مجتمع الأستاذ محمد' +
+        (!isAdminMode ? '<span style="font-size:0.8rem; color:#7c3aed; display:block; margin-top:4px;">🔒 مرحلتك: ' + (stageNames[currentUserStage]?.label || currentUserStage || 'غير محددة') + '</span>' : '') +
+        '</div>' +
+        '<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:12px; margin-bottom:20px;">' + stagesHtml + '</div>' +
+        '<div id="communityLinksContainer" style="display:flex; flex-wrap:wrap; gap:16px; justify-content:center;"></div>' +
+        (!isAdminMode ? '<div style="text-align:center; margin-top:16px; padding:10px; background:rgba(124,58,237,0.1); border-radius:12px; font-size:0.8rem; color:#5b21b6;">🔒 يمكنك فقط مشاهدة روابط مرحلتك التعليمية</div>' :
+        '<div style="text-align:center; margin-top:16px; padding:10px; background:rgba(16,185,129,0.1); border-radius:12px; font-size:0.8rem; color:#065f46;">👑 لديك صلاحية مشاهدة جميع روابط المجتمع</div>') +
+        '</div>';
+    
+    document.getElementById('dynamicArea').innerHTML = html;
+    
+    var stageBtns = document.querySelectorAll('.stage-btn');
+    for (var i = 0; i < stageBtns.length; i++) {
+        stageBtns[i].addEventListener('click', function() {
+            var stage = this.getAttribute('data-stage');
+            if (!canUserAccessStage(stage)) {
+                document.getElementById('dynamicArea').innerHTML = showAccessDeniedMessage(stage);
+                return;
+            }
+            selectedCommunityStage = stage;
+            showCommunitySection();
+            saveNavigationState();
+        });
+    }
+    
+    var backBtn = document.getElementById('communityBackBtn');
+    if (backBtn) {
+        backBtn.addEventListener('click', function() {
+            isInCommunity = false;
+            showMainStages();
+            currentStage = null;
+            clearNavigationState();
+        });
+    }
+    
+    renderCommunityLinks();
+    currentStage = null;
+    saveNavigationState();
+}
+
+// ============================================================
+// ===== دوال حفظ الحالة والعرض =====
+// ============================================================
+
+function saveNavigationState() {
+    if (isRestoringState) return;
+    var state = {
+        stage: currentStage,
+        subStage: currentSubStage,
+        year: currentYear,
+        subject: currentSubject,
+        lessonType: currentLessonType,
+        page: currentPage,
+        navigationStack: navigationStack.slice(),
+        viewingFile: currentViewingFile,
+        viewingLesson: currentViewingLesson,
+        isInCommunity: isInCommunity,
+        selectedCommunityStage: selectedCommunityStage
+    };
+    try {
+        sessionStorage.setItem('platform_nav_state', JSON.stringify(state));
+    } catch(e) {}
+}
+
+function restoreNavigationState() {
+    try {
+        var saved = sessionStorage.getItem('platform_nav_state');
+        if (!saved) return false;
+        var state = JSON.parse(saved);
+        if (!state.stage && !state.isInCommunity) return false;
+        
+        currentStage = state.stage || null;
+        currentSubStage = state.subStage || null;
+        currentYear = state.year || null;
+        currentSubject = state.subject || null;
+        currentLessonType = state.lessonType || null;
+        currentPage = state.page || 1;
+        navigationStack = state.navigationStack || [];
+        currentViewingFile = state.viewingFile || null;
+        currentViewingLesson = state.viewingLesson || null;
+        isInCommunity = state.isInCommunity || false;
+        if (state.selectedCommunityStage) {
+            selectedCommunityStage = state.selectedCommunityStage;
+        }
+        return true;
+    } catch(e) {
+        return false;
+    }
+}
+
+function clearNavigationState() {
+    sessionStorage.removeItem('platform_nav_state');
+}
+
+function showMainStages() {
+    document.getElementById('mainStagesContainer').classList.remove('hidden');
+    document.getElementById('dynamicArea').innerHTML = '<div class="welcome-new">' +
+        '<span class="emoji">👨‍🏫📚</span>' +
+        '<h3>مرحباً بك في منصة الأستاذ محمد</h3>' +
+        '<p>اختر المرحلة الدراسية من الأعلى للبدء</p></div>';
+    clearNavigationState();
+    updateStats();
+}
+window.showMainStages = showMainStages;
+
+function hideMainStages() { 
+    document.getElementById('mainStagesContainer').classList.add('hidden'); 
+}
+
+function goHome() {
+    currentStage = null; 
+    currentSubStage = null; 
+    currentYear = null;
+    currentSubject = null; 
+    currentLessonType = null; 
+    navigationStack = [];
+    isInCommunity = false;
+    currentFilter = 'all';
+    clearNavigationState();
+    showMainStages();
+    showInfo('تم العودة للصفحة الرئيسية');
+}
+window.goHome = goHome;
+
+function goBack() {
+    if (navigationStack.length === 0) { 
+        if (isInCommunity) {
+            isInCommunity = false;
+            showMainStages();
+            clearNavigationState();
+            return;
+        }
+        currentStage = null; 
+        showMainStages(); 
+        clearNavigationState(); 
+        return; 
+    }
+    var last = navigationStack.pop();
+    if (last.view === 'subStages') { currentStage = 'primary'; currentSubStage = null; showSubStages(); }
+    else if (last.view === 'years') { currentStage = last.stage; currentYear = null; showYears(); }
+    else if (last.view === 'subjects') { currentStage = last.stage; currentSubStage = last.substage; currentYear = last.year; currentSubject = null; showSubjects(); }
+    else if (last.view === 'lessonTypes') { currentStage = last.stage; currentSubStage = last.substage; currentYear = last.year; currentSubject = last.subject; currentLessonType = null; showLessonTypes(); }
+    saveNavigationState();
+}
+window.goBack = goBack;
+
+async function refreshCurrentView() {
+    var loading = document.getElementById('app-loading');
+    if (loading) loading.classList.add('hidden');
+    
+    try {
+        if (isFirstLoad) {
+            isFirstLoad = false;
+            isRestoringState = true;
+            var restored = restoreNavigationState();
+            if (restored) {
+                await waitForAuthReady(10000);
+                if (isInCommunity) {
+                    showCommunitySection();
+                    isRestoringState = false;
+                    updateStats();
+                    return;
+                }
+                if (currentViewingFile && currentViewingLesson) {
+                    if (currentLessonType) { try { renderLessonsList(); } catch (e) {} }
+                    setTimeout(function() {
+                        showLessonContent(currentViewingFile, currentViewingLesson.title, currentViewingLesson.url, currentViewingLesson.download, currentViewingLesson.type, currentViewingLesson.fileId);
+                        isRestoringState = false;
+                    }, 100);
+                    return;
+                }
+                if (currentLessonType) renderLessonsList();
+                else if (currentSubject) showLessonTypes();
+                else if (currentYear) showSubjects();
+                else if (currentSubStage) showSubjects();
+                else if (currentStage === 'primary') showSubStages();
+                else if (currentStage === 'middle' || currentStage === 'high') showYears();
+                else showMainStages();
+                isRestoringState = false;
+                updateStats();
+                return;
+            }
+            isRestoringState = false;
+            showMainStages();
+            updateStats();
+            return;
+        }
+        
+        if (isInCommunity) {
+            showCommunitySection();
+            updateStats();
+            return;
+        }
+        
+        if (currentViewingFile && currentViewingLesson) {
+            if (currentLessonType && !document.getElementById('lessonsContainer')) { try { renderLessonsList(); } catch (e) {} }
+            showLessonContent(currentViewingFile, currentViewingLesson.title, currentViewingLesson.url, currentViewingLesson.download, currentViewingLesson.type, currentViewingLesson.fileId);
+            updateStats();
+            return;
+        }
+        
+        if (currentLessonType) renderLessonsList();
+        else if (currentSubject) showLessonTypes();
+        else if (currentYear) showSubjects();
+        else if (currentSubStage) showSubjects();
+        else if (currentStage === 'primary') showSubStages();
+        else if (currentStage === 'middle' || currentStage === 'high') showYears();
+        else showMainStages();
+        
+        updateStats();
+        
+    } catch(error) {
+        console.error('Error in refreshCurrentView:', error);
+        showMainStages();
+        if (loading) loading.classList.add('hidden');
+    }
+}
+
+// ============================================================
+// ===== دوال عرض المراحل =====
+// ============================================================
+
+function showSubStages() {
+    hideMainStages();
+    if (!canUserAccessStage('primary')) { 
+        document.getElementById('dynamicArea').innerHTML = showAccessDeniedMessage('primary'); 
+        return; 
+    }
+    
+    if (!platformData || !platformData.primary) {
+        setTimeout(showSubStages, 300);
+        return;
+    }
+    
+    var html = '<button class="back-btn-new" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع</button>' +
+        '<div class="page-title"><i class="fas fa-school"></i> المرحلة الابتدائية</div><div class="sub-stages-new">';
+    for (var key in platformData.primary) {
+        var stage = platformData.primary[key];
+        var emoji = key === 'stage1' ? '⭐' : (key === 'stage2' ? '📖' : '🎓');
+        html += '<div class="sub-stage-card-new" data-stage="' + key + '"><span class="emoji">' + emoji + '</span><h3>' + sanitizeHtml(stage.name) + '</h3><p>' + sanitizeHtml(stage.years) + '</p></div>';
+    }
+    html += '</div>';
+    document.getElementById('dynamicArea').innerHTML = html;
+    var backBtn = document.getElementById('backBtn');
+    if (backBtn) backBtn.addEventListener('click', goBack);
+    var cards = document.querySelectorAll('.sub-stage-card-new');
+    for (var i = 0; i < cards.length; i++) {
+        cards[i].addEventListener('click', function() {
+            navigationStack.push({ view: 'subStages' });
+            currentSubStage = this.getAttribute('data-stage');
+            showSubjects();
+            saveNavigationState();
+        });
+    }
+    saveNavigationState();
+}
+
+function showYears() {
+    hideMainStages();
+    if (!canUserAccessStage(currentStage)) { 
+        document.getElementById('dynamicArea').innerHTML = showAccessDeniedMessage(currentStage); 
+        return; 
+    }
+    
+    if (!platformData) {
+        setTimeout(showYears, 300);
+        return;
+    }
+    
+    var years = currentStage === 'middle' ? platformData.middle.yearsList : platformData.high.yearsList;
+    var titleText = currentStage === 'middle' ? 'مرحلة المتوسط' : 'مرحلة الثانوي';
+    var icon = currentStage === 'middle' ? 'fas fa-chalkboard-user' : 'fas fa-university';
+    var images = currentStage === 'middle' ? ['📘','📗','📙','📕'] : ['🎓','📚','🏛️'];
+    var html = '<button class="back-btn-new" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع</button>' +
+        '<div class="page-title"><i class="' + icon + '"></i> ' + titleText + '</div><div class="years-new">';
+    for (var i = 0; i < years.length; i++) {
+        html += '<div class="year-card-new" data-year="' + sanitizeHtml(years[i]) + '"><span class="emoji">' + images[i % images.length] + '</span><h3>' + sanitizeHtml(years[i]) + '</h3></div>';
+    }
+    html += '</div>';
+    document.getElementById('dynamicArea').innerHTML = html;
+    var backBtn = document.getElementById('backBtn');
+    if (backBtn) backBtn.addEventListener('click', goBack);
+    var cards = document.querySelectorAll('.year-card-new');
+    for (var i = 0; i < cards.length; i++) {
+        cards[i].addEventListener('click', function() {
+            navigationStack.push({ view: 'years', stage: currentStage });
+            currentYear = this.getAttribute('data-year');
+            showSubjects();
+            saveNavigationState();
+        });
+    }
+    saveNavigationState();
+}
+
+function showSubjects() {
+    hideMainStages();
+    if (!canUserAccessStage(currentStage)) { 
+        document.getElementById('dynamicArea').innerHTML = showAccessDeniedMessage(currentStage); 
+        return; 
+    }
+    
+    if (!platformData) {
+        setTimeout(showSubjects, 300);
+        return;
+    }
+    
+    var subjectsObj = {}, titleText = '', icon = '';
+    if (currentStage === 'primary') { 
+        if (!platformData.primary[currentSubStage]) {
+            setTimeout(showSubjects, 300);
+            return;
+        }
+        subjectsObj = platformData.primary[currentSubStage].subjects; 
+        titleText = platformData.primary[currentSubStage].name; 
+        icon = 'fas fa-star'; 
+    }
+    else if (currentStage === 'middle') { 
+        if (!platformData.middle.subjectsByYear[currentYear]) {
+            setTimeout(showSubjects, 300);
+            return;
+        }
+        subjectsObj = platformData.middle.subjectsByYear[currentYear]; 
+        titleText = currentYear; 
+        icon = 'fas fa-book'; 
+    }
+    else { 
+        if (!platformData.high.subjectsByYear[currentYear]) {
+            setTimeout(showSubjects, 300);
+            return;
+        }
+        subjectsObj = platformData.high.subjectsByYear[currentYear]; 
+        titleText = currentYear; 
+        icon = 'fas fa-graduation-cap'; 
+    }
+    
+    var subjectIcons = { 'اللغة العربية': 'fas fa-language', 'الرياضيات': 'fas fa-calculator', 'التربية الإسلامية': 'fas fa-mosque', 'التربية العلمية': 'fas fa-flask', 'التاريخ والجغرافيا': 'fas fa-landmark', 'المتفرقات': 'fas fa-puzzle-piece', 'العلوم الإسلامية': 'fas fa-star-and-crescent', 'العلوم الفيزيائية': 'fas fa-atom' };
+    var html = '<button class="back-btn-new" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع</button>' +
+        '<div class="page-title"><i class="' + icon + '"></i> ' + sanitizeHtml(titleText) + '</div><div class="subjects-new">';
+    for (var subject in subjectsObj) {
+        var subIcon = subjectIcons[subject] || 'fas fa-book';
+        html += '<div class="subject-card-new" data-subject="' + sanitizeHtml(subject) + '"><div class="header"><i class="' + subIcon + '"></i> ' + sanitizeHtml(subject) + '</div></div>';
+    }
+    html += '</div>';
+    document.getElementById('dynamicArea').innerHTML = html;
+    var backBtn = document.getElementById('backBtn');
+    if (backBtn) backBtn.addEventListener('click', goBack);
+    var cards = document.querySelectorAll('.subject-card-new');
+    for (var i = 0; i < cards.length; i++) {
+        cards[i].addEventListener('click', function() {
+            navigationStack.push({ view: 'subjects', stage: currentStage, substage: currentSubStage, year: currentYear });
+            currentSubject = this.getAttribute('data-subject');
+            showLessonTypes();
+            saveNavigationState();
+        });
+    }
+    saveNavigationState();
+}
+
+function showLessonTypes() {
+    hideMainStages();
+    if (!canUserAccessStage(currentStage)) { 
+        document.getElementById('dynamicArea').innerHTML = showAccessDeniedMessage(currentStage); 
+        return; 
+    }
+    
+    if (!platformData) {
+        setTimeout(showLessonTypes, 300);
+        return;
+    }
+    
+    var summerCount = 0, curriculumCount = 0;
+    try {
+        if (currentStage === 'primary') { 
+            summerCount = platformData.primary[currentSubStage].subjects[currentSubject].summer.length; 
+            curriculumCount = platformData.primary[currentSubStage].subjects[currentSubject].curriculum.length; 
+        }
+        else if (currentStage === 'middle') { 
+            summerCount = platformData.middle.subjectsByYear[currentYear][currentSubject].summer.length; 
+            curriculumCount = platformData.middle.subjectsByYear[currentYear][currentSubject].curriculum.length; 
+        }
+        else { 
+            summerCount = platformData.high.subjectsByYear[currentYear][currentSubject].summer.length; 
+            curriculumCount = platformData.high.subjectsByYear[currentYear][currentSubject].curriculum.length; 
+        }
+    } catch(e) {
+        summerCount = 0;
+        curriculumCount = 0;
+    }
+    
+    var html = '<button class="back-btn-new" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع</button>' +
+        '<div class="page-title"><i class="fas fa-chalkboard-teacher"></i> ' + sanitizeHtml(currentSubject) + '</div>' +
+        '<div class="lesson-types-new">' +
+        '<div class="lesson-type-card-new summer" data-type="summer"><span class="emoji">🏖️</span><h3>الدروس الصيفية</h3><p>دروس العطلة والمراجعة</p><div class="count"><i class="fas fa-video"></i> ' + summerCount + ' درس</div></div>' +
+        '<div class="lesson-type-card-new curriculum" data-type="curriculum"><span class="emoji">📖</span><h3>الدروس المقررة</h3><p>دروس البرنامج الدراسي</p><div class="count"><i class="fas fa-video"></i> ' + curriculumCount + ' درس</div></div>' +
+        '</div>';
+    document.getElementById('dynamicArea').innerHTML = html;
+    var backBtn = document.getElementById('backBtn');
+    if (backBtn) backBtn.addEventListener('click', goBack);
+    var cards = document.querySelectorAll('.lesson-type-card-new');
+    for (var i = 0; i < cards.length; i++) {
+        cards[i].addEventListener('click', function() {
+            navigationStack.push({ view: 'lessonTypes', stage: currentStage, substage: currentSubStage, year: currentYear, subject: currentSubject });
+            currentLessonType = this.getAttribute('data-type');
+            currentPage = 1;
+            renderLessonsList();
+            saveNavigationState();
+        });
+    }
+    saveNavigationState();
+}
+
+// ============================================================
+// ===== دوال عرض الدروس مع ترتيب (الأحدث أولاً) =====
+// ============================================================
+
+function getCurrentLessons() {
+    try {
+        var lessons = [];
+        if (currentStage === 'primary') lessons = platformData.primary[currentSubStage].subjects[currentSubject][currentLessonType];
+        else if (currentStage === 'middle') lessons = platformData.middle.subjectsByYear[currentYear][currentSubject][currentLessonType];
+        else lessons = platformData.high.subjectsByYear[currentYear][currentSubject][currentLessonType];
+        
+        if (!lessons) lessons = [];
+        
+        lessons.sort(function(a, b) {
+            var dateA = a.created_at ? new Date(a.created_at) : new Date(0);
+            var dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+            return dateB - dateA;
+        });
+        
+        if (currentFilter === 'summer') {
+            var filtered = [];
+            for (var i = 0; i < lessons.length; i++) {
+                if (lessons[i].content_type === 'pdf' || lessons[i].content_type === 'image') {
+                    filtered.push(lessons[i]);
+                }
+            }
+            lessons = filtered;
+        } else if (currentFilter === 'external') {
+            var filtered = [];
+            for (var i = 0; i < lessons.length; i++) {
+                if (lessons[i].content_type === 'telegram' || lessons[i].content_type === 'facebook') {
+                    filtered.push(lessons[i]);
+                }
+            }
+            lessons = filtered;
+        }
+        return lessons;
+    } catch(e) { return []; }
+}
+
+function getLessonBadge(lesson) {
+    if (lesson.content_type === 'pdf') return '<span class="badge badge-pdf"><i class="fas fa-file-pdf"></i> PDF</span>';
+    if (lesson.content_type === 'image') return '<span class="badge badge-image"><i class="fas fa-image"></i> صورة</span>';
+    if (lesson.content_type === 'telegram') return '<span class="badge badge-telegram"><i class="fab fa-telegram"></i> تلجرام</span>';
+    if (lesson.content_type === 'facebook') return '<span class="badge badge-facebook"><i class="fab fa-facebook-f"></i> فيسبوك</span>';
+    return '';
+}
+
+function toggleSortOrder() {
+    sortOrder = (sortOrder === 'desc') ? 'asc' : 'desc';
+    renderLessonsList();
+}
+window.toggleSortOrder = toggleSortOrder;
+
+function renderLessonsList() {
+    hideMainStages();
+    if (!canUserAccessStage(currentStage)) { 
+        document.getElementById('dynamicArea').innerHTML = showAccessDeniedMessage(currentStage); 
+        return; 
+    }
+    var allLessons = getCurrentLessons();
+    
+    if (sortOrder === 'asc') { allLessons.reverse(); }
+    
+    var totalPages = Math.ceil(allLessons.length / LESSONS_PER_PAGE);
+    if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
+    var start = (currentPage - 1) * LESSONS_PER_PAGE;
+    var paginated = allLessons.slice(start, start + LESSONS_PER_PAGE);
+    var titleText = currentSubject;
+    if (currentStage !== 'primary') titleText = currentYear + ' - ' + currentSubject;
+    
+    var sortIcon = sortOrder === 'desc' ? 'fa-arrow-down' : 'fa-arrow-up';
+    var sortLabel = sortOrder === 'desc' ? 'الأحدث أولاً' : 'الأقدم أولاً';
+    
+    var html = '<button class="back-btn-new" id="backBtn"><i class="fas fa-arrow-right"></i> رجوع</button>' +
+        '<div class="page-title"><i class="fas fa-book-open"></i> ' + sanitizeHtml(titleText) + ' - ' + (currentLessonType === 'summer' ? 'الدروس الصيفية' : 'الدروس المقررة') + '</div>' +
+        '<div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:space-between; align-items:center; margin-bottom:12px;">' +
+        '<div class="filter-buttons" style="margin-bottom:0;">' +
+        '<button class="filter-btn active" data-filter="all" onclick="filterLessons(\'all\')">📚 الكل</button>' +
+        '<button class="filter-btn" data-filter="summer" onclick="filterLessons(\'summer\')">📄 داخلية</button>' +
+        '<button class="filter-btn" data-filter="external" onclick="filterLessons(\'external\')">🔗 خارجية</button>' +
+        '</div>' +
+        '<button class="sort-btn" onclick="toggleSortOrder()" title="ترتيب الدروس">' +
+        '<i class="fas ' + sortIcon + '"></i> ' + sortLabel +
+        '</button>' +
+        '</div>' +
+        '<div class="lessons-count">📊 إجمالي الدروس: ' + allLessons.length + '</div>' +
+        '<div id="lessonsContainer" class="lessons-list-new">';
+    
+    if (paginated && paginated.length > 0) {
+        for (var i = 0; i < paginated.length; i++) {
+            var lesson = paginated[i];
+            var isLocked = !isLessonAccessible(currentLessonType);
+            var authPending = !!(typeof auth !== 'undefined' && auth && auth.currentUser && !isAuthReady);
+            var canView = isAdminMode || authPending || (currentUser && currentUserIsApproved && !isLocked);
+            
+            var fileId = lesson.file_info?.file_id || lesson.telegram_file_id || null;
+            var createdDate = lesson.created_at ? new Date(lesson.created_at).toLocaleDateString('ar') : '';
+            
+            html += '<div class="lesson-item-new">' +
+                '<div class="title"><span>📌 ' + sanitizeHtml(lesson.title) + '</span>' +
+                (createdDate ? '<span style="font-size:0.6rem; color:var(--text-muted); margin-right:6px;">📅 ' + createdDate + '</span>' : '') +
+                '</div><div class="actions">';
+            
+            if (lesson.content_type === 'pdf' || lesson.content_type === 'image') {
+                if (canView) {
+                    var fileUrl = lesson.file_info?.url || lesson.internal_url || '';
+                    var downloadUrl = lesson.file_info?.url || lesson.download_url || '';
+                    html += '<button class="lesson-btn view" data-action="view-internal" data-id="' + escAttr(lesson.id) + '" data-title="' + escAttr(lesson.title) + '" data-file-url="' + escAttr(fileUrl) + '" data-download-url="' + escAttr(downloadUrl) + '" data-content-type="' + escAttr(lesson.content_type) + '" data-file-id="' + escAttr(fileId || '') + '"><i class="fas fa-eye"></i> عرض</button>';
+                } else {
+                    html += '<button class="lesson-btn view" data-action="unavailable"><i class="fas fa-eye"></i> عرض</button>';
+                }
+            } else {
+                if (canView) {
+                    html += '<button class="lesson-btn watch" data-action="watch" data-external-url="' + escAttr(lesson.external_url) + '"><i class="fas fa-external-link-alt"></i> مشاهدة</button>';
+                } else {
+                    html += '<button class="lesson-btn view" data-action="unavailable"><i class="fas fa-eye"></i> عرض</button>';
+                }
+            }
+            if (isAdminMode) {
+                if (lesson.content_type === 'pdf' || lesson.content_type === 'image') {
+                    html += '<button class="lesson-btn edit" data-action="edit-internal" data-id="' + escAttr(lesson.id) + '" data-title="' + escAttr(lesson.title) + '" data-file-url="' + escAttr(lesson.file_info?.url || lesson.internal_url || '') + '" data-download-url="' + escAttr(lesson.file_info?.url || lesson.download_url || '') + '" data-content-type="' + escAttr(lesson.content_type) + '"><i class="fas fa-edit"></i> تعديل</button>';
+                } else {
+                    html += '<button class="lesson-btn edit" data-action="edit-external" data-id="' + escAttr(lesson.id) + '" data-title="' + escAttr(lesson.title) + '" data-external-url="' + escAttr(lesson.external_url) + '" data-platform="' + escAttr(lesson.platform) + '"><i class="fas fa-edit"></i> تعديل</button>';
+                }
+                html += '<button class="lesson-btn delete" data-action="delete" data-id="' + escAttr(lesson.id) + '"><i class="fas fa-trash"></i> حذف</button>';
+            }
+            html += '</div></div>';
+        }
+    } else {
+        html += '<div style="text-align:center; padding:20px; color:var(--text-muted);"><i class="fas fa-inbox"></i> لا توجد دروس ' + (currentFilter !== 'all' ? (currentFilter === 'summer' ? 'داخلية' : 'خارجية') : '') + ' حالياً</div>';
+    }
+    html += '</div>';
+    if (totalPages > 1) {
+        html += '<div style="display:flex; justify-content:center; gap:6px; margin-top:12px; flex-wrap:wrap;">' +
+            '<button class="page-nav-new" data-page="prev" style="background:var(--primary); color:white; border:none; padding:4px 14px; border-radius:20px; cursor:pointer; font-weight:700; font-size:0.8rem;"><i class="fas fa-chevron-right"></i> السابق</button>';
+        for (var i = 1; i <= totalPages; i++) {
+            html += '<button class="page-btn-new ' + (i === currentPage ? 'active' : '') + '" data-page="' + i + '" style="' + (i === currentPage ? 'background:var(--primary); color:white;' : 'background:var(--bg-body);') + ' border:none; padding:4px 12px; border-radius:20px; cursor:pointer; font-weight:700; font-size:0.8rem; min-width:32px;">' + i + '</button>';
+        }
+        html += '<button class="page-nav-new" data-page="next" style="background:var(--primary); color:white; border:none; padding:4px 14px; border-radius:20px; cursor:pointer; font-weight:700; font-size:0.8rem;">التالي <i class="fas fa-chevron-left"></i></button>' +
+            '<span style="font-size:0.8rem; color:var(--text-secondary); font-weight:700;">' + currentPage + ' / ' + totalPages + '</span></div>';
+    }
+    if (isAdminMode) {
+        html += '<div style="margin-top:16px;"><button class="add-lesson-btn-new" id="openAddLessonBtn"><i class="fas fa-plus-circle"></i> إضافة درس جديد</button></div>';
+    }
+    document.getElementById('dynamicArea').innerHTML = html;
+    var backBtn = document.getElementById('backBtn');
+    if (backBtn) backBtn.addEventListener('click', goBack);
+
+    var lessonBtns = document.querySelectorAll('#lessonsContainer .lesson-btn[data-action]');
+    for (var lb = 0; lb < lessonBtns.length; lb++) {
+        lessonBtns[lb].addEventListener('click', function() {
+            var action = this.getAttribute('data-action');
+            if (action === 'view-internal') {
+                showLessonContent(this.getAttribute('data-id'), this.getAttribute('data-title'), this.getAttribute('data-file-url'), this.getAttribute('data-download-url'), this.getAttribute('data-content-type'), this.getAttribute('data-file-id'));
+            } else if (action === 'unavailable') {
+                if (!currentUser) {
+                    showLoginRequiredPopup();
+                } else {
+                    showUnavailableModal();
+                }
+            } else if (action === 'watch') {
+                window.open(this.getAttribute('data-external-url'), '_blank');
+            } else if (action === 'edit-internal') {
+                openEditInternalModal(this.getAttribute('data-id'), this.getAttribute('data-title'), this.getAttribute('data-file-url'), this.getAttribute('data-download-url'), this.getAttribute('data-content-type'));
+            } else if (action === 'edit-external') {
+                openEditModal(this.getAttribute('data-id'), this.getAttribute('data-title'), this.getAttribute('data-external-url'), this.getAttribute('data-platform'));
+            } else if (action === 'delete') {
+                deleteLesson(this.getAttribute('data-id'));
+            }
+        });
+    }
+    
+    var pageBtns = document.querySelectorAll('.page-btn-new, .page-nav-new');
+    for (var i = 0; i < pageBtns.length; i++) {
+        pageBtns[i].addEventListener('click', function() {
+            var action = this.getAttribute('data-page');
+            if (action === 'prev') currentPage = Math.max(1, currentPage - 1);
+            else if (action === 'next') currentPage = Math.min(totalPages, currentPage + 1);
+            else currentPage = parseInt(action);
+            renderLessonsList();
+            saveNavigationState();
+        });
+    }
+    
+    var addBtn = document.getElementById('openAddLessonBtn');
+    if (addBtn) {
+        addBtn.addEventListener('click', function() {
+            document.getElementById('addLessonModal').classList.add('active');
+            document.getElementById('newLessonTitle').value = '';
+            document.getElementById('newLessonInternalUrl').value = '';
+            document.getElementById('newLessonDownloadUrl').value = '';
+            document.getElementById('newLessonExternalUrl').value = '';
+            clearFileUploadFields();
+        });
+    }
+    saveNavigationState();
+}
+
+// ============================================================
+// ===== دعم لوحة المفاتيح: تسجيل الدخول بزر Enter =====
+// ============================================================
+// يعمل على أي نافذة منبثقة (login/register) تحتوي حقول إدخال — يضغط المستخدم Enter
+// داخل أي حقل نصي فتُنفَّذ نفس عملية زر "تسجيل الدخول / إرسال الطلب" الرئيسي في تلك النافذة،
+// دون الحاجة للمس الفأرة. يعمل بشكل عام على كل النوافذ الحالية والمستقبلية دون ربط يدوي لكل واحدة.
+function setupEnterKeySubmit() {
+    document.addEventListener('keydown', function(e) {
+        if (e.key !== 'Enter') return;
+        var target = e.target;
+        if (!target || target.tagName !== 'INPUT') return;
+        if (target.type === 'checkbox' || target.type === 'radio' || target.type === 'button') return;
+        
+        var modal = target.closest('.modal-overlay');
+        if (!modal || !modal.classList.contains('active')) return;
+        
+        e.preventDefault();
+        
+        // نبحث عن زر "تسجيل الدخول" أو "إرسال الطلب" داخل نفس النافذة، مع استبعاد أزرار الإلغاء/الإغلاق
+        var candidates = modal.querySelectorAll('button[id$="LoginBtn"], button[id$="SubmitBtn"]');
+        var submitBtn = null;
+        for (var i = 0; i < candidates.length; i++) {
+            if (candidates[i].id.indexOf('close') !== 0 && !candidates[i].disabled) {
+                submitBtn = candidates[i];
+                break;
+            }
+        }
+        if (submitBtn) submitBtn.click();
+    });
+}
+
+// ============================================================
+// ===== إشعار التحديثات المباشر (Live Update Notification) =====
+// ============================================================
+// عند نشر تحسينات جديدة على المنصة، يضغط المسؤول زر "نشر إشعار تحديث" من لوحة التحكم — فيتم
+// كتابة رقم/وقت الإصدار في settings/appVersion. جميع المستخدمين المتصلين حالياً يستلمون هذا
+// التحديث فوراً عبر الاستماع اللحظي (realtime) ويظهر لهم شريط علوي لإعادة تحميل الصفحة والحصول
+// على أحدث نسخة، بدل انتظارهم اكتشاف التحسينات بالصدفة.
+
+
+
+
+// يستخدمها المسؤول (الأستاذ محمد) فقط لنشر إشعار تحديث فوري لكل المستخدمين المتصلين حالياً
+
+
+// ============================================================
+// ===== دوال ربط الأزرار =====
+// ============================================================
+
+function bindMainStageButtons() {
+    var btns = document.querySelectorAll('.stage-btn-new');
+    for (var i = 0; i < btns.length; i++) {
+        btns[i].removeEventListener('click', stageClickHandler);
+        btns[i].addEventListener('click', stageClickHandler);
+    }
+    var communityBtn = document.getElementById('communityBtn');
+    if (communityBtn) communityBtn.addEventListener('click', showCommunitySection);
+}
+
+function stageClickHandler(e) {
+    var btn = e.currentTarget;
+    if (btn.id === 'communityBtn') return;
+    var stage = btn.getAttribute('data-main');
+    
+    if (!canUserAccessStage(stage)) { 
+        document.getElementById('dynamicArea').innerHTML = showAccessDeniedMessage(stage); 
+        return; 
+    }
+    
+    isInCommunity = false;
+    currentFilter = 'all';
+    currentStage = stage; 
+    currentSubStage = null; 
+    currentYear = null; 
+    currentSubject = null; 
+    currentLessonType = null; 
+    navigationStack = [];
+    if (currentStage === 'primary') showSubStages();
+    else showYears();
+    saveNavigationState();
+}
+
+// ============================================================
+// ===== دوال تسجيل الخروج =====
+// ============================================================
+
+async function confirmLogout() {
+    if (auth) { 
+        if (currentUser) {
+            await removeActiveSession(currentUser.email);
+            logSecurityEvent('logout', { user: currentUser.email });
+        }
+        await auth.signOut(); 
+        showInfo('تم تسجيل الخروج');
+        updateUIAfterLogout();
+    }
+}
+
+async function revokeOwnMembership() {
+    if (!currentUser) { showWarning('لا يوجد مستخدم مسجل'); return; }
+    if (currentUser.email === MASTER_TEACHER_EMAIL) { showWarning('لا يمكن للمسؤول إلغاء عضويته!'); return; }
+    if (!await validateSession()) return;
+    
+    showConfirmDialog('⚠️ هل أنت متأكد من إلغاء عضويتك؟\nسيتم حذف صلاحيتك ولن تتمكن من تسجيل الدخول مرة أخرى', async function() {
+        try {
+            var email = currentUser.email;
+            await database.ref('members/approved/' + emailToKey(email)).remove();
+            logSecurityEvent('membership_revoked', { email: email });
+            showSuccess('تم إلغاء عضويتك بنجاح');
+            await removeActiveSession(email);
+            await auth.signOut();
+            updateUIAfterLogout();
+        } catch(e) { showError('حدث خطأ: ' + e.message); }
+    });
+}
+window.revokeOwnMembership = revokeOwnMembership;
+
+function showConfirmDialog(message, onConfirm) {
+    var dialog = document.getElementById('confirmDialog');
+    var msg = document.getElementById('confirmMessage');
+    var confirmBtn = document.getElementById('confirmDeleteBtn');
+    
+    msg.textContent = message;
+    dialog.classList.add('active');
+    
+    var newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+    
+    newConfirmBtn.addEventListener('click', function() {
+        closeConfirmDialog();
+        if (typeof onConfirm === 'function') onConfirm();
+    });
+}
+
+function closeConfirmDialog() {
+    document.getElementById('confirmDialog').classList.remove('active');
+}
+window.showConfirmDialog = showConfirmDialog;
+window.closeConfirmDialog = closeConfirmDialog;
+
+// ============================================================
+// ===== ربط أحداث DOM =====
+// ============================================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    
+    
+    var teacherPass = document.getElementById('registerTeacherPassword');
+    var memberPass = document.getElementById('registerMemberPassword');
+    
+    if (teacherPass) {
+        teacherPass.addEventListener('input', function() {
+            updatePasswordRequirements(this.value, 'teacher');
+        });
+    }
+    
+    if (memberPass) {
+        memberPass.addEventListener('input', function() {
+            updatePasswordRequirements(this.value, 'member');
+        });
+    }
+    
+    // ✅ تمت إزالة listener الخاص بـ EmailJS - يستخدم Google Forms الآن
+    
+    var loginAdminBtn = document.getElementById('loginAdminBtn');
+    if (loginAdminBtn) {
+        loginAdminBtn.addEventListener('click', function() {
+            document.getElementById('loginChoiceModal').classList.remove('active');
+            var remembered = getSecurePersistentData('rememberedEmail');
+            document.getElementById('adminEmail').value = remembered || '';
+            document.getElementById('adminPassword').value = '';
+            document.getElementById('adminLoginError').innerText = '';
+            document.getElementById('adminLoginModal').classList.add('active');
+        });
+    }
+    
+    var loginTeacherBtn = document.getElementById('loginTeacherBtn');
+    if (loginTeacherBtn) {
+        loginTeacherBtn.addEventListener('click', function() {
+            document.getElementById('loginChoiceModal').classList.remove('active');
+            var remembered = getSecurePersistentData('rememberedEmail');
+            document.getElementById('teacherEmail').value = remembered || '';
+            document.getElementById('teacherPassword').value = '';
+            document.getElementById('teacherLoginError').innerText = '';
+            document.getElementById('teacherLoginModal').classList.add('active');
+        });
+    }
+    
+    var loginMemberBtn = document.getElementById('loginMemberBtn');
+    if (loginMemberBtn) {
+        loginMemberBtn.addEventListener('click', function() {
+            document.getElementById('loginChoiceModal').classList.remove('active');
+            var remembered = getSecurePersistentData('rememberedEmail');
+            document.getElementById('memberEmail').value = remembered || '';
+            document.getElementById('memberPassword').value = '';
+            document.getElementById('memberLoginError').innerText = '';
+            document.getElementById('memberLoginModal').classList.add('active');
+        });
+    }
+    
+    var closeLoginChoiceBtn = document.getElementById('closeLoginChoiceBtn');
+    if (closeLoginChoiceBtn) closeLoginChoiceBtn.addEventListener('click', hideAllModals);
+    
+    var closeRegisterChoiceBtn = document.getElementById('closeRegisterChoiceBtn');
+    if (closeRegisterChoiceBtn) closeRegisterChoiceBtn.addEventListener('click', hideAllModals);
+    
+    var registerTeacherChoiceBtn = document.getElementById('registerTeacherChoiceBtn');
+    if (registerTeacherChoiceBtn) {
+        registerTeacherChoiceBtn.addEventListener('click', function() {
+            document.getElementById('registerChoiceModal').classList.remove('active');
+            document.getElementById('registerTeacherModal').classList.add('active');
+        });
+    }
+    
+    var registerMemberChoiceBtn = document.getElementById('registerMemberChoiceBtn');
+    if (registerMemberChoiceBtn) {
+        registerMemberChoiceBtn.addEventListener('click', function() {
+            document.getElementById('registerChoiceModal').classList.remove('active');
+            document.getElementById('registerMemberModal').classList.add('active');
+        });
+    }
+    
+    var adminLoginBtn = document.getElementById('adminLoginBtn');
+    if (adminLoginBtn) adminLoginBtn.addEventListener('click', handleAdminLogin);
+    
+    var teacherLoginBtn = document.getElementById('teacherLoginBtn');
+    if (teacherLoginBtn) teacherLoginBtn.addEventListener('click', handleTeacherLogin);
+    
+    var memberLoginBtn = document.getElementById('memberLoginBtn');
+    if (memberLoginBtn) memberLoginBtn.addEventListener('click', handleMemberLogin);
+    
+    var registerTeacherSubmitBtn = document.getElementById('registerTeacherSubmitBtn');
+    if (registerTeacherSubmitBtn) registerTeacherSubmitBtn.addEventListener('click', handleRegisterTeacher);
+    
+    var registerMemberSubmitBtn = document.getElementById('registerMemberSubmitBtn');
+    if (registerMemberSubmitBtn) registerMemberSubmitBtn.addEventListener('click', handleRegisterMember);
+    
+    var closeAdminLoginBtn = document.getElementById('closeAdminLoginBtn');
+    if (closeAdminLoginBtn) {
+        closeAdminLoginBtn.addEventListener('click', function() {
+            document.getElementById('adminLoginModal').classList.remove('active');
+            document.getElementById('adminEmail').value = '';
+            document.getElementById('adminPassword').value = '';
+            document.getElementById('adminLoginError').innerText = '';
+        });
+    }
+    
+    var closeTeacherLoginBtn = document.getElementById('closeTeacherLoginBtn');
+    if (closeTeacherLoginBtn) {
+        closeTeacherLoginBtn.addEventListener('click', function() {
+            document.getElementById('teacherLoginModal').classList.remove('active');
+            document.getElementById('teacherEmail').value = '';
+            document.getElementById('teacherPassword').value = '';
+            document.getElementById('teacherLoginError').innerText = '';
+        });
+    }
+    
+    var closeMemberLoginBtn = document.getElementById('closeMemberLoginBtn');
+    if (closeMemberLoginBtn) {
+        closeMemberLoginBtn.addEventListener('click', function() {
+            document.getElementById('memberLoginModal').classList.remove('active');
+            document.getElementById('memberEmail').value = '';
+            document.getElementById('memberPassword').value = '';
+            document.getElementById('memberLoginError').innerText = '';
+        });
+    }
+    
+    var adminForgotPasswordLink = document.getElementById('adminForgotPasswordLink');
+    if (adminForgotPasswordLink) {
+        adminForgotPasswordLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            showForgotPasswordModal(document.getElementById('adminEmail').value);
+        });
+    }
+
+    var teacherForgotPasswordLink = document.getElementById('teacherForgotPasswordLink');
+    if (teacherForgotPasswordLink) {
+        teacherForgotPasswordLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            showForgotPasswordModal(document.getElementById('teacherEmail').value);
+        });
+    }
+
+    var memberForgotPasswordLink = document.getElementById('memberForgotPasswordLink');
+    if (memberForgotPasswordLink) {
+        memberForgotPasswordLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            showForgotPasswordModal(document.getElementById('memberEmail').value);
+        });
+    }
+
+    var forgotPasswordSubmitBtn = document.getElementById('forgotPasswordSubmitBtn');
+    if (forgotPasswordSubmitBtn) forgotPasswordSubmitBtn.addEventListener('click', handleForgotPassword);
+
+    var closeForgotPasswordBtn = document.getElementById('closeForgotPasswordBtn');
+    if (closeForgotPasswordBtn) {
+        closeForgotPasswordBtn.addEventListener('click', function() {
+            document.getElementById('forgotPasswordModal').classList.remove('active');
+            document.getElementById('forgotPasswordEmail').value = '';
+            document.getElementById('forgotPasswordError').innerText = '';
+            document.getElementById('forgotPasswordSuccess').innerText = '';
+        });
+    }
+
+    var forgotPasswordEmailInput = document.getElementById('forgotPasswordEmail');
+    if (forgotPasswordEmailInput) {
+        forgotPasswordEmailInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { e.preventDefault(); handleForgotPassword(); }
+        });
+    }
+
+    var closeRegisterTeacherBtn = document.getElementById('closeRegisterTeacherBtn');
+    if (closeRegisterTeacherBtn) {
+        closeRegisterTeacherBtn.addEventListener('click', function() {
+            document.getElementById('registerTeacherModal').classList.remove('active');
+            document.getElementById('registerTeacherEmail').value = '';
+            document.getElementById('registerTeacherPassword').value = '';
+            document.getElementById('registerTeacherConfirm').value = '';
+            document.getElementById('registerTeacherError').innerText = '';
+        });
+    }
+    
+    var closeRegisterMemberBtn = document.getElementById('closeRegisterMemberBtn');
+    if (closeRegisterMemberBtn) {
+        closeRegisterMemberBtn.addEventListener('click', function() {
+            document.getElementById('registerMemberModal').classList.remove('active');
+            document.getElementById('registerMemberEmail').value = '';
+            document.getElementById('registerMemberPassword').value = '';
+            document.getElementById('registerMemberConfirm').value = '';
+            document.getElementById('registerMemberError').innerText = '';
+        });
+    }
+    
+    var summerStopBtn = document.getElementById('summerStopBtn');
+    if (summerStopBtn) summerStopBtn.addEventListener('click', function() { stopLessons('summer'); });
+    
+    var summerStartBtn = document.getElementById('summerStartBtn');
+    if (summerStartBtn) summerStartBtn.addEventListener('click', function() { startLessons('summer'); });
+    
+    var curriculumStopBtn = document.getElementById('curriculumStopBtn');
+    if (curriculumStopBtn) curriculumStopBtn.addEventListener('click', function() { stopLessons('curriculum'); });
+    
+    var curriculumStartBtn = document.getElementById('curriculumStartBtn');
+    if (curriculumStartBtn) curriculumStartBtn.addEventListener('click', function() { startLessons('curriculum'); });
+    
+    var registrationStopBtn = document.getElementById('registrationStopBtn');
+    if (registrationStopBtn) registrationStopBtn.addEventListener('click', stopRegistration);
+    
+    var registrationStartBtn = document.getElementById('registrationStartBtn');
+    if (registrationStartBtn) registrationStartBtn.addEventListener('click', startRegistration);
+    
+    var confirmAddLessonBtn = document.getElementById('confirmAddLessonBtn');
+    if (confirmAddLessonBtn) confirmAddLessonBtn.addEventListener('click', addNewLesson);
+    
+    var cancelAddLessonBtn = document.getElementById('cancelAddLessonBtn');
+    if (cancelAddLessonBtn) {
+        cancelAddLessonBtn.addEventListener('click', function() {
+            document.getElementById('addLessonModal').classList.remove('active');
+            clearFileUploadFields();
+            document.getElementById('newLessonTitle').value = '';
+            document.getElementById('newLessonInternalUrl').value = '';
+            document.getElementById('newLessonDownloadUrl').value = '';
+            document.getElementById('newLessonExternalUrl').value = '';
+        });
+    }
+    
+    var confirmEditLessonBtn = document.getElementById('confirmEditLessonBtn');
+    if (confirmEditLessonBtn) {
+        confirmEditLessonBtn.addEventListener('click', async function() {
+            if (!isAdminMode) { showError('غير مصرح لك - هذه الصلاحية للأستاذ فقط'); return; }
+            if (editingLessonId) {
+                await database.ref('lessons/' + editingLessonId).update({
+                    title: document.getElementById('editLessonTitle').value,
+                    platform: document.getElementById('editLessonPlatform').value,
+                    external_url: document.getElementById('editLessonUrl').value,
+                    updated_at: new Date().toISOString()
+                });
+                logSecurityEvent('lesson_updated', { lessonId: editingLessonId });
+                showSuccess('تم تعديل الدرس بنجاح');
+            }
+            document.getElementById('editLessonModal').classList.remove('active');
+            await loadDataFromFirebase(); 
+            refreshCurrentView();
+            updateStats();
+        });
+    }
+    
+    var cancelEditLessonBtn = document.getElementById('cancelEditLessonBtn');
+    if (cancelEditLessonBtn) {
+        cancelEditLessonBtn.addEventListener('click', function() {
+            document.getElementById('editLessonModal').classList.remove('active');
+        });
+    }
+    
+    var confirmEditInternalBtn = document.getElementById('confirmEditInternalBtn');
+    if (confirmEditInternalBtn) {
+        confirmEditInternalBtn.addEventListener('click', async function() {
+            if (!isAdminMode) { showError('غير مصرح لك - هذه الصلاحية للأستاذ فقط'); return; }
+            if (editingInternalLessonId) {
+                var updateData = {
+                    title: document.getElementById('editInternalTitle').value,
+                    content_type: document.getElementById('editInternalType').value,
+                    updated_at: new Date().toISOString(),
+                    updated_by: currentUser?.email || 'unknown'
+                };
+                // الحقول الحساسة (روابط الملفات) تُحدَّث في عقدة 'lessons_secure' المنفصلة
+                var secureUpdateData = {};
+                
+                if (uploadedFileForEdit) {
+                    try {
+                        var fileInfo = await uploadFileToTelegram(uploadedFileForEdit, document.getElementById('editInternalTitle').value);
+                        secureUpdateData.file_info = {
+                            url: fileInfo.url,
+                            file_id: fileInfo.file_id,
+                            name: fileInfo.name,
+                            size: fileInfo.size,
+                            type: fileInfo.type
+                        };
+                        secureUpdateData.internal_url = fileInfo.url;
+                        secureUpdateData.download_url = fileInfo.url;
+                        secureUpdateData.telegram_file_id = fileInfo.file_id;
+                        showSuccess('تم رفع الملف الجديد بنجاح');
+                    } catch(error) {
+                        showError('فشل رفع الملف: ' + error.message);
+                        return;
+                    }
+                } else {
+                    var internalUrl = document.getElementById('editInternalUrl').value.trim();
+                    var downloadUrl = document.getElementById('editInternalDownload').value.trim();
+                    if (internalUrl) {
+                        secureUpdateData.internal_url = internalUrl;
+                        secureUpdateData.download_url = downloadUrl || internalUrl;
+                    }
+                }
+                
+                try {
+                    // نستخدم update() (لا set()) كي لا نمحو الحقول الأخرى (stage, subject...)
+                    await database.ref('lessons/' + editingInternalLessonId).update(updateData);
+                    if (Object.keys(secureUpdateData).length > 0) {
+                        await database.ref('lessons_secure/' + editingInternalLessonId).update(secureUpdateData);
+                    }
+                } catch (error) {
+                    showError('❌ فشل حفظ التعديل في قاعدة البيانات: ' + error.message);
+                    return;
+                }
+                logSecurityEvent('lesson_updated', { lessonId: editingInternalLessonId });
+                showSuccess('تم تعديل الدرس بنجاح');
+            }
+            document.getElementById('editInternalLessonModal').classList.remove('active');
+            clearFileUploadFields();
+            await loadDataFromFirebase(); 
+            refreshCurrentView();
+            updateStats();
+        });
+    }
+    
+    var cancelEditInternalBtn = document.getElementById('cancelEditInternalBtn');
+    if (cancelEditInternalBtn) {
+        cancelEditInternalBtn.addEventListener('click', function() {
+            document.getElementById('editInternalLessonModal').classList.remove('active');
+            clearFileUploadFields();
+        });
+    }
+    
+    var membershipLogoutBtn = document.getElementById('membershipLogoutBtn');
+    if (membershipLogoutBtn) membershipLogoutBtn.addEventListener('click', showLogoutConfirm);
+    
+    var confirmLogoutBtn = document.getElementById('confirmLogoutBtn');
+    if (confirmLogoutBtn) confirmLogoutBtn.addEventListener('click', confirmLogout);
+    
+    var cancelLogoutBtn = document.getElementById('cancelLogoutBtn');
+    if (cancelLogoutBtn) cancelLogoutBtn.addEventListener('click', hideAllModals);
+    
+    var revokeMembershipBtn = document.getElementById('revokeMembershipBtn');
+    if (revokeMembershipBtn) revokeMembershipBtn.addEventListener('click', showRevokeConfirm);
+    
+    var confirmRevokeBtn = document.getElementById('confirmRevokeBtn');
+    if (confirmRevokeBtn) confirmRevokeBtn.addEventListener('click', revokeOwnMembership);
+    
+    var cancelRevokeBtn = document.getElementById('cancelRevokeBtn');
+    if (cancelRevokeBtn) {
+        cancelRevokeBtn.addEventListener('click', function() {
+            document.getElementById('revokeConfirmModal').classList.remove('active');
+        });
+    }
+    
+    var addTeacherBtn = document.getElementById('addTeacherBtn');
+    if (addTeacherBtn) addTeacherBtn.addEventListener('click', addTeacher);
+    
+    var updateNewsBtn = document.getElementById('updateNewsBtn');
+    if (updateNewsBtn) {
+        updateNewsBtn.addEventListener('click', updateNews);
+    }
+    
+    var directAddMemberBtn = document.getElementById('directAddMemberBtn');
+    if (directAddMemberBtn) {
+        directAddMemberBtn.addEventListener('click', async function() {
+            var email = document.getElementById('directAddMemberEmail').value.trim();
+            var stage = document.getElementById('directAddMemberStage').value;
+            var resultDiv = document.getElementById('directAddMemberResult');
+            
+            if (!isAdminMode || currentUser?.email !== MASTER_TEACHER_EMAIL) {
+                showError('غير مصرح لك - هذه الصلاحية للمسؤول فقط');
+                return;
+            }
+            if (!email) { showWarning('الرجاء إدخال البريد الإلكتروني'); return; }
+            if (isFakeEmail(email)) { showWarning('⚠️ البريد الإلكتروني غير صالح'); return; }
+            if (!await validateSession()) return;
+            
+            try {
+                var check = await database.ref('members/approved/' + emailToKey(email)).once('value');
+                if (check.exists()) {
+                    showWarning('هذا البريد موجود بالفعل في قائمة الأعضاء المعتمدين');
+                    resultDiv.innerHTML = '<span style="color:#f59e0b;">⚠️ البريد موجود مسبقاً</span>';
+                    return;
+                }
+                
+                var stageNames = { 'primary': 'الابتدائية', 'middle': 'المتوسط', 'high': 'الثانوي', 'all': 'جميع المراحل' };
+                await database.ref('members/approved/' + emailToKey(email)).set({
+                    email: email,
+                    approvedAt: Date.now(),
+                    userType: 'عضو',
+                    userStage: stage
+                });
+                
+                logSecurityEvent('direct_member_added', { email: email, stage: stage });
+                showSuccess('✅ تم إضافة العضو ' + email + ' بنجاح في مرحلة ' + (stageNames[stage] || stage));
+                resultDiv.innerHTML = '<span style="color:#10b981;">✅ تمت الإضافة بنجاح</span>';
+                
+                document.getElementById('directAddMemberEmail').value = '';
+                await loadApprovedMembers();
+                updateStats();
+                
+            } catch(e) {
+                showError('حدث خطأ: ' + e.message);
+                resultDiv.innerHTML = '<span style="color:#ef4444;">❌ خطأ: ' + sanitizeHtml(e.message) + '</span>';
+            }
+        });
+    }
+
+    var teacherGear = document.getElementById('teacherGearIcon');
+    if (teacherGear) {
+        teacherGear.addEventListener('click', function() {
+            if (currentUser && isAdminMode && currentUser?.email !== MASTER_TEACHER_EMAIL) {
+                var panel = document.getElementById('adminPanel');
+                var overlay = document.getElementById('adminOverlay');
+                if (panel.classList.contains('active')) { 
+                    panel.classList.remove('active'); 
+                    overlay.classList.remove('active'); 
+                } else { 
+                    panel.classList.add('active'); 
+                    overlay.classList.add('active');
+                    document.getElementById('adminOnlySection').style.display = 'none';
+                    document.getElementById('panelBadge').textContent = '👨‍🏫 أستاذ'; 
+                    updateAdminPanel(); 
+                }
+            } else if (currentUser && !isAdminMode) { 
+                showWarning('هذه اللوحة للأستاذ فقط'); 
+            } else { 
+                showLoginChoice(); 
+            }
+        });
+    }
+    
+    var adminGear = document.getElementById('adminGearIcon');
+    if (adminGear) {
+        adminGear.addEventListener('click', function() {
+            if (currentUser && isAdminMode && currentUser?.email === MASTER_TEACHER_EMAIL) {
+                var panel = document.getElementById('adminPanel');
+                var overlay = document.getElementById('adminOverlay');
+                if (panel.classList.contains('active')) { 
+                    panel.classList.remove('active'); 
+                    overlay.classList.remove('active'); 
+                } else { 
+                    panel.classList.add('active'); 
+                    overlay.classList.add('active');
+                    document.getElementById('adminOnlySection').style.display = 'block';
+                    document.getElementById('panelBadge').textContent = 'الإدارة';
+                    loadJoinRequests(); 
+                    loadApprovedMembers(); 
+                    loadTeachersList();
+                    loadRegistrationSettings();
+                    updateAdminPanel(); 
+                    updateStats(); 
+                }
+            } else if (currentUser && !isAdminMode) { 
+                showWarning('هذه اللوحة للإدارة فقط'); 
+            } else { 
+                showLoginChoice(); 
+            }
+        });
+    }
+    
+    window.onclick = function(e) {
+        if (e.target.classList.contains('modal-overlay')) hideAllModals();
+        if (e.target.classList.contains('visitor-popup-new')) e.target.classList.remove('active');
+        if (e.target.classList.contains('confirm-dialog-overlay')) closeConfirmDialog();
+        if (e.target.classList.contains('unavailable-modal-overlay')) closeUnavailableModal();
+        if (e.target.classList.contains('admin-overlay')) closeAdminPanel();
+        if (e.target.classList.contains('registration-stopped-modal')) {
+            if (e.target === document.getElementById('registrationStoppedModal')) {
+                closeRegistrationStoppedModal();
+            }
+        }
+    };
+    
+    if (auth) {
+        auth.onAuthStateChanged(async function(user) {
+            var previousUser = currentUser;
+            currentUser = user;
+            if (user) {
+                var email = normalizeEmail(user.email);
+                currentUserStage = null;
+                clearPermissionCache(email);
+                
+                var isApprovedMember, isTeacher;
+                var permissionCheckAttempts = 0;
+                var permissionCheckSucceeded = false;
+                while (permissionCheckAttempts < 3 && !permissionCheckSucceeded) {
+                    try {
+                        // فحص متوازٍ (كان تسلسلياً) لتسريع ظهور المحتوى بعد تسجيل الدخول
+                        var permResults = await Promise.all([
+                            checkMemberApproval(email),
+                            checkTeacherPermissions(email)
+                        ]);
+                        isApprovedMember = permResults[0];
+                        isTeacher = permResults[1];
+                        permissionCheckSucceeded = true;
+                    } catch (permError) {
+                        permissionCheckAttempts++;
+                        logSecurityEvent('permission_check_network_error', { 
+                            email: email, 
+                            attempt: permissionCheckAttempts, 
+                            error: permError && permError.message 
+                        });
+                        if (permissionCheckAttempts < 3) {
+                            await new Promise(function(resolve) { 
+                                setTimeout(resolve, 800 * permissionCheckAttempts); 
+                            });
+                        }
+                    }
+                }
+                
+                if (!permissionCheckSucceeded) {
+                    showWarning('⚠️ تعذر التحقق من صلاحياتك بسبب ضعف الاتصال بالإنترنت. يرجى التحقق من الاتصال والمحاولة مرة أخرى.');
+                    updateAuthButtons();
+                    isAuthReady = true;
+                    return;
+                }
+                
+                if (!isApprovedMember && !isTeacher && email !== MASTER_TEACHER_EMAIL) {
+                    await auth.signOut();
+                    logSecurityEvent('unapproved_user_attempt', { email: email });
+                    showWarning('لم يتم الموافقة على طلبك بعد');
+                    updateUIAfterLogout();
+                    isAuthReady = true;
+                    return;
+                }
+                
+                if (isApprovedMember && !isTeacher && email !== MASTER_TEACHER_EMAIL) {
+                    isAdminMode = false;
+                    currentUserIsApproved = true;
+                    console.log('✅ عضو معتمد - المرحلة:', currentUserStage);
+                } else if (isTeacher || email === MASTER_TEACHER_EMAIL) {
+                    isAdminMode = true;
+                    currentUserIsApproved = true;
+                    if (email === MASTER_TEACHER_EMAIL) {
+                        currentUserStage = 'all';
+                    }
+                    console.log('✅ أستاذ/مسؤول - المرحلة:', currentUserStage);
+                }
+                
+                if (!currentUserStage && currentUserIsApproved && !isAdminMode) {
+                    currentUserStage = 'primary';
+                    showWarning('تم تعيين مرحلتك كـ "ابتدائي" بشكل افتراضي، يرجى التواصل مع الإدارة إذا كان ذلك خطأ');
+                }
+                
+                registerActiveSession(email).then(function () {
+                    attachSessionConflictListener(email);
+                }).catch(function () {});
+                
+                updateUserInterface();
+                if (isAdminMode && currentUser?.email === MASTER_TEACHER_EMAIL) {
+                    repairLegacyMemberKeys().then(function(res) {
+                        if (res && (res.members + res.teachers) > 0) {
+                            loadApprovedMembers();
+                            loadTeachersList();
+                        }
+                    });
+                    loadJoinRequests(); 
+                    loadApprovedMembers(); 
+                    loadTeachersList();
+                    loadRegistrationSettings();
+                }
+                updateAuthButtons();
+                attachNotificationsListener();
+                // إصلاح: عند التحميل كزائر تُرفض قراءة عقدة 'lessons_secure' فتُخزَّن الدروس
+                // بدون روابط (internal_url / telegram_file_id فارغة). بعد تسجيل الدخول كانت
+                // الواجهة تُعاد رسمها من نفس البيانات القديمة، فلا يفتح الدرس إلا بعد الخروج
+                // منه وإعادة فتحه أو إعادة تحديث الصفحة. الحل: إعادة تحميل بيانات الدروس
+                // بصلاحيات المستخدم الجديد قبل إعلان جاهزية التحقق ورسم الواجهة.
+                try { await loadDataFromFirebase(); } catch (e) {}
+                isAuthReady = true;
+                if (previousUser === null) { 
+                    refreshCurrentView(); 
+                    updateStats();
+                } else if (currentLessonType && !currentViewingFile) {
+                    // تحديث أزرار العرض فور اكتمال التحقق دون إزعاج المستخدم
+                    try { renderLessonsList(); } catch (e) {}
+                }
+                resetSessionTimer();
+            } else {
+                isAuthReady = true;
+                if (previousUser !== null) {
+                    // بعد الخروج نُعيد تحميل الدروس بصلاحيات الزائر حتى لا تبقى الروابط الخاصة في الذاكرة
+                    updateUIAfterLogout();
+                    loadDataFromFirebase().then(function () {
+                        try { refreshCurrentView(); } catch (e) {}
+                    }).catch(function () {});
+                }
+                else updateAuthButtons();
+            }
+        });
+    }
+});
+
+// ============================================================
+// ===== بدء التطبيق =====
+// ============================================================
+
+async function init() {
+    try {
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        checkPrivacyConsent();
+        setupSessionActivityListeners();
+        
+        if (!database) {
+            console.error('❌ قاعدة البيانات غير متاحة');
+            document.getElementById('dynamicArea').innerHTML = '<div style="text-align:center; padding:40px;">' +
+                '<i class="fas fa-database" style="font-size:2.5rem; color:#dc2626;"></i>' +
+                '<h3 style="color:#dc2626;">⚠️ خطأ في الاتصال بقاعدة البيانات</h3>' +
+                '<button onclick="location.reload()" style="background:var(--primary); color:white; border:none; padding:10px 28px; border-radius:20px; margin-top:10px; cursor:pointer;">🔄 إعادة تحميل</button></div>';
+            return;
+        }
+        
+        var dataLoadedFlag = false;
+        // المشكلة 6 (تتمة): كان هذا المؤقّت يفرض بيانات افتراضية فارغة بعد 8 ثوانٍ فقط إن لم
+        // تكتمل الشبكة بعد — وإذا وصلت البيانات الحقيقية لاحقاً (شبكة بطيئة، لا خطأ فعلي)، كانت
+        // الدروس التي ظهرت قبل قليل "تختفي" أمام المستخدم بلا سبب واضح. الآن: لا نستبدل بيانات
+        // حقيقية سبق تحميلها بنجاح، ونكتفي بعرض تنبيه للانتظار دون تفريغ الشاشة.
+        var dataTimeout = setTimeout(function() {
+            if (!dataLoadedFlag) {
+                dataLoadedFlag = true;
+                if (!lessonsEverLoadedFromServer) {
+                    platformData = getDefaultPlatformData();
+                    refreshCurrentView();
+                }
+                updateStats();
+                showWarning('الاتصال بطيء، يتم تحميل البيانات في الخلفية...');
+            }
+        }, 8000);
+        
+        loadCountdownDate();
+        
+        try {
+            await loadDataFromFirebase();
+            await loadLockSettings();
+            await loadRegistrationSettings();
+            await loadInviteLinks();
+            await loadNews();
+            dataLoadedFlag = true;
+            clearTimeout(dataTimeout);
+            console.log('✅ تم تحميل البيانات بنجاح');
+            refreshCurrentView();
+            updateStats();
+            setInterval(updateCountdown, 1000);
+        } catch(error) {
+            console.error('❌ خطأ في تحميل البيانات:', error);
+            // لا نمحو دروساً محمّلة فعلاً بنجاح بسبب فشل عابر في أحد إعدادات الإضافية (news, lockSettings...)
+            if (!lessonsEverLoadedFromServer) {
+                platformData = getDefaultPlatformData();
+            }
+            dataLoadedFlag = true;
+            clearTimeout(dataTimeout);
+            showWarning(lessonsEverLoadedFromServer ? 'حدث خطأ أثناء تحديث بعض الإعدادات، الدروس المحمّلة لم تتأثر' : 'تم تحميل البيانات الافتراضية بسبب خطأ في الاتصال');
+            refreshCurrentView();
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+        }
+        
+        bindMainStageButtons();
+        updateAuthButtons();
+        setupEnterKeySubmit();
+        
+        if (database) {
+            database.ref('lessons').on('value', async function() { 
+                await loadDataFromFirebase(); 
+                refreshCurrentView(); 
+                updateStats();
+            });
+        }
+        
+        var rememberedEmail = getSecurePersistentData('rememberedEmail');
+        if (rememberedEmail) {
+            var emailInputs = document.querySelectorAll('input[type="email"]');
+            for (var i = 0; i < emailInputs.length; i++) {
+                if (emailInputs[i].id && emailInputs[i].id.includes('Email') && !emailInputs[i].value) {
+                    emailInputs[i].value = rememberedEmail;
+                }
+            }
+        }
+        
+        refreshCurrentView();
+        logSecurityEvent('platform_initialized', { version: CURRENT_APP_VERSION });
+        
+        
+        
+        
+        
+    } catch(error) {
+        console.error('❌ خطأ في التحميل:', error);
+        showError('حدث خطأ أثناء تحميل المنصة');
+        showMainStages();
+    }
+}
+
+init();
