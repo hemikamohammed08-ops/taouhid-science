@@ -56,6 +56,7 @@ var lockSettings = null;
 var countdownTargetDate = null;
 var registrationSettings = null;
 var newsItems = ["📢 مرحباً بكم في منصة الأستاذ محمد التعليمية"];
+var siteContent = null;
 // ⚠️ ملاحظة: Base64 هنا مجرد تعتيم بسيط (obfuscation) وليس تشفيراً حقيقياً — يمكن فك تشفيره فوراً من console المتصفح.
 // الحماية الفعلية ضد الوصول غير المصرح به تعتمد بالكامل على قواعد Firebase Realtime Database (auth.token.email)، وليس على إخفاء هذا النص.
 var MASTER_TEACHER_EMAIL = atob("aGVtaWthbW9oYW1tZWQwOEBnbWFpbC5jb20=");
@@ -2884,6 +2885,8 @@ function updateAdminPanel() {
     var panelTitle = document.getElementById('panelTitle');
     var securityLogSection = document.getElementById('securityLogSection');
     
+    fillSiteContentEditor(siteContent || getDefaultSiteContent());
+    
     if (isMaster) {
         if (panelBadge) panelBadge.textContent = 'الإدارة';
         if (adminOnlySection) adminOnlySection.style.display = 'block';
@@ -3717,6 +3720,129 @@ async function updateNews() {
 }
 
 // ============================================================
+// ===== دوال إدارة محتوى الموقع (نصوص قابلة للتعديل من لوحة التحكم) =====
+// ============================================================
+
+function getDefaultSiteContent() {
+    return {
+        heroBadge: 'الدروس تُحدَّث باستمرار',
+        heroTitleMain: 'محتواك الدراسي',
+        heroTitleHighlight: 'على بُعد نقرة',
+        heroSubtitle: 'دروس، ملخصات، وتمارين لكل المراحل، مع متابعة مباشرة من  مجموعة من الأساتذة.',
+        heroCta: 'اختر مرحلتك الدراسية',
+        welcomeBackText: '🎉 مرحباً بعودتكم',
+        footerText: '© الأستاذ محمد للتعليم - الجزائر | تعليم ذكي للمستقبل'
+    };
+}
+
+// يطبّق نصوص المحتوى فعلياً على عناصر الصفحة (نستخدم textContent فقط لأمان تام ضد XSS)
+function applySiteContent(content) {
+    if (!content) return;
+    var map = {
+        heroBadgeText: content.heroBadge,
+        heroTitleMain: content.heroTitleMain,
+        heroTitleHighlight: content.heroTitleHighlight,
+        heroSubtitleText: content.heroSubtitle,
+        heroCtaText: content.heroCta,
+        footerText: content.footerText
+    };
+    Object.keys(map).forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el && typeof map[id] === 'string' && map[id].trim() !== '') {
+            el.textContent = map[id];
+        }
+    });
+    // رسالة العودة تُستخدم مباشرة داخل updateCountdown() عبر المتغيّر العام siteContent
+    if (document.getElementById('days') === null) {
+        // لو كان العدّاد منتهياً أصلاً حدّث النص المعروض فوراً
+        updateCountdown();
+    }
+}
+
+function fillSiteContentEditor(content) {
+    var fields = {
+        siteContentHeroBadge: content.heroBadge,
+        siteContentHeroTitleMain: content.heroTitleMain,
+        siteContentHeroTitleHighlight: content.heroTitleHighlight,
+        siteContentHeroSubtitle: content.heroSubtitle,
+        siteContentHeroCta: content.heroCta,
+        siteContentWelcomeBack: content.welcomeBackText,
+        siteContentFooter: content.footerText
+    };
+    Object.keys(fields).forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.value = fields[id] || '';
+    });
+}
+
+async function loadSiteContent() {
+    var defaults = getDefaultSiteContent();
+    if (!database) {
+        siteContent = defaults;
+        applySiteContent(siteContent);
+        fillSiteContentEditor(siteContent);
+        return siteContent;
+    }
+    try {
+        var snapshot = await database.ref('settings/siteContent').once('value');
+        var saved = snapshot.val();
+        siteContent = Object.assign({}, defaults, saved || {});
+        applySiteContent(siteContent);
+        fillSiteContentEditor(siteContent);
+        return siteContent;
+    } catch(e) {
+        console.error('Error loading site content:', e);
+        siteContent = defaults;
+        applySiteContent(siteContent);
+        fillSiteContentEditor(siteContent);
+        return siteContent;
+    }
+}
+
+async function updateSiteContent() {
+    if (!isAdminMode) {
+        showError('غير مصرح لك - هذه الصلاحية للإدارة فقط');
+        return;
+    }
+    if (!checkRateLimit('update_site_content')) return;
+    if (!await validateSession()) return;
+
+    var defaults = getDefaultSiteContent();
+    var newContent = {
+        heroBadge: (document.getElementById('siteContentHeroBadge').value || '').trim() || defaults.heroBadge,
+        heroTitleMain: (document.getElementById('siteContentHeroTitleMain').value || '').trim() || defaults.heroTitleMain,
+        heroTitleHighlight: (document.getElementById('siteContentHeroTitleHighlight').value || '').trim() || defaults.heroTitleHighlight,
+        heroSubtitle: (document.getElementById('siteContentHeroSubtitle').value || '').trim() || defaults.heroSubtitle,
+        heroCta: (document.getElementById('siteContentHeroCta').value || '').trim() || defaults.heroCta,
+        welcomeBackText: (document.getElementById('siteContentWelcomeBack').value || '').trim() || defaults.welcomeBackText,
+        footerText: (document.getElementById('siteContentFooter').value || '').trim() || defaults.footerText
+    };
+
+    if (!database) { showError('❌ لا يوجد اتصال بقاعدة البيانات'); return; }
+    try {
+        await database.ref('settings/siteContent').set(newContent);
+        siteContent = newContent;
+        applySiteContent(siteContent);
+        logSecurityEvent('site_content_updated', { keys: Object.keys(newContent) });
+        showSuccess('✅ تم حفظ محتوى الموقع بنجاح');
+        var resultDiv = document.getElementById('siteContentResult');
+        if (resultDiv) resultDiv.textContent = '✔️ آخر تحديث: ' + new Date().toLocaleString('ar-DZ');
+    } catch(e) {
+        showError('❌ حدث خطأ أثناء الحفظ: ' + e.message);
+    }
+}
+
+async function resetSiteContentToDefault() {
+    if (!isAdminMode) {
+        showError('غير مصرح لك - هذه الصلاحية للإدارة فقط');
+        return;
+    }
+    var defaults = getDefaultSiteContent();
+    fillSiteContentEditor(defaults);
+    showWarning('تمت استعادة النصوص الافتراضية في الحقول، اضغط "حفظ المحتوى" لتثبيتها');
+}
+
+// ============================================================
 // ===== دوال الإعدادات والقفل =====
 // ============================================================
 
@@ -3835,7 +3961,8 @@ function updateCountdown() {
     var targetDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     var diff = targetDate - new Date();
     if (diff <= 0) {
-        if (container) container.innerHTML = '<div class="title">🎉 مرحباً بعودتكم</div>';
+        var welcomeBackMsg = (siteContent && siteContent.welcomeBackText) ? siteContent.welcomeBackText : '🎉 مرحباً بعودتكم';
+        if (container) container.innerHTML = '<div class="title">' + escapeHtml(welcomeBackMsg) + '</div>';
         return;
     }
     if (container && !document.getElementById('days')) {
@@ -5193,6 +5320,15 @@ document.addEventListener('DOMContentLoaded', function() {
     if (updateNewsBtn) {
         updateNewsBtn.addEventListener('click', updateNews);
     }
+
+    var updateSiteContentBtn = document.getElementById('updateSiteContentBtn');
+    if (updateSiteContentBtn) {
+        updateSiteContentBtn.addEventListener('click', updateSiteContent);
+    }
+    var resetSiteContentBtn = document.getElementById('resetSiteContentBtn');
+    if (resetSiteContentBtn) {
+        resetSiteContentBtn.addEventListener('click', resetSiteContentToDefault);
+    }
     
     var directAddMemberBtn = document.getElementById('directAddMemberBtn');
     if (directAddMemberBtn) {
@@ -5481,6 +5617,7 @@ async function init() {
             await loadRegistrationSettings();
             await loadInviteLinks();
             await loadNews();
+            await loadSiteContent();
             dataLoadedFlag = true;
             clearTimeout(dataTimeout);
             console.log('✅ تم تحميل البيانات بنجاح');

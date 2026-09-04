@@ -1,4 +1,4 @@
-    // إظهار منطقة المراحل بعد الضغط على زر "اختر مرحلتك الدراسية" (لا يؤثر على أي وظيفة أخرى)
+// إظهار منطقة المراحل بعد الضغط على زر "اختر مرحلتك الدراسية" (لا يؤثر على أي وظيفة أخرى)
     function revealStageArea(scroll) {
         var opened = false;
         var nodes = document.querySelectorAll('[data-stage-gate="closed"]');
