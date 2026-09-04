@@ -64,7 +64,21 @@
     
 
 
-<meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e37fc7c9c87798ee862e35fe02221704/id-preview-eff0be86--45fc513e-0add-48ea-9297-9061a1543237.lovable.app-1788354093901.png"><meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e37fc7c9c87798ee862e35fe02221704/id-preview-eff0be86--45fc513e-0add-48ea-9297-9061a1543237.lovable.app-1788354093901.png">    <link rel="stylesheet" href="css/styles.css">
+<meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e37fc7c9c87798ee862e35fe02221704/id-preview-eff0be86--45fc513e-0add-48ea-9297-9061a1543237.lovable.app-1788354093901.png"><meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e37fc7c9c87798ee862e35fe02221704/id-preview-eff0be86--45fc513e-0add-48ea-9297-9061a1543237.lovable.app-1788354093901.png">
+<!-- ============================================================
+     🎨 طبقة التصميم الاحترافية الجديدة — Aurora Glass Edition
+     أُضيفت فوق كل الطبقات السابقة. تعدّل المظهر فقط، لا تمس الوظائف.
+     ============================================================ -->
+
+
+
+<!-- ===== طبقة ترقية علب الحوار — Premium Dialog Frames ===== -->
+
+
+
+<!-- ===== إصلاح لوحة التحكم: إعادة position:fixed المسروقة + التمركز والحجم ===== -->
+
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
@@ -171,7 +185,7 @@
             <h2><span id="heroTitleMain">محتواك الدراسي</span> <span id="heroTitleHighlight">على بُعد نقرة</span></h2>
             <p id="heroSubtitleText">دروس، ملخصات، وتمارين لكل المراحل، مع متابعة مباشرة من  مجموعة من الأساتذة.</p>
             <button class="hero-banner__cta" onclick="revealStageArea()">
-                <i class="fas fa-arrow-down"></i> اختر مرحلتك الدراسية
+                <i class="fas fa-arrow-down"></i> <span id="heroCtaText">اختر مرحلتك الدراسية</span>
             </button>
         </div>
     </section>
@@ -642,6 +656,11 @@
             </div>
 
             <div class="form-group">
+                <label style="font-size:0.75rem; font-weight:700; display:block; margin-bottom:4px;">🔘 نص زر "اختر مرحلتك الدراسية":</label>
+                <input type="text" id="siteContentHeroCta" style="width:100%; padding:8px 12px; border-radius:14px; border:1px solid var(--border-color); background:var(--bg-white);">
+            </div>
+
+            <div class="form-group">
                 <label style="font-size:0.75rem; font-weight:700; display:block; margin-bottom:4px;">🎉 رسالة "العودة إلى الدراسة" (تظهر عند انتهاء العدّاد):</label>
                 <input type="text" id="siteContentWelcomeBack" style="width:100%; padding:8px 12px; border-radius:14px; border:1px solid var(--border-color); background:var(--bg-white);">
             </div>
@@ -694,6 +713,9 @@
 
 
 
-    <script src="js/script.js"></script>
+    <script src="js/loading-screen.js"></script>
+    <script src="js/notifications-fix.js"></script>
+    <script src="js/hero-banner.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>
