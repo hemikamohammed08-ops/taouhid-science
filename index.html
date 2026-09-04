@@ -61,9 +61,11 @@
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
     
-    <link rel="stylesheet" href="css/style.css">
+    
 
-<meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e37fc7c9c87798ee862e35fe02221704/id-preview-eff0be86--45fc513e-0add-48ea-9297-9061a1543237.lovable.app-1788354093901.png"><meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e37fc7c9c87798ee862e35fe02221704/id-preview-eff0be86--45fc513e-0add-48ea-9297-9061a1543237.lovable.app-1788354093901.png"></head>
+
+<meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e37fc7c9c87798ee862e35fe02221704/id-preview-eff0be86--45fc513e-0add-48ea-9297-9061a1543237.lovable.app-1788354093901.png"><meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e37fc7c9c87798ee862e35fe02221704/id-preview-eff0be86--45fc513e-0add-48ea-9297-9061a1543237.lovable.app-1788354093901.png">    <link rel="stylesheet" href="css/styles.css">
+</head>
 <body>
 
 
@@ -74,7 +76,7 @@
     <p style="color:var(--text-primary); font-weight:700;">📚 جاري تحميل المنصة...</p>
 </div>
 
-<script src="js/loading-screen.js"></script>
+
 
 <!-- شريط إشعار الخصوصية -->
 <div id="privacyNotice">
@@ -158,22 +160,22 @@
         </div>
     </header>
 
-    <script src="js/notifications-fix.js"></script>
+    
 
     <section class="hero-banner" aria-label="مرحباً بكم">
         <div class="hero-banner__bg"></div>
         <div class="hero-banner__overlay"></div>
         <div class="hero-banner__particles" id="heroParticles"></div>
         <div class="hero-banner__content">
-            <span class="hero-banner__badge"><span class="dot"></span> الدروس تُحدَّث باستمرار</span>
-            <h2>محتواك الدراسي <span>على بُعد نقرة</span></h2>
-            <p>دروس، ملخصات، وتمارين لكل المراحل، مع متابعة مباشرة من  مجموعة من الأساتذة.</p>
+            <span class="hero-banner__badge"><span class="dot"></span> <span id="heroBadgeText">الدروس تُحدَّث باستمرار</span></span>
+            <h2><span id="heroTitleMain">محتواك الدراسي</span> <span id="heroTitleHighlight">على بُعد نقرة</span></h2>
+            <p id="heroSubtitleText">دروس، ملخصات، وتمارين لكل المراحل، مع متابعة مباشرة من  مجموعة من الأساتذة.</p>
             <button class="hero-banner__cta" onclick="revealStageArea()">
                 <i class="fas fa-arrow-down"></i> اختر مرحلتك الدراسية
             </button>
         </div>
     </section>
-    <script src="js/hero-banner.js"></script>
+    
 
     <div id="newsTicker" class="news-ticker-new">
         <span class="label"><i class="fas fa-bullhorn"></i> المستجدات</span>
@@ -238,7 +240,7 @@
 </div>
 
 <div class="footer-new">
-    <p>© الأستاذ محمد للتعليم - الجزائر | تعليم ذكي للمستقبل</p>
+    <p id="footerText">© الأستاذ محمد للتعليم - الجزائر | تعليم ذكي للمستقبل</p>
 </div>
 
 <div id="toastContainer" class="toast-container"></div>
@@ -614,6 +616,47 @@
         </div>
     </div>
 
+    <div id="siteContentSection" style="margin-top:12px;">
+        <h5><i class="fas fa-pen-to-square"></i> تعديل محتوى الموقع</h5>
+        <div style="background:var(--bg-body); border-radius:12px; padding:10px;">
+            <p style="font-size:0.7rem; color:var(--text-secondary); margin-bottom:8px;">📌 عدّل النصوص الظاهرة في الموقع، ثم اضغط "حفظ المحتوى" ليتم تحديثها فوراً لجميع الزوار.</p>
+
+            <div class="form-group">
+                <label style="font-size:0.75rem; font-weight:700; display:block; margin-bottom:4px;">🏷️ شارة الترحيب (أعلى القسم الرئيسي):</label>
+                <input type="text" id="siteContentHeroBadge" style="width:100%; padding:8px 12px; border-radius:14px; border:1px solid var(--border-color); background:var(--bg-white);">
+            </div>
+
+            <div class="form-group">
+                <label style="font-size:0.75rem; font-weight:700; display:block; margin-bottom:4px;">📢 عنوان القسم الرئيسي (الجزء الأول):</label>
+                <input type="text" id="siteContentHeroTitleMain" style="width:100%; padding:8px 12px; border-radius:14px; border:1px solid var(--border-color); background:var(--bg-white);">
+            </div>
+
+            <div class="form-group">
+                <label style="font-size:0.75rem; font-weight:700; display:block; margin-bottom:4px;">✨ عنوان القسم الرئيسي (الجزء المميّز بلون):</label>
+                <input type="text" id="siteContentHeroTitleHighlight" style="width:100%; padding:8px 12px; border-radius:14px; border:1px solid var(--border-color); background:var(--bg-white);">
+            </div>
+
+            <div class="form-group">
+                <label style="font-size:0.75rem; font-weight:700; display:block; margin-bottom:4px;">📝 الوصف أسفل العنوان الرئيسي:</label>
+                <textarea id="siteContentHeroSubtitle" rows="2" style="width:100%; padding:8px 12px; border-radius:14px; border:1px solid var(--border-color); background:var(--bg-white); font-family:'Tajawal',sans-serif; resize:vertical;"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label style="font-size:0.75rem; font-weight:700; display:block; margin-bottom:4px;">🎉 رسالة "العودة إلى الدراسة" (تظهر عند انتهاء العدّاد):</label>
+                <input type="text" id="siteContentWelcomeBack" style="width:100%; padding:8px 12px; border-radius:14px; border:1px solid var(--border-color); background:var(--bg-white);">
+            </div>
+
+            <div class="form-group">
+                <label style="font-size:0.75rem; font-weight:700; display:block; margin-bottom:4px;">© نص أسفل الصفحة (Footer):</label>
+                <input type="text" id="siteContentFooter" style="width:100%; padding:8px 12px; border-radius:14px; border:1px solid var(--border-color); background:var(--bg-white);">
+            </div>
+
+            <button id="updateSiteContentBtn" style="background:var(--primary); color:white; border:none; padding:6px 18px; border-radius:20px; cursor:pointer; font-weight:700; min-height:36px; width:100%;"><i class="fas fa-save"></i> حفظ المحتوى</button>
+            <button id="resetSiteContentBtn" type="button" style="background:transparent; color:var(--text-secondary); border:1px solid var(--border-color); padding:6px 18px; border-radius:20px; cursor:pointer; font-weight:700; min-height:36px; width:100%; margin-top:6px;"><i class="fas fa-rotate-left"></i> استعادة النصوص الافتراضية</button>
+            <div id="siteContentResult" style="font-size:0.65rem; color:var(--text-muted); margin-top:4px;"></div>
+        </div>
+    </div>
+
     <div id="telegramSection" style="margin-top:12px;">
         <h5><i class="fab fa-telegram-plane"></i> إعدادات Telegram</h5>
         <div style="background:var(--bg-body); border-radius:12px; padding:10px;">
@@ -649,7 +692,8 @@
     </div>
 </div>
 
-<script src="js/app.js"></script>
 
+
+    <script src="js/script.js"></script>
 </body>
 </html>
