@@ -33,58 +33,34 @@
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&display=swap" rel="stylesheet">
     
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"></noscript>
+    <!-- ✅ إصلاح ظهور الأيقونات: تحميل مباشر + Preload للخط -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/DOMPurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js" defer></script>
     
-    
-    
-    
-    
-    
-        <!-- ملاحظة CSP: بقاء 'unsafe-inline' في script-src مؤقت وضروري لأن الكود الحالي يستخدم معالجات onclick مضمّنة.
-         للوصول للمستوى الصارم: انقل كل onclick إلى addEventListener (app.js) ثم احذف 'unsafe-inline'.
-         القيم nonce/hash في <meta> غير عملية لأنها تتطلب توليدًا ديناميكيًا من الخادم لكل طلب. -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdnjs.cloudflare.com https://cdn.gpteng.co blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https://fonts.gstatic.com https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev; font-src 'self' https://fonts.gstatic.com https://cdn.gpteng.co; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com wss://*.firebaseio.com wss://*.firebasedatabase.app https://*.firebaseio.com https://*.firebasedatabase.app; worker-src 'self' blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; child-src 'self' blob: https://accounts.google.com; frame-src 'self' blob: https://accounts.google.com https://docs.google.com; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https://docs.google.com; frame-ancestors 'self' https://lovable.dev https://*.lovable.dev https://gptengineer.app http://localhost:*; upgrade-insecure-requests">
+    <!-- ✅ إصلاح سياسة الأمان: إضافة cdnjs.cloudflare.com إلى font-src -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdnjs.cloudflare.com blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https://fonts.gstatic.com https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com wss://*.firebaseio.com wss://*.firebasedatabase.app https://*.firebaseio.com https://*.firebasedatabase.app; worker-src 'self' blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; child-src 'self' blob: https://accounts.google.com; frame-src 'self' blob: https://accounts.google.com https://docs.google.com; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https://docs.google.com; frame-ancestors 'self'; upgrade-insecure-requests">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
     
-    
-
-
 <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e37fc7c9c87798ee862e35fe02221704/id-preview-eff0be86--45fc513e-0add-48ea-9297-9061a1543237.lovable.app-1788354093901.png"><meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e37fc7c9c87798ee862e35fe02221704/id-preview-eff0be86--45fc513e-0add-48ea-9297-9061a1543237.lovable.app-1788354093901.png">
-<!-- ============================================================
-     🎨 طبقة التصميم الاحترافية الجديدة — Aurora Glass Edition
-     أُضيفت فوق كل الطبقات السابقة. تعدّل المظهر فقط، لا تمس الوظائف.
-     ============================================================ -->
-
-
-
-<!-- ===== طبقة ترقية علب الحوار — Premium Dialog Frames ===== -->
-
-
-
-<!-- ===== إصلاح لوحة التحكم: إعادة position:fixed المسروقة + التمركز والحجم ===== -->
 
     <link rel="stylesheet" href="css/styles.min.css">
 </head>
 <body>
-
-
 
 <!-- شاشة التحميل -->
 <div id="app-loading">
     <div class="spinner"></div>
     <p style="color:var(--text-primary); font-weight:700;">📚 جاري تحميل المنصة...</p>
 </div>
-
-
 
 <!-- شريط إشعار الخصوصية -->
 <div id="privacyNotice">
@@ -168,8 +144,6 @@
         </div>
     </header>
 
-    
-
     <main id="main-content">
     <section class="hero-banner" aria-label="مرحباً بكم">
         <img class="hero-banner__img" src="images/hero-classroom.webp" width="1350" height="1080" alt="" fetchpriority="high" loading="eager" decoding="async">
@@ -236,8 +210,6 @@
             <span class="label">👨‍🏫 الأساتذة</span>
         </div>
     </div>
-
-
 
     <div id="dynamicArea" data-stage-gate="closed">
         <div class="welcome-new">
@@ -706,8 +678,6 @@
         </div>
     </div>
 </div>
-
-
 
     <script src="js/loading-screen.js" defer></script>
     <script src="js/notifications-fix.js" defer></script>
