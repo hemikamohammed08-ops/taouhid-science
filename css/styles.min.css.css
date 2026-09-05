@@ -1,0 +1,28 @@
+/* ===================== 8) أزرار المراحل — بطاقات صور ضخمة ===================== */
+.stage-btn-new{
+    border-radius:26px !important;
+    min-height:210px !important;min-width:230px !important;
+    box-shadow:var(--shadow-lg) !important;
+    border:1.5px solid rgba(255,255,255,.25) !important;
+    font-size:1.2rem !important; /* تكبير النص قليلاً */
+    font-weight:900 !important; /* خط أسمك */
+    text-shadow:0 2px 8px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.5); /* ظل قوي للنص */
+}
+/* تفتيح التدرج فوق الصورة ليظهر النص بوضوح */
+.stage-btn-new::before{
+    background:linear-gradient(to top,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0.15) 40%,rgba(0,0,0,0) 70%) !important;
+}
+.stage-btn-new i{
+    font-size:2.6rem !important;
+    margin-bottom:10px !important;
+    filter:drop-shadow(0 4px 12px rgba(0,0,0,0.8));
+}
+.stage-btn-new:hover:not(.btn-loading){
+    transform:translateY(-8px) scale(1.04) !important;
+    box-shadow:0 30px 60px -10px rgba(79,70,229,.5) !important;
+}
+/* مسارات الصور */
+.stage-btn-new.primary{background-image:url('images/stage-primary.jpg') !important;}
+.stage-btn-new.middle{background-image:url('images/stage-middle.webp') !important;}
+.stage-btn-new.high{background-image:url('images/stage-high.jpg') !important;}
+.stage-btn-new.community{background-image:url('images/stage-community.jpg') !important;}
