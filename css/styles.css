@@ -291,7 +291,7 @@
         /* ===== خلفية حقيقية لكامل الموقع (خلف كل الأقسام والبطاقات، لا تؤثر على أي وظيفة) ===== */
         body::before {
             content: ""; position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: -2;
-            background-image: url('images/hero-classroom.jpg');
+            background-image: url('https://commons.wikimedia.org/wiki/Special:FilePath/20230709_English_classroom_in_school.jpg?width=1600');
             background-size: cover; background-position: center; background-attachment: fixed;
             filter: saturate(1.05) contrast(1.05);
         }
@@ -677,7 +677,7 @@
             position: relative; overflow: hidden; text-align: center; padding: 44px 22px;
             border-radius: var(--radius-lg); margin: 16px 0; box-shadow: var(--shadow-lg);
             background-color: #0d2b5c;
-            background-image: url('images/hero-classroom.jpg');
+            background-image: url('https://commons.wikimedia.org/wiki/Special:FilePath/20230709_English_classroom_in_school.jpg?width=1600');
             background-size: cover; background-position: center;
             color: #fff;
         }
@@ -1377,7 +1377,7 @@
             background-color: #0d2b5c;
             background-image:
                 linear-gradient(115deg, rgba(9,25,54,0.78) 0%, rgba(20,55,105,0.62) 45%, rgba(26,74,138,0.42) 72%, rgba(232,168,56,0.32) 100%),
-                url('images/hero-classroom.jpg');
+                url('https://commons.wikimedia.org/wiki/Special:FilePath/20230709_English_classroom_in_school.jpg?width=1600');
             background-size: cover, cover;
             background-position: center, center;
             border: 1px solid rgba(255,255,255,0.16);
@@ -1406,12 +1406,12 @@
             margin-bottom: 24px; min-height: 300px; display: flex; align-items: center;
             box-shadow: var(--shadow-lg);
         }
-        .hero-banner__img {
+        .hero-banner__bg {
             position: absolute; top: -24px; right: -24px; bottom: -24px; left: -24px; z-index: 0;
-            object-fit: cover; object-position: center;
             background-color: #0d2b5c;
+            background-image: url('https://commons.wikimedia.org/wiki/Special:FilePath/20230709_English_classroom_in_school.jpg?width=1920');
+            background-size: cover; background-position: center;
             animation: heroKenBurns 24s ease-in-out infinite alternate;
-            will-change: transform;
         }
         @keyframes heroKenBurns {
             0% { transform: scale(1) translate(0, 0); }
@@ -1447,19 +1447,8 @@
             animation: heroDotPulse 1.8s ease-in-out infinite;
         }
         @keyframes heroDotPulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.25); opacity: 0.85; }
-        }
-        .hero-banner__badge .dot { position: relative; }
-        .hero-banner__badge .dot::after {
-            content: ""; position: absolute; inset: -4px; border-radius: 50%;
-            border: 2px solid rgba(52,211,153,0.55); opacity: 0;
-            animation: heroDotRing 1.8s ease-out infinite;
-            will-change: transform, opacity;
-        }
-        @keyframes heroDotRing {
-            0% { transform: scale(0.6); opacity: 0.8; }
-            100% { transform: scale(1.9); opacity: 0; }
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(52,211,153,0.55); }
+            50% { transform: scale(1.25); box-shadow: 0 0 0 6px rgba(52,211,153,0); }
         }
         .hero-banner__content h2 {
             font-size: var(--text-3xl); font-weight: 900; line-height: 1.25; margin-bottom: 12px;
@@ -1519,7 +1508,13 @@
 /* ===== next style block ===== */
 
 
-	/* حُذف خط CameraPlainVariable غير المستعمل (توفير طلب شبكة) */
+	@font-face {
+		font-family: 'CameraPlainVariable';
+		src: url('https://cdn.gpteng.co/mcp-widgets/v1/fonts/CameraPlainVariable.woff2') format('woff2');
+		font-weight: 100 900;
+		font-style: normal;
+		font-display: swap;
+	}
 
 
 
@@ -1529,13 +1524,13 @@
 
 /* ----- خلفية الموقع العامة ----- */
 body::before {
-    background-image: url('images/bg-study.jpg') !important;
+    background-image: url('https://kimi-web-img.kimi.ai/img/i0.wp.com/b6b8d3c82b4e2dfc0d5182daf1bad61bb93fbc60.jpeg') !important;
     filter: saturate(1.1) contrast(1.05) brightness(0.9);
 }
 
 /* ----- الهيرو بصورة حقيقية للطلاب ----- */
 .hero-banner__bg {
-    background-image: url('images/bg-study.jpg') !important;
+    background-image: url('https://kimi-web-img.kimi.ai/img/i0.wp.com/b6b8d3c82b4e2dfc0d5182daf1bad61bb93fbc60.jpeg') !important;
     filter: brightness(0.8) saturate(1.15);
 }
 
@@ -1564,16 +1559,16 @@ body::before {
     z-index: 2;
 }
 .stage-btn-new.primary {
-    background-image: url('images/stage-primary.jpg') !important;
+    background-image: url('https://kimi-web-img.kimi.ai/img/www.unicef.org/1b5d60d507a1b635193510f6377f5b77ca50353a.jpeg') !important;
 }
 .stage-btn-new.middle {
-    background-image: url('images/stage-middle.jpg') !important;
+    background-image: url('https://kimi-web-img.kimi.ai/img/www.middleeastmonitor.com/9a2f9e3253e80de589f690f254a61cf395b72ae9.jpg') !important;
 }
 .stage-btn-new.high {
-    background-image: url('images/stage-high.jpg') !important;
+    background-image: url('https://kimi-web-img.kimi.ai/img/borgenproject.org/927cf8193514b5bf596a6b9d8233716217d26ace.jpg') !important;
 }
 .stage-btn-new.community {
-    background-image: url('images/stage-community.jpg') !important;
+    background-image: url('https://kimi-web-img.kimi.ai/img/thumbs.dreamstime.com/bd44e3a24d3852d032647bcd7afbc3d4ac0b7cad.jpg') !important;
 }
 
 /* تنسيق النص فوق الصورة */
@@ -2056,7 +2051,7 @@ body::before {
 
 /* ===================== 2) الخلفية العامة — صورة حقيقية + تعتيم نيلي ===================== */
 body::before{
-    background-image:url('images/bg-study.jpg') !important;
+    background-image:url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1920&q=80') !important;
     background-size:cover !important;
     background-position:center !important;
     filter:saturate(1.1) contrast(1.06) brightness(.94) !important;
@@ -2132,7 +2127,10 @@ body::after{
 .btn:hover:not(.btn-loading){transform:translateY(-3px) scale(1.03) !important;}
 
 /* ===================== 4) الهيرو — صورة جامعة حقيقية + شرائط ضوئية ===================== */
-/* خلفية الهيرو أصبحت <img> محليًا (images/hero-classroom.webp) */
+.hero-banner__bg{
+    background-image:url('https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1920&q=80') !important;
+    filter:saturate(1.15) !important;
+}
 .hero-banner__overlay{
     background:
         linear-gradient(115deg,rgba(30,27,120,.92) 0%,rgba(79,70,229,.78) 42%,rgba(124,58,237,.55) 75%,rgba(245,158,11,.35) 100%) !important;
@@ -2218,10 +2216,10 @@ body::after{
     transform:translateY(-8px) scale(1.04) !important;
     box-shadow:0 30px 60px -10px rgba(79,70,229,.5) !important;
 }
-.stage-btn-new.primary{background-image:url('images/stage-primary.jpg') !important;}
-.stage-btn-new.middle{background-image:url('images/stage-middle.jpg') !important;}
-.stage-btn-new.high{background-image:url('images/stage-high.jpg') !important;}
-.stage-btn-new.community{background-image:url('images/stage-community.jpg') !important;}
+.stage-btn-new.primary{background-image:url('https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=800&q=80') !important;}
+.stage-btn-new.middle{background-image:url('https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?auto=format&fit=crop&w=800&q=80') !important;}
+.stage-btn-new.high{background-image:url('https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=800&q=80') !important;}
+.stage-btn-new.community{background-image:url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=800&q=80') !important;}
 
 /* ===================== 9) جميع البطاقات — زجاج + حد متدرج متحرك ===================== */
 .sub-stage-card-new,.year-card-new,.subject-card-new,.lesson-type-card-new{
@@ -2823,41 +2821,3 @@ body::after{
         margin-bottom:6px;
     }
 }
-
-
-/* ============================================================
-   ===== تحسينات الإنتاج: CLS + تباين WCAG AA =====
-   ============================================================ */
-
-/* ----- حجز مساحة مسبقة للعناصر الديناميكية (تقليل CLS) ----- */
-.hero-banner__content { min-height: 190px; }
-.hero-banner__particles { contain: layout paint; }
-#dynamicArea { min-height: 240px; }
-.lessons-list-new { min-height: 140px; }
-#toastContainer { contain: layout; }
-/* لوحة الإشعارات و overlay مثبتان (position:fixed) بعد نقلهما إلى body عبر notifications-fix.js،
-   لذا لا يُحدثان CLS؛ نضيف contain لعزل إعادة التدفق */
-.notif-panel { contain: layout style; }
-@media (max-width: 640px) {
-    .hero-banner__content { min-height: 160px; }
-    #dynamicArea { min-height: 200px; }
-}
-
-/* ----- رفع تباين الألوان إلى WCAG AA (نصوص صغيرة ورمادية) ----- */
-/* ‏#94a3b8 على خلفية فاتحة ≈ 2.6:1 (فاشل) ← ‏#64748b ≈ 4.8:1 (ناجح) */
-.stat-item .label,
-.lessons-count,
-.notif-footer,
-.registration-stopped-modal .card .note,
-.file-name-display { color: #64748b !important; }
-[data-theme="dark"] .stat-item .label,
-[data-theme="dark"] .lessons-count,
-[data-theme="dark"] .notif-footer,
-[data-theme="dark"] .registration-stopped-modal .card .note,
-[data-theme="dark"] .file-name-display { color: #a8b3c7 !important; }
-/* فوتر وأوصاف الشعار: رفع الشفافية فوق الخلفية الداكنة */
-.footer-new { color: rgba(255,255,255,0.88); }
-.logo-text-new p { color: rgba(255,255,255,0.95) !important; }
-/* نص التمرير في أشرطة اللوحة: رفعه للمتغير الأغمق */
-.admin-panel-new div[style*="color:var(--text-muted)"] { color: #64748b !important; }
-[data-theme="dark"] .admin-panel-new div[style*="color:var(--text-muted)"] { color: #a8b3c7 !important; }
