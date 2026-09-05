@@ -16,12 +16,10 @@ function revealStageArea(scroll) {
 window.revealStageArea = revealStageArea;
 
 (function () {
-    // أي محتوى يُحمَّل داخل منطقة الدروس يفتح البوابة تلقائياً
     var area = document.getElementById('dynamicArea');
     if (area && window.MutationObserver) {
         new MutationObserver(function(){
             if (area.getAttribute('data-stage-gate') !== 'closed') return;
-            // تجاهل بطاقة الترحيب الافتراضية
             var onlyWelcome = area.children.length <= 1 && area.querySelector('.welcome-new');
             if (onlyWelcome) return;
             if (area.textContent.trim() === '') return;
