@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الأستاذ محمد للتعليم | منصة تعليم جزائرية</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.min.css">
+</head>
+<body>
+
+<div id="app-loading">
+    <div class="spinner"></div>
+    <p>📚 جاري تحميل المنصة...</p>
+</div>
+
+<div id="privacyNotice">
+    <p>
+        🔒 نستخدم ملفات تعريف الارتباط لتحسين تجربتك. باستخدامك للمنصة، فإنك توافق على استخدامها.
+        <button class="btn-accept" onclick="acceptPrivacy()">✅ موافق</button>
+        <button class="btn-policy" onclick="showPrivacyPolicy()">📋 سياسة الخصوصية</button>
+    </p>
+</div>
+
+<div id="toastContainer" class="toast-container"></div>
+
+<div class="confirm-dialog-overlay" id="confirmDialog">
+    <div class="confirm-dialog">
+        <span class="icon">⚠️</span>
+        <h3>تأكيد الحذف</h3>
+        <p id="confirmMessage">هل أنت متأكد من حذف هذا العنصر؟</p>
+        <div class="btn-group">
+            <button class="btn-cancel" onclick="closeConfirmDialog()">إلغاء</button>
+            <button class="btn-confirm" id="confirmDeleteBtn">نعم، حذف</button>
+        </div>
+    </div>
+</div>
+
+<div class="registration-stopped-modal" id="registrationStoppedModal">
+    <div class="card">
+        <div class="icon-wrap"><i class="fas fa-hourglass-half"></i></div>
+        <h2>⏳ التسجيل متوقف حالياً</h2>
+        <p class="subtitle">نعتذر عن الإزعاج، فترة التسجيل الحالية منتهية.<br>سيتم إعادة فتح باب التسجيل قريباً.</p>
+        <button class="btn-close-reg-stop" onclick="closeRegistrationStoppedModal()">
+            <i class="fas fa-check"></i> تفهمت، شكراً
+        </button>
+        <p class="note"><i class="fas fa-heart"></i> نقدّر تفهمك وصبرك.</p>
+    </div>
+</div>
+
+<div class="visitor-popup-new" id="loginRequiredPopup">
+    <div class="content">
+        <span class="emoji">🔐</span>
+        <h3>⚠️ أنت غير مسجل</h3>
+        <p>لا يمكنك مشاهدة المحتوى، تقبل اعتذارنا 🙏</p>
+        <p>✅ إذا كنت تملك حساباً، فضلاً تسجيل الدخول<br> إذا لم تكن مسجلاً، يمكنك تقديم طلب تسجيل</p>
+        <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:16px;">
+            <button onclick="showLoginChoice(); closeLoginRequiredPopup();"><i class="fas fa-sign-in-alt"></i> تسجيل الدخول</button>
+            <button onclick="showRegisterChoice(); closeLoginRequiredPopup();"><i class="fas fa-user-plus"></i> طلب تسجيل</button>
+        </div>
+        <button onclick="closeLoginRequiredPopup()" style="margin-top:12px; background:transparent; color:#666; border:1px solid #ccc;">إغلاق</button>
+    </div>
+</div>
+
+<div class="unavailable-modal-overlay" id="unavailableModal">
+    <div class="unavailable-modal-content">
+        <div class="icon-wrap"><i class="fas fa-clock"></i></div>
+        <h2>⏳ الدروس لم تنطلق بعد</h2>
+        <p>نعتذر عن الإزعاج، هذه الدروس لا تزال قيد التجهيز.<br>سنقوم بإتاحتها قريباً إن شاء الله. تابعونا!</p>
+        <button class="btn-close-unavailable" onclick="closeUnavailableModal()">
+            <i class="fas fa-arrow-right"></i> عُد للمحتوى
+        </button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="contactModal">
+    <div class="modal-content">
+        <h3>📩 راسلنا</h3>
+        <p style="text-align:center;">
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLScGxpkdkoYolBO-o-t_lT3Ca5eGrjgZTvsJOLy2S0BEqmOD7Q/viewform" target="_blank" rel="noopener noreferrer" style="display:inline-block; background:var(--primary); color:white; padding:12px 28px; border-radius:20px; text-decoration:none; font-weight:700;">
+                <i class="fas fa-envelope"></i> اتصل بنا من هنا
+            </a>
+        </p>
+        <div style="text-align:center; margin-top:16px;">
+            <button class="btn btn-danger" onclick="closeContactModal()">إغلاق</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="loginChoiceModal">
+    <div class="modal-content">
+        <h3>🔐 تسجيل الدخول</h3>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top:16px;">
+            <button id="loginAdminBtn" style="padding:14px; border-radius:14px; border:none; cursor:pointer; font-weight:700; font-size:1rem; background:linear-gradient(135deg,#dc2626,#b91c1c); color:white;">
+                🏛️ الإدارة
+            </button>
+            <button id="loginTeacherBtn" style="padding:14px; border-radius:14px; border:none; cursor:pointer; font-weight:700; font-size:1rem; background:linear-gradient(135deg,#f59e0b,#d97706); color:white;">
+                👨‍🏫 أستاذ
+            </button>
+            <button id="loginMemberBtn" style="padding:14px; border-radius:14px; border:none; cursor:pointer; font-weight:700; font-size:1rem; background:linear-gradient(135deg,#10b981,#059669); color:white;">
+                👨‍ عضو
+            </button>
+        </div>
+        <div style="text-align:center; margin-top:16px;">
+            <button class="btn btn-danger" id="closeLoginChoiceBtn">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="registerChoiceModal">
+    <div class="modal-content">
+        <h3> طلب تسجيل جديد</h3>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top:16px;">
+            <button id="registerTeacherChoiceBtn" style="padding:14px; border-radius:14px; border:none; cursor:pointer; font-weight:700; font-size:1rem; background:linear-gradient(135deg,#f59e0b,#d97706); color:white;">
+                👨‍🏫 أستاذ
+            </button>
+            <button id="registerMemberChoiceBtn" style="padding:14px; border-radius:14px; border:none; cursor:pointer; font-weight:700; font-size:1rem; background:linear-gradient(135deg,#10b981,#059669); color:white;">
+                👨‍ عضو
+            </button>
+        </div>
+        <div style="text-align:center; margin-top:16px;">
+            <button class="btn btn-danger" id="closeRegisterChoiceBtn">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="adminLoginModal">
+    <div class="modal-content">
+        <h3>🏛️ تسجيل الدخول - الإدارة</h3>
+        <div class="form-group">
+            <label>البريد الإلكتروني</label>
+            <input type="email" id="adminEmail" placeholder="أدخل بريدك">
+        </div>
+        <div class="form-group">
+            <label>كلمة المرور</label>
+            <input type="password" id="adminPassword" placeholder="أدخل كلمة المرور">
+        </div>
+        <div class="remember-me">
+            <input type="checkbox" id="adminRemember">
+            <label for="adminRemember">تذكرني</label>
+        </div>
+        <div id="adminLoginError" style="color:#ef4444; font-size:0.85rem; margin-top:8px;"></div>
+        <div class="btn-group" style="margin-top:16px;">
+            <button class="btn btn-primary" id="adminLoginBtn">تسجيل الدخول</button>
+            <button class="btn btn-danger" id="closeAdminLoginBtn">إلغاء</button>
+        </div>
+        <div style="text-align:center; margin-top:12px;">
+            <a href="#" id="adminForgotPasswordLink" style="color:var(--primary); font-size:0.85rem;">نسيت كلمة المرور؟</a>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="teacherLoginModal">
+    <div class="modal-content">
+        <h3>👨‍🏫 تسجيل الدخول كأستاذ</h3>
+        <div class="form-group">
+            <label>البريد الإلكتروني</label>
+            <input type="email" id="teacherEmail" placeholder="أدخل بريدك">
+        </div>
+        <div class="form-group">
+            <label>كلمة المرور</label>
+            <input type="password" id="teacherPassword" placeholder="أدخل كلمة المرور">
+        </div>
+        <div class="remember-me">
+            <input type="checkbox" id="teacherRemember">
+            <label for="teacherRemember">تذكرني</label>
+        </div>
+        <div id="teacherLoginError" style="color:#ef4444; font-size:0.85rem; margin-top:8px;"></div>
+        <div class="btn-group" style="margin-top:16px;">
+            <button class="btn btn-primary" id="teacherLoginBtn">تسجيل الدخول</button>
+            <button class="btn btn-danger" id="closeTeacherLoginBtn">إلغاء</button>
+        </div>
+        <div style="text-align:center; margin-top:12px;">
+            <a href="#" id="teacherForgotPasswordLink" style="color:var(--primary); font-size:0.85rem;">نسيت كلمة المرور؟</a>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="memberLoginModal">
+    <div class="modal-content">
+        <h3>👨‍🎓 تسجيل الدخول كعضو</h3>
+        <div class="form-group">
+            <label>البريد الإلكتروني</label>
+            <input type="email" id="memberEmail" placeholder="أدخل بريدك">
+        </div>
+        <div class="form-group">
+            <label>كلمة المرور</label>
+            <input type="password" id="memberPassword" placeholder="أدخل كلمة المرور">
+        </div>
+        <div class="remember-me">
+            <input type="checkbox" id="memberRemember">
+            <label for="memberRemember">تذكرني</label>
+        </div>
+        <div id="memberLoginError" style="color:#ef4444; font-size:0.85rem; margin-top:8px;"></div>
+        <div class="btn-group" style="margin-top:16px;">
+            <button class="btn btn-primary" id="memberLoginBtn">تسجيل الدخول</button>
+            <button class="btn btn-danger" id="closeMemberLoginBtn">إلغاء</button>
+        </div>
+        <div style="text-align:center; margin-top:12px;">
+            <a href="#" id="memberForgotPasswordLink" style="color:var(--primary); font-size:0.85rem;">نسيت كلمة المرور؟</a>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="forgotPasswordModal">
+    <div class="modal-content">
+        <h3>🔑 إعادة تعيين كلمة المرور</h3>
+        <p style="text-align:center; color:var(--text-secondary); margin-bottom:16px;">أدخل بريدك الإلكتروني وسنرسل لك رابطاً لإعادة تعيين كلمة المرور.</p>
+        <div class="form-group">
+            <label>البريد الإلكتروني</label>
+            <input type="email" id="forgotPasswordEmail" placeholder="أدخل بريدك">
+        </div>
+        <div id="forgotPasswordError" style="color:#ef4444; font-size:0.85rem;"></div>
+        <div id="forgotPasswordSuccess" style="color:#10b981; font-size:0.85rem;"></div>
+        <div class="btn-group" style="margin-top:16px;">
+            <button class="btn btn-primary" id="forgotPasswordSubmitBtn">إرسال رابط إعادة التعيين</button>
+            <button class="btn btn-danger" id="closeForgotPasswordBtn">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="registerTeacherModal">
+    <div class="modal-content">
+        <h3>👨‍🏫 طلب تسجيل كأستاذ</h3>
+        <p style="text-align:center; color:var(--text-secondary); font-size:0.85rem;"> سيتم إرسال طلبك للموافقة عليه</p>
+        <div class="form-group">
+            <label>البريد الإلكتروني</label>
+            <input type="email" id="registerTeacherEmail" placeholder="أدخل بريدك">
+        </div>
+        <div class="form-group">
+            <label>كلمة المرور</label>
+            <input type="password" id="registerTeacherPassword" placeholder="أدخل كلمة المرور">
+        </div>
+        <div class="password-requirements" id="teacherPasswordReqs">
+            <span class="req invalid" id="reqTlength"><i class="fas fa-times"></i> 8 أحرف على الأقل</span>
+            <span class="req invalid" id="reqTupper"><i class="fas fa-times"></i> حرف كبير</span>
+            <span class="req invalid" id="reqTlower"><i class="fas fa-times"></i> حرف صغير</span>
+            <span class="req invalid" id="reqTnumber"><i class="fas fa-times"></i> رقم</span>
+            <span class="req invalid" id="reqTspecial"><i class="fas fa-times"></i> رمز خاص</span>
+        </div>
+        <div class="form-group">
+            <label>تأكيد كلمة المرور</label>
+            <input type="password" id="registerTeacherConfirm" placeholder="أعد كلمة المرور">
+        </div>
+        <div id="registerTeacherError" style="color:#ef4444; font-size:0.85rem;"></div>
+        <div class="btn-group" style="margin-top:16px;">
+            <button class="btn btn-primary" id="registerTeacherSubmitBtn">📝 إرسال الطلب</button>
+            <button class="btn btn-danger" id="closeRegisterTeacherBtn">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="registerMemberModal">
+    <div class="modal-content">
+        <h3>👨‍🎓 طلب تسجيل كعضو</h3>
+        <p style="text-align:center; color:var(--text-secondary); font-size:0.85rem;">📌 سيتم إرسال طلبك للموافقة عليه</p>
+        <div class="form-group">
+            <label>البريد الإلكتروني</label>
+            <input type="email" id="registerMemberEmail" placeholder="أدخل بريدك">
+        </div>
+        <div class="form-group">
+            <label>كلمة المرور</label>
+            <input type="password" id="registerMemberPassword" placeholder="أدخل كلمة المرور">
+        </div>
+        <div class="password-requirements" id="memberPasswordReqs">
+            <span class="req invalid" id="reqMlength"><i class="fas fa-times"></i> 8 أحرف على الأقل</span>
+            <span class="req invalid" id="reqMupper"><i class="fas fa-times"></i> حرف كبير</span>
+            <span class="req invalid" id="reqMlower"><i class="fas fa-times"></i> حرف صغير</span>
+            <span class="req invalid" id="reqMnumber"><i class="fas fa-times"></i> رقم</span>
+            <span class="req invalid" id="reqMspecial"><i class="fas fa-times"></i> رمز خاص</span>
+        </div>
+        <div class="form-group">
+            <label>تأكيد كلمة المرور</label>
+            <input type="password" id="registerMemberConfirm" placeholder="أعد كلمة المرور">
+        </div>
+        <div class="form-group">
+            <label>📚 اختر المرحلة التعليمية</label>
+            <select id="registerMemberStage">
+                <option value="primary">📚 المرحلة الابتدائية</option>
+                <option value="middle">🏫 مرحلة المتوسط</option>
+                <option value="high">🎓 مرحلة الثانوي</option>
+            </select>
+        </div>
+        <div id="registerMemberError" style="color:#ef4444; font-size:0.85rem;"></div>
+        <div class="btn-group" style="margin-top:16px;">
+            <button class="btn btn-primary" id="registerMemberSubmitBtn">📝 إرسال الطلب</button>
+            <button class="btn btn-danger" id="closeRegisterMemberBtn">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="logoutConfirmModal">
+    <div class="modal-content">
+        <h3>🚪 هل أنت متأكد من تسجيل الخروج؟</h3>
+        <div class="btn-group" style="margin-top:16px;">
+            <button class="btn btn-danger" id="confirmLogoutBtn">نعم، تسجيل خروج</button>
+            <button class="btn btn-outline" id="cancelLogoutBtn">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="revokeConfirmModal">
+    <div class="modal-content">
+        <h3>🚫 ⚠️ هل أنت متأكد من إلغاء عضويتك؟</h3>
+        <div class="btn-group" style="margin-top:16px;">
+            <button class="btn btn-danger" id="confirmRevokeBtn">نعم، إلغاء العضوية</button>
+            <button class="btn btn-outline" id="cancelRevokeBtn">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="addLessonModal">
+    <div class="modal-content">
+        <h3>➕ إضافة درس جديد</h3>
+        <div class="form-group">
+            <label>عنوان الدرس</label>
+            <input type="text" id="newLessonTitle" placeholder="أدخل عنوان الدرس">
+        </div>
+        <div class="form-group">
+            <label>نوع المحتوى</label>
+            <select id="newLessonType" onchange="toggleLessonFields()">
+                <option value="pdf">📄 PDF - عرض داخل الموقع</option>
+                <option value="image">🖼️ صورة - عرض داخل الموقع</option>
+                <option value="telegram">📡 تلجرام - رابط خارجي</option>
+                <option value="facebook">📘 فيسبوك - رابط خارجي</option>
+            </select>
+        </div>
+        <div id="internalLessonFields">
+            <div class="form-group">
+                <label>📁 اختر ملفاً للرفع (PDF أو صورة):</label>
+                <div class="file-upload-wrapper">
+                    <button class="file-upload-btn">اختر ملف</button>
+                    <input type="file" id="newLessonFile" accept=".pdf,image/*" onchange="handleFileSelect(this,'newLessonFile')">
+                </div>
+                <span class="file-name-display" id="newLessonFileDisplay">لم يتم اختيار ملف</span>
+                <div class="file-upload-progress" id="uploadProgress">
+                    <div>⏳ جاري رفع الملف إلى Telegram...</div>
+                    <div class="progress-bar"><div class="fill" id="progressFill"></div></div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>🔗 أو استخدم رابطاً مباشراً (بدون رفع):</label>
+                <input type="url" id="newLessonInternalUrl" placeholder="https://...">
+            </div>
+            <div class="form-group">
+                <label> رابط التحميل (اختياري):</label>
+                <input type="url" id="newLessonDownloadUrl" placeholder="https://...">
+            </div>
+        </div>
+        <div id="externalLessonFields" style="display:none;">
+            <div class="form-group">
+                <label>🔗 الرابط الخارجي:</label>
+                <input type="url" id="newLessonExternalUrl" placeholder="https://...">
+            </div>
+        </div>
+        <div style="background:rgba(79,70,229,0.08); padding:10px; border-radius:10px; font-size:0.8rem; color:var(--text-secondary); margin:10px 0;">
+            📌 سيتم رفع الملف إلى قناة Telegram تلقائياً<br>
+            يمكنك أيضاً استخدام رابط مباشر بدلاً من رفع ملف
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-primary" id="confirmAddLessonBtn">✅ حفظ الدرس</button>
+            <button class="btn btn-danger" id="cancelAddLessonBtn">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="editInternalLessonModal">
+    <div class="modal-content">
+        <h3>✏️ تعديل الدرس</h3>
+        <div class="form-group">
+            <label>العنوان</label>
+            <input type="text" id="editInternalTitle">
+        </div>
+        <div class="form-group">
+            <label>النوع</label>
+            <select id="editInternalType">
+                <option value="pdf"> PDF</option>
+                <option value="image">🖼️ صورة</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>📁 أو ارفع ملفاً جديداً:</label>
+            <div class="file-upload-wrapper">
+                <button class="file-upload-btn">اختر ملف</button>
+                <input type="file" id="editLessonFile" accept=".pdf,image/*" onchange="handleFileSelect(this,'editLessonFile')">
+            </div>
+            <span class="file-name-display" id="editLessonFileDisplay">لم يتم اختيار ملف</span>
+        </div>
+        <div class="form-group">
+            <label>الرابط</label>
+            <input type="url" id="editInternalUrl">
+        </div>
+        <div class="form-group">
+            <label>رابط التحميل</label>
+            <input type="url" id="editInternalDownload">
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-primary" id="confirmEditInternalBtn">✅ حفظ التعديلات</button>
+            <button class="btn btn-danger" id="cancelEditInternalBtn">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="editLessonModal">
+    <div class="modal-content">
+        <h3>✏️ تعديل الدرس</h3>
+        <div class="form-group">
+            <label>العنوان</label>
+            <input type="text" id="editLessonTitle">
+        </div>
+        <div class="form-group">
+            <label>النوع</label>
+            <select id="editLessonPlatform">
+                <option value="telegram">📡 تلجرام</option>
+                <option value="facebook">📘 فيسبوك</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>الرابط</label>
+            <input type="url" id="editLessonUrl">
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-primary" id="confirmEditLessonBtn">✅ حفظ التعديلات</button>
+            <button class="btn btn-danger" id="cancelEditLessonBtn">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<div class="admin-overlay" id="adminOverlay"></div>
+<div class="admin-panel-new" id="adminPanel">
+    <button class="admin-close-btn" onclick="closeAdminPanel()"><i class="fas fa-times"></i></button>
+    <h4 id="panelTitle">🔐 لوحة التحكم <span class="admin-badge" id="panelBadge">الإدارة</span></h4>
+    
+    <div id="adminOnlySection">
+        <hr>
+        <h4 style="margin-top:16px;">⏸️ التحكم بتوقيف الدروس</h4>
+        <div style="background:var(--bg-body); padding:12px; border-radius:12px; margin:10px 0;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span>🏖️ الدروس الصيفية</span>
+                <span id="summerLockStatusBadge" style="background:#ef4444; color:white; padding:4px 12px; border-radius:20px; font-size:0.75rem;">🔒 مقفلة</span>
+            </div>
+            <div style="margin-top:8px; font-size:0.8rem; color:var(--text-secondary);" id="summerInfo">ستفتح قريباً</div>
+            <input type="date" id="summerStopDate" style="margin-top:8px; padding:6px; border-radius:8px; border:1px solid var(--border-color);">
+            <div style="display:flex; gap:8px; margin-top:8px;">
+                <button class="btn btn-danger" id="summerStopBtn" style="font-size:0.75rem; padding:6px 12px;">⏸️ توقيف</button>
+                <button class="btn btn-success" id="summerStartBtn" style="font-size:0.75rem; padding:6px 12px;">▶️ استئناف</button>
+            </div>
+        </div>
+        
+        <div style="background:var(--bg-body); padding:12px; border-radius:12px; margin:10px 0;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span> الدروس المقررة</span>
+                <span id="curriculumLockStatusBadge" style="background:#ef4444; color:white; padding:4px 12px; border-radius:20px; font-size:0.75rem;"> مقفلة</span>
+            </div>
+            <div style="margin-top:8px; font-size:0.8rem; color:var(--text-secondary);" id="curriculumInfo">ستفتح قريباً</div>
+            <input type="date" id="curriculumStopDate" style="margin-top:8px; padding:6px; border-radius:8px; border:1px solid var(--border-color);">
+            <div style="display:flex; gap:8px; margin-top:8px;">
+                <button class="btn btn-danger" id="curriculumStopBtn" style="font-size:0.75rem; padding:6px 12px;">️ توقيف</button>
+                <button class="btn btn-success" id="curriculumStartBtn" style="font-size:0.75rem; padding:6px 12px;">▶️ استئناف</button>
+            </div>
+        </div>
+        
+        <hr>
+        <h4 style="margin-top:16px;">️ إدارة التسجيل</h4>
+        <div style="background:var(--bg-body); padding:12px; border-radius:12px; margin:10px 0;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span>حالة التسجيل:</span>
+                <span id="registrationStatusBadge" style="background:#10b981; color:white; padding:4px 12px; border-radius:20px; font-size:0.75rem;">🟢 مفتوح</span>
+            </div>
+            <div style="margin-top:8px; font-size:0.8rem; color:var(--text-secondary);" id="registrationInfo">✅ التسجيل مفتوح للجميع</div>
+            <input type="date" id="registrationResumeDateInput" style="margin-top:8px; padding:6px; border-radius:8px; border:1px solid var(--border-color);">
+            <div style="display:flex; gap:8px; margin-top:8px;">
+                <button class="btn btn-danger" id="registrationStopBtn" style="font-size:0.75rem; padding:6px 12px;">⏸️ إيقاف</button>
+                <button class="btn btn-success" id="registrationStartBtn" style="font-size:0.75rem; padding:6px 12px;">▶️ استئناف</button>
+            </div>
+        </div>
+        
+        <hr>
+        <h4 style="margin-top:16px;">➕ إضافة عضو مباشر</h4>
+        <div style="background:var(--bg-body); padding:12px; border-radius:12px; margin:10px 0;">
+            <p style="font-size:0.8rem; color:var(--text-secondary);">📌 أضف بريداً إلكترونياً مباشرة إلى قائمة الأعضاء المعتمدين</p>
+            <input type="email" id="directAddMemberEmail" placeholder="البريد الإلكتروني" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border-color); margin:6px 0;">
+            <select id="directAddMemberStage" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border-color); margin:6px 0;">
+                <option value="primary">ابتدائي</option>
+                <option value="middle">متوسط</option>
+                <option value="high">ثانوي</option>
+                <option value="all">جميع المراحل</option>
+            </select>
+            <button class="btn btn-primary" id="directAddMemberBtn" style="width:100%; margin-top:8px;">➕ إضافة عضو</button>
+            <div id="directAddMemberResult" style="margin-top:8px; font-size:0.8rem;"></div>
+            <button class="btn btn-outline" id="repairLegacyKeysBtn" style="width:100%; margin-top:8px; font-size:0.75rem;">🛠️ إصلاح حسابات الأعضاء القدامى</button>
+            <div id="repairLegacyKeysResult" style="margin-top:8px; font-size:0.8rem;"></div>
+        </div>
+        
+        <hr>
+        <h4 style="margin-top:16px;">📰 إدارة شريط المستجدات</h4>
+        <div style="background:var(--bg-body); padding:12px; border-radius:12px; margin:10px 0;">
+            <label style="font-size:0.85rem; font-weight:700;"> نصوص المستجدات (كل خبر في سطر):</label>
+            <textarea id="newsEditorInput" rows="4" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border-color); margin-top:6px; font-family:inherit;"></textarea>
+            <button class="btn btn-primary" id="updateNewsBtn" style="width:100%; margin-top:8px;">تحديث المستجدات</button>
+            <p style="font-size:0.75rem; color:var(--text-muted); margin-top:6px;">💡 كل خبر في سطر مستقل</p>
+        </div>
+        
+        <hr>
+        <h4 style="margin-top:16px;">🎨 تعديل محتوى الموقع</h4>
+        <div style="background:var(--bg-body); padding:12px; border-radius:12px; margin:10px 0;">
+            <p style="font-size:0.8rem; color:var(--text-secondary);">📌 عدّل النصوص الظاهرة في الموقع</p>
+            <div class="form-group">
+                <label>🏷️ شارة الترحيب:</label>
+                <input type="text" id="siteContentHeroBadge">
+            </div>
+            <div class="form-group">
+                <label>📢 عنوان القسم الرئيسي (الجزء الأول):</label>
+                <input type="text" id="siteContentHeroTitleMain">
+            </div>
+            <div class="form-group">
+                <label>✨ عنوان القسم الرئيسي (الجزء المميّز):</label>
+                <input type="text" id="siteContentHeroTitleHighlight">
+            </div>
+            <div class="form-group">
+                <label> الوصف:</label>
+                <input type="text" id="siteContentHeroSubtitle">
+            </div>
+            <div class="form-group">
+                <label>🔘 نص الزر:</label>
+                <input type="text" id="siteContentHeroCta">
+            </div>
+            <div class="form-group">
+                <label>🎉 رسالة العودة:</label>
+                <input type="text" id="siteContentWelcomeBack">
+            </div>
+            <div class="form-group">
+                <label>© نص الفوتر:</label>
+                <input type="text" id="siteContentFooter">
+            </div>
+            <div style="display:flex; gap:8px; margin-top:12px;">
+                <button class="btn btn-primary" id="updateSiteContentBtn" style="flex:1;">حفظ المحتوى</button>
+                <button class="btn btn-outline" id="resetSiteContentBtn" style="flex:1;">استعادة الافتراضي</button>
+            </div>
+            <div id="siteContentResult" style="margin-top:8px; font-size:0.8rem; color:var(--text-secondary);"></div>
+        </div>
+        
+        <hr>
+        <h4 style="margin-top:16px;">️ إعدادات Telegram</h4>
+        <div style="background:var(--bg-body); padding:12px; border-radius:12px; margin:10px 0; font-size:0.85rem;">
+            <div>✅ Telegram Storage جاهز للعمل</div>
+            <div>📁 جميع الملفات ترفع إلى قناة: الاستاذ محمد للتعليم</div>
+        </div>
+        
+        <hr>
+        <h4 style="margin-top:16px;">📥 طلبات التسجيل <span id="requestsCount" style="background:#dc2626; color:white; padding:2px 10px; border-radius:20px; font-size:0.7rem;">0</span></h4>
+        <div id="joinRequestsList" style="margin-top:10px;"></div>
+        
+        <hr>
+        <h4 style="margin-top:16px;">👥 الأعضاء المعتمدون</h4>
+        <div id="approvedMembersList" style="margin-top:10px;"></div>
+        
+        <hr>
+        <div id="teacherManagementSection" style="display:none;">
+            <h4 style="margin-top:16px;">👨‍🏫 إدارة الأساتذة</h4>
+            <div style="background:var(--bg-body); padding:12px; border-radius:12px; margin:10px 0;">
+                <input type="email" id="newTeacherEmail" placeholder="بريد الأستاذ" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border-color);">
+                <button class="btn btn-primary" id="addTeacherBtn" style="width:100%; margin-top:8px;">➕ إضافة أستاذ</button>
+            </div>
+            <div id="teachersList" style="margin-top:10px;"></div>
+        </div>
+        
+        <hr>
+        <div id="securityLogSection" style="display:none;">
+            <h4 style="margin-top:16px;">📋 سجل الأمان</h4>
+            <div id="securityLogList" style="margin-top:10px; font-size:0.75rem;">📋 سيتم عرض سجل الأمان هنا</div>
+        </div>
+    </div>
+</div>
+
+<div class="notif-overlay" id="notifOverlay" onclick="closeNotificationsPanel()"></div>
+<div class="notif-panel" id="notificationsPanel">
+    <div class="notif-panel-header">
+        <div class="notif-head-title">
+            <i class="fas fa-bell"></i>
+            مركز الإشعارات
+            <span class="notif-head-count" id="notifHeadCount">0</span>
+        </div>
+        <button class="notif-close-btn" onclick="closeNotificationsPanel()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="notif-toolbar">
+        <button class="notif-tab active" id="notifTabAll" onclick="setNotificationsFilter('all')">الكل</button>
+        <button class="notif-tab" id="notifTabUnread" onclick="setNotificationsFilter('unread')">غير المقروءة</button>
+        <span class="notif-spacer"></span>
+        <button class="notif-action-btn" id="notifMarkAllBtn" onclick="markNotificationsRead()">
+            <i class="fas fa-check-double"></i> تعليم الكل
+        </button>
+        <button class="notif-action-btn danger" id="notifClearAllBtn" onclick="clearAllNotifications()">
+            <i class="fas fa-trash"></i> حذف الكل
+        </button>
+    </div>
+    <div class="notif-list" id="notificationsList">
+        <div class="notif-empty">
+            <i class="fas fa-bell-slash" style="font-size:1.6rem; display:block; margin-bottom:8px;"></i>
+            لا توجد إشعارات بعد
+        </div>
+    </div>
+    <div class="notif-footer">تُحفظ حالة الإشعارات على جهازك فقط</div>
+</div>
+
+<div class="container">
+    <header class="header-new">
+        <div class="logo-new" onclick="goHome()">
+            <div class="logo-text-new">
+                <h1>الأستاذ محمد <span>للتعليم</span></h1>
+                <p>🇿 منصة تعليم جزائرية</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-outline" onclick="openContactModal()">
+                <i class="fas fa-envelope"></i> راسلنا
+            </button>
+            <button class="btn btn-primary" id="loginBtn" onclick="showLoginChoice()">
+                <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
+            </button>
+            <button class="btn btn-success" id="registerBtn" onclick="showRegisterChoice()">
+                <i class="fas fa-user-plus"></i> طلب تسجيل
+            </button>
+            <button class="btn btn-danger" id="logoutBtn" onclick="showLogoutConfirm()" style="display:none;">
+                <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+            </button>
+            <div class="notif-wrapper" id="notifWrapper" style="display:none;">
+                <button class="btn btn-ghost" id="notificationBellBtn" onclick="toggleNotificationsPanel(event)">
+                    <i class="fas fa-bell"></i>
+                    <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+                </button>
+            </div>
+            <button class="btn btn-ghost" id="themeToggleBtn" onclick="toggleTheme()" title="تبديل الوضع">
+                <i class="fas fa-moon"></i>
+            </button>
+            <button class="btn btn-ghost" id="teacherGearIcon" style="display:none;" title="لوحة الأستاذ">
+                <i class="fas fa-cog"></i>
+            </button>
+            <button class="btn btn-ghost" id="adminGearIcon" style="display:none;" title="لوحة الإدارة">
+                <i class="fas fa-cog"></i>
+            </button>
+        </div>
+    </header>
+
+    <div class="membership-banner" id="membershipBanner" style="display:none;">
+        <span id="bannerUserType"></span>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn btn-danger" id="membershipLogoutBtn" onclick="showLogoutConfirm()">
+                <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+            </button>
+            <button class="btn btn-outline" id="revokeMembershipBtn" onclick="showRevokeConfirm()">
+                <i class="fas fa-user-times"></i> إلغاء العضوية
+            </button>
+        </div>
+    </div>
+
+    <div class="countdown-new" id="countdownContainer">
+        <div class="title"><i class="fas fa-calendar-days"></i> العودة إلى الدراسة</div>
+        <div class="timer">
+            <div class="box"><div class="number" id="days">00</div><div class="label">يوم</div></div>
+            <div class="box"><div class="number" id="hours">00</div><div class="label">ساعة</div></div>
+            <div class="box"><div class="number" id="minutes">00</div><div class="label">دقيقة</div></div>
+            <div class="box"><div class="number" id="seconds">00</div><div class="label">ثانية</div></div>
+        </div>
+    </div>
+
+    <div class="news-ticker-new">
+        <div class="label"><i class="fas fa-bolt"></i> المستجدات</div>
+        <div class="content" id="newsTickerContent"></div>
+    </div>
+
+    <div class="stats-container" id="statsContainer">
+        <div class="stat-item"><span class="number" id="statsLessons">0</span><span class="label">📚 إجمالي الدروس</span></div>
+        <div class="stat-item"><span class="number" id="statsUsers">0</span><span class="label">👥 الأعضاء</span></div>
+        <div class="stat-item"><span class="number" id="statsTeachers">0</span><span class="label">👨‍ الأساتذة</span></div>
+    </div>
+
+    <div id="mainStagesContainer">
+        <div class="welcome-new">
+            <span class="emoji">👨🏫📚</span>
+            <h3 id="heroTitleMain">مرحباً بك في منصة الأستاذ محمد</h3>
+            <p id="heroSubtitle">اختر المرحلة الدراسية من الأعلى للبدء</p>
+        </div>
+        
+        <div class="stages-new" id="dynamicArea" data-stage-gate="closed">
+            <button class="stage-btn-new primary" data-main="primary">
+                <i class="fas fa-school"></i>
+                <span>ابتدائي</span>
+            </button>
+            <button class="stage-btn-new middle" data-main="middle">
+                <i class="fas fa-chalkboard-user"></i>
+                <span>متوسط</span>
+            </button>
+            <button class="stage-btn-new high" data-main="high">
+                <i class="fas fa-graduation-cap"></i>
+                <span>ثانوي</span>
+            </button>
+            <button class="stage-btn-new community" id="communityBtn">
+                <i class="fas fa-users"></i>
+                <span>مجتمعنا</span>
+            </button>
+        </div>
+    </div>
+
+    <footer class="footer-new">
+        <strong id="footerText">© الأستاذ محمد للتعليم - الجزائر | تعليم ذكي للمستقبل</strong>
+    </footer>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+
+<script src="loading-screen.js"></script>
+<script src="notifications-fix.js"></script>
+<script src="hero-banner.js"></script>
+<script src="app.min.js"></script>
+
+</body>
+</html>
