@@ -44,18 +44,21 @@
     
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"></noscript>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/DOMPurify/3.0.6/purify.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/DOMPurify/3.0.6/purify.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js" defer></script>
     
     
     
     
     
     
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src https://cdn.gpteng.co 'self' https: blob: 'unsafe-inline' https://www.google.com https://www.gstatic.com; worker-src 'self' blob: https:; child-src 'self' blob: https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; connect-src 'self' https: wss: blob:; frame-src 'self' https: blob:; base-uri 'self'; form-action 'self'; upgrade-insecure-requests; frame-ancestors 'self' https://lovable.dev https://beta.lovable.dev https://*.beta.lovable.dev https://*.dwl.lovable.dev https://*.sandcastle.lovable.net https://gptengineer.app http://localhost:* http://*.localhost:*">
+        <!-- ملاحظة CSP: بقاء 'unsafe-inline' في script-src مؤقت وضروري لأن الكود الحالي يستخدم معالجات onclick مضمّنة.
+         للوصول للمستوى الصارم: انقل كل onclick إلى addEventListener (app.js) ثم احذف 'unsafe-inline'.
+         القيم nonce/hash في <meta> غير عملية لأنها تتطلب توليدًا ديناميكيًا من الخادم لكل طلب. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdnjs.cloudflare.com https://cdn.gpteng.co blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https://fonts.gstatic.com https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev; font-src 'self' https://fonts.gstatic.com https://cdn.gpteng.co; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com wss://*.firebaseio.com wss://*.firebasedatabase.app https://*.firebaseio.com https://*.firebasedatabase.app; worker-src 'self' blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; child-src 'self' blob: https://accounts.google.com; frame-src 'self' blob: https://accounts.google.com https://docs.google.com; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https://docs.google.com; frame-ancestors 'self' https://lovable.dev https://*.lovable.dev https://gptengineer.app http://localhost:*; upgrade-insecure-requests">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -78,7 +81,7 @@
 
 <!-- ===== إصلاح لوحة التحكم: إعادة position:fixed المسروقة + التمركز والحجم ===== -->
 
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/styles.min.css">
 </head>
 <body>
 
@@ -176,8 +179,9 @@
 
     
 
+    <main id="main-content">
     <section class="hero-banner" aria-label="مرحباً بكم">
-        <div class="hero-banner__bg"></div>
+        <img class="hero-banner__img" src="images/hero-classroom.webp" width="1350" height="1080" alt="" fetchpriority="high" loading="eager" decoding="async">
         <div class="hero-banner__overlay"></div>
         <div class="hero-banner__particles" id="heroParticles"></div>
         <div class="hero-banner__content">
@@ -251,6 +255,7 @@
             <p>اختر المرحلة الدراسية من الأعلى للبدء</p>
         </div>
     </div>
+    </main>
 </div>
 
 <div class="footer-new">
@@ -713,9 +718,9 @@
 
 
 
-    <script src="js/loading-screen.js"></script>
-    <script src="js/notifications-fix.js"></script>
-    <script src="js/hero-banner.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/loading-screen.js" defer></script>
+    <script src="js/notifications-fix.js" defer></script>
+    <script src="js/hero-banner.js" defer></script>
+    <script src="js/app.min.js" defer></script>
 </body>
 </html>
