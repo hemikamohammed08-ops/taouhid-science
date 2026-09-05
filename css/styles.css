@@ -1,4 +1,5 @@
-:root {
+
+        :root {
             /* هوية بصرية موحّدة: أزرق جزائري عميق + ذهبي دافئ + أخضر زمردي للنجاح */
             --primary: #24407A;
             --primary-dark: #152C55;
@@ -298,7 +299,7 @@
         /* ===== خلفية حقيقية لكامل الموقع (خلف كل الأقسام والبطاقات، لا تؤثر على أي وظيفة) ===== */
         body::before {
             content: ""; position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: -2;
-            background-image: url('../hero-classroom.webp');
+            background-image: url('../images/hero-classroom.webp');
             background-size: cover; background-position: center; background-attachment: fixed;
             filter: saturate(1.05) contrast(1.05);
         }
@@ -684,7 +685,7 @@
             position: relative; overflow: hidden; text-align: center; padding: 44px 22px;
             border-radius: var(--radius-lg); margin: 16px 0; box-shadow: var(--shadow-lg);
             background-color: var(--primary-dark);
-            background-image: url('../hero-classroom.webp');
+            background-image: url('../images/hero-classroom.webp');
             background-size: cover; background-position: center;
             color: #fff;
         }
@@ -1384,7 +1385,7 @@
             background-color: var(--primary-dark);
             background-image:
                 linear-gradient(115deg, rgba(9,25,54,0.78) 0%, rgba(20,55,105,0.62) 45%, rgba(26,74,138,0.42) 72%, rgba(232,168,56,0.32) 100%),
-                url('../hero-classroom.webp');
+                url('../images/hero-classroom.webp');
             background-size: cover, cover;
             background-position: center, center;
             border: 1px solid rgba(255,255,255,0.16);
@@ -1416,7 +1417,7 @@
         .hero-banner__bg {
             position: absolute; top: -24px; right: -24px; bottom: -24px; left: -24px; z-index: 0;
             background-color: var(--primary-dark);
-            background-image: url('../hero-classroom.webp');
+            background-image: url('../images/hero-classroom.webp');
             background-size: cover; background-position: center;
             animation: heroKenBurns 24s ease-in-out infinite alternate;
         }
@@ -1515,13 +1516,6 @@
 /* ===== next style block ===== */
 
 
-	@font-face {
-		font-family: 'CameraPlainVariable';
-		src: url('https://cdn.gpteng.co/mcp-widgets/v1/fonts/CameraPlainVariable.woff2') format('woff2');
-		font-weight: 100 900;
-		font-style: normal;
-		font-display: swap;
-	}
 
 
 
@@ -1531,13 +1525,13 @@
 
 /* ----- خلفية الموقع العامة ----- */
 body::before {
-    background-image: url('../bg-study.jpg') !important;
+    background-image: url('../images/bg-study.jpg') !important;
     filter: saturate(1.1) contrast(1.05) brightness(0.9);
 }
 
 /* ----- الهيرو بصورة حقيقية للطلاب ----- */
 .hero-banner__bg {
-    background-image: url('../bg-study.jpg') !important;
+    background-image: url('../images/bg-study.jpg') !important;
     filter: brightness(0.8) saturate(1.15);
 }
 
@@ -1566,16 +1560,16 @@ body::before {
     z-index: 2;
 }
 .stage-btn-new.primary {
-    background-image: url('../stage-primary.jpg') !important;
+    background-image: url('../images/stage-primary.jpg') !important;
 }
 .stage-btn-new.middle {
-    background-image: url('../stage-middle.webp') !important;
+    background-image: url('../images/stage-middle.webp') !important;
 }
 .stage-btn-new.high {
-    background-image: url('../stage-high.jpg') !important;
+    background-image: url('../images/stage-high.jpg') !important;
 }
 .stage-btn-new.community {
-    background-image: url('../stage-community.jpg') !important;
+    background-image: url('../images/stage-community.jpg') !important;
 }
 
 /* تنسيق النص فوق الصورة */
@@ -2058,7 +2052,7 @@ body::before {
 
 /* ===================== 2) الخلفية العامة — صورة حقيقية + تعتيم نيلي ===================== */
 body::before{
-    background-image:url('../bg-study.jpg') !important;
+    background-image:url('../images/bg-study.jpg') !important;
     background-size:cover !important;
     background-position:center !important;
     filter:saturate(1.1) contrast(1.06) brightness(.94) !important;
@@ -2135,7 +2129,7 @@ body::after{
 
 /* ===================== 4) الهيرو — صورة جامعة حقيقية + شرائط ضوئية ===================== */
 .hero-banner__bg{
-    background-image:url('../hero-classroom.webp') !important;
+    background-image:url('../images/hero-classroom.webp') !important;
     filter:saturate(1.15) !important;
 }
 .hero-banner__overlay{
@@ -2223,10 +2217,10 @@ body::after{
     transform:translateY(-8px) scale(1.04) !important;
     box-shadow:0 30px 60px -10px rgba(79,70,229,.5) !important;
 }
-.stage-btn-new.primary{background-image:url('../stage-primary.jpg') !important;}
-.stage-btn-new.middle{background-image:url('../stage-middle.webp') !important;}
-.stage-btn-new.high{background-image:url('../stage-high.jpg') !important;}
-.stage-btn-new.community{background-image:url('../stage-community.jpg') !important;}
+.stage-btn-new.primary{background-image:url('../images/stage-primary.jpg') !important;}
+.stage-btn-new.middle{background-image:url('../images/stage-middle.webp') !important;}
+.stage-btn-new.high{background-image:url('../images/stage-high.jpg') !important;}
+.stage-btn-new.community{background-image:url('../images/stage-community.jpg') !important;}
 
 /* ===================== 9) جميع البطاقات — زجاج + حد متدرج متحرك ===================== */
 .sub-stage-card-new,.year-card-new,.subject-card-new,.lesson-type-card-new{
